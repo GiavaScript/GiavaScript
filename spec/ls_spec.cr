@@ -13,6 +13,18 @@ describe Ls do
     interpreter.eval("$another_value").should eq(["$another_value = 5"])
   end
 
+  it "assigns string values" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$a = \"hello world!\";").should eq([] of String)
+    interpreter.eval("$a").should eq(["$a = \"hello world!\""])
+  end
+
+  it "assigns string values from another variable" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$a = \"hello\"; $b = $a;").should eq([] of String)
+    interpreter.eval("$b").should eq(["$b = \"hello\""])
+  end
+
   it "evaluates integer arithmetic" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("$result = 2 + 3 * 4;").should eq([] of String)
@@ -46,6 +58,32 @@ describe Ls do
     interpreter.eval("$a + 1").should eq(["6"])
   end
 
+  it "prints string literal result without assignment" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"hello world!\"").should eq(["\"hello world!\""])
+  end
+
+  it "concatenates string literals" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"hello\" + \" world\"").should eq(["\"hello world\""])
+  end
+
+  it "concatenates string variables" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$a = \"hello\"; $b = \" world\"; $c = $a + $b;").should eq([] of String)
+    interpreter.eval("$c").should eq(["$c = \"hello world\""])
+  end
+
+  it "concatenates string with number using coercion" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"count: \" + 5").should eq(["\"count: 5\""])
+  end
+
+  it "concatenates number with string using coercion" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("5 + \" items\"").should eq(["\"5 items\""])
+  end
+
   it "evaluates float arithmetic" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("$ratio = 7 / 2;").should eq([] of String)
@@ -71,6 +109,57 @@ describe Ls do
   it "prints error for invalid arithmetic" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("$x = 5 + ;").should eq(["Error: invalid right-hand side '5 +'"])
+  end
+
+  it "supports mixed concatenation in assignments" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$value = 7; $x = \"value=\" + $value;").should eq([] of String)
+    interpreter.eval("$x").should eq(["$x = \"value=7\""])
+  end
+
+  it "interpolates numeric variables inside strings" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$value = 7;").should eq([] of String)
+    interpreter.eval("\"value is $value\"").should eq(["\"value is 7\""])
+  end
+
+  it "interpolates string variables inside strings" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$name = \"Lenna\";").should eq([] of String)
+    interpreter.eval("\"hello $name!\"").should eq(["\"hello Lenna!\""])
+  end
+
+  it "interpolates variables with brace syntax" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$name = \"Lenna\"; $value = 7;").should eq([] of String)
+    interpreter.eval("\"hello ${name}, value=${value}\"").should eq(["\"hello Lenna, value=7\""])
+  end
+
+  it "interpolates expressions with brace syntax" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$a = 5;").should eq([] of String)
+    interpreter.eval("\"total=${$a + 2}\"").should eq(["\"total=7\""])
+  end
+
+  it "interpolates mixed string expressions with brace syntax" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$count = 5;").should eq([] of String)
+    interpreter.eval("\"label=${\"count: \" + $count}\"").should eq(["\"label=count: 5\""])
+  end
+
+  it "allows escaping dollar sign in strings" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"price: \\\$5\"").should eq(["\"price: $5\""])
+  end
+
+  it "prints error for missing interpolated variables" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"hello $missing\"").should eq(["Error: variable '$missing' does not exist"])
+  end
+
+  it "prints error for missing braced interpolated variables" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"hello ${missing}\"").should eq(["Error: variable '$missing' does not exist"])
   end
 
   it "prints error for missing variables" do

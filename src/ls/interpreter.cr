@@ -3,7 +3,7 @@ module Ls
     VAR_REGEX = /^\$[A-Za-z_][A-Za-z0-9_]*$/
 
     def initialize
-      @env = Hash(String, Number).new
+      @env = Hash(String, Value).new
     end
 
     def repl(input : IO = STDIN, output : IO = STDOUT)
@@ -37,27 +37,48 @@ module Ls
       if match = stmt.match(/^(\$[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/)
         var_name = match[1]
         rhs = match[2].strip
-        value = eval_rhs(rhs)
-        return value.is_a?(String) ? value : (@env[var_name] = value; nil)
+
+        begin
+          value = eval_rhs(rhs)
+          @env[var_name] = value
+          return nil
+        rescue ex : ExpressionError
+          return ex.message || "Error: invalid right-hand side '#{rhs}'"
+        end
       end
 
       if stmt.matches?(VAR_REGEX)
         if val = @env[stmt]?
-          return "#{stmt} = #{number_to_s(val)}"
+          return "#{stmt} = #{value_to_s(val)}"
         end
         return "Error: variable '#{stmt}' does not exist"
       end
 
-      value = eval_rhs(stmt)
-      value.is_a?(String) ? value : number_to_s(value)
+      begin
+        value = eval_rhs(stmt)
+        value_to_s(value)
+      rescue ex : ExpressionError
+        ex.message || "Error: invalid right-hand side '#{stmt}'"
+      end
     end
 
-    private def eval_rhs(rhs : String) : Number | String
+    private def eval_rhs(rhs : String) : Value
       ExpressionParser.new(rhs, @env).parse
     end
 
-    private def number_to_s(number : Number) : String
-      number.to_s
+    private def value_to_s(value : Value) : String
+      if value.is_a?(String)
+        "\"#{escape_string(value)}\""
+      else
+        value.to_s
+      end
+    end
+
+    private def escape_string(value : String) : String
+      value.gsub('\\', "\\\\")
+        .gsub('"', "\\\"")
+        .gsub('\n', "\\n")
+        .gsub('\t', "\\t")
     end
   end
 end

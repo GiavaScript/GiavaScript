@@ -1,6 +1,7 @@
 module Ls
   VERSION = "0.1.0"
   alias Number = Int32 | Float64
+  alias Value = Number | String
 end
 
 require "./ls/expression_parser"

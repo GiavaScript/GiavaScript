@@ -6,9 +6,12 @@ At the current stage, it focuses on variable handling and arithmetic inside a RE
 
 ## What LennaScript Can Do Right Now
 
-- Declare variables with integer or float values.
+- Declare variables with integer, float, or string values.
 - Assign one variable from another variable.
 - Evaluate arithmetic expressions with `+`, `-`, `*`, `/`, `%`, `^`, and parentheses.
+- Concatenate strings with `+` (numbers are coerced to strings when needed).
+- Interpolate variables in strings with `$name` or `${name}` syntax.
+- Evaluate expressions inside strings with `${...}` interpolation.
 - Print a variable by typing its name.
 - Show an error when a variable does not exist.
 
@@ -17,9 +20,16 @@ Supported examples:
 ```txt
 $a = 5;
 $b = 2.5;
+$message = "hello world!";
+$greeting = "hello" + " world";
+$label = "count: " + 5;
 $value = 44;
+$line = "value is $value";
+$line2 = "value is ${value}";
+$line3 = "sum is ${$value + 6}";
 $another_value = $a;
 $result = ($a + $value) / $b;
+$message
 $another_value
 ```
 
