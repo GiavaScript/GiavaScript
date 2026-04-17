@@ -19,6 +19,22 @@ describe Ls do
     interpreter.eval("$result").should eq(["$result = 14"])
   end
 
+  it "evaluates power expressions" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("2^2").should eq(["4"])
+    interpreter.eval("2^3").should eq(["8"])
+  end
+
+  it "uses right associativity for power" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("2^3^2").should eq(["512"])
+  end
+
+  it "evaluates modulo expressions" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("10 % 3").should eq(["1"])
+  end
+
   it "prints expression result without assignment" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("2 + 3 * 4").should eq(["14"])
@@ -45,6 +61,11 @@ describe Ls do
   it "prints error for division by zero" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("$x = 4 / 0;").should eq(["Error: division by zero"])
+  end
+
+  it "prints error for modulo by zero" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$x = 4 % 0;").should eq(["Error: modulo by zero"])
   end
 
   it "prints error for invalid arithmetic" do

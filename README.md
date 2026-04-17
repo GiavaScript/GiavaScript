@@ -8,7 +8,7 @@ At the current stage, it focuses on variable handling and arithmetic inside a RE
 
 - Declare variables with integer or float values.
 - Assign one variable from another variable.
-- Evaluate arithmetic expressions with `+`, `-`, `*`, `/`, and parentheses.
+- Evaluate arithmetic expressions with `+`, `-`, `*`, `/`, `%`, `^`, and parentheses.
 - Print a variable by typing its name.
 - Show an error when a variable does not exist.
 

@@ -36,16 +36,29 @@ module Ls
     end
 
     private def parse_term : Number
-      left = parse_factor
+      left = parse_power
 
       loop do
         skip_whitespace
         operator = current_char
-        break unless operator == '*' || operator == '/'
+        break unless operator == '*' || operator == '/' || operator == '%'
 
         advance
-        right = parse_factor
+        right = parse_power
         left = apply_operator(left, right, operator.not_nil!)
+      end
+
+      left
+    end
+
+    private def parse_power : Number
+      left = parse_factor
+
+      skip_whitespace
+      if current_char == '^'
+        advance
+        right = parse_power
+        return apply_operator(left, right, '^')
       end
 
       left
@@ -154,9 +167,33 @@ module Ls
         end
 
         left.to_f64 / right.to_f64
+      when '%'
+        if right.to_f64 == 0.0
+          raise ExpressionError.new("Error: modulo by zero")
+        end
+
+        if left.is_a?(Int32) && right.is_a?(Int32)
+          left % right
+        else
+          left.to_f64 % right.to_f64
+        end
+      when '^'
+        if left.is_a?(Int32) && right.is_a?(Int32) && right >= 0
+          pow_int(left, right)
+        else
+          left.to_f64 ** right.to_f64
+        end
       else
         raise invalid_rhs_error
       end
+    end
+
+    private def pow_int(base : Int32, exponent : Int32) : Int32
+      result = 1
+      exponent.times do
+        result *= base
+      end
+      result
     end
 
     private def negate(value : Number) : Number
