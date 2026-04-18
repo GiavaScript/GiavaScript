@@ -1,5 +1,7 @@
 # LennaScript
 
+[![Test](https://github.com/memburg/LennaScript/actions/workflows/test.yml/badge.svg)](https://github.com/memburg/LennaScript/actions/workflows/test.yml)
+
 LennaScript is a small interpreted language written in Crystal.
 
 At the current stage, it focuses on variable handling and arithmetic inside a REPL.
