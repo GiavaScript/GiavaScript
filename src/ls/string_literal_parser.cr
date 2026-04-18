@@ -78,8 +78,8 @@ module Ls
       end
 
       var_name = @source[start...@index]
-      if value = @env[var_name]?
-        return value_to_string(value)
+      if @env.has_key?(var_name)
+        return value_to_string(@env[var_name])
       end
 
       raise ExpressionError.new("Error: variable '#{var_name}' does not exist")
@@ -136,8 +136,8 @@ module Ls
 
       if content.matches?(/^[A-Za-z_][A-Za-z0-9_]*$/)
         var_name = "$#{content}"
-        if value = @env[var_name]?
-          return value_to_string(value)
+        if @env.has_key?(var_name)
+          return value_to_string(@env[var_name])
         end
 
         raise ExpressionError.new("Error: variable '#{var_name}' does not exist")
@@ -148,8 +148,12 @@ module Ls
     end
 
     private def value_to_string(value : Value) : String
-      if value.nil?
+      if value.is_a?(VoidValue)
         raise ExpressionError.new("Error: void value cannot be used in expressions")
+      end
+
+      if value.nil?
+        return "nil"
       end
 
       if value.is_a?(String)

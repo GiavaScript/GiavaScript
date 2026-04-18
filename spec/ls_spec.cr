@@ -198,6 +198,60 @@ describe Ls do
     interpreter.eval("$x = no_return();").should eq(["Error: function used in assignment must return a value"])
   end
 
+  it "prints values with the built-in print function" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("print(\"hello world\");").should eq(["hello world"])
+  end
+
+  it "prints expression values with the built-in print function" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$a = 4; print($a * 2);").should eq(["8"])
+  end
+
+  it "prints error when print gets the wrong number of arguments" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("print();").should eq(["Error: function 'print' expects 1 argument but got 0"])
+  end
+
+  it "returns string length with len" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("len(\"hello\");").should eq(["5"])
+  end
+
+  it "supports len in assignments" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$size = len(\"hello world\");").should eq([] of String)
+    interpreter.eval("$size;").should eq(["$size = 11"])
+  end
+
+  it "prints error when len gets the wrong number of arguments" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("len();").should eq(["Error: function 'len' expects 1 argument but got 0"])
+  end
+
+  it "prints error when len is called with non-string values" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("len(5);").should eq(["Error: function 'len' expects a string argument"])
+  end
+
+  it "supports nil as a value" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$value = nil;").should eq([] of String)
+    interpreter.eval("$value;").should eq(["$value = nil"])
+  end
+
+  it "prints nil and void with print" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("print(nil);").should eq(["nil"])
+    interpreter.eval("print(void);").should eq(["void"])
+  end
+
+  it "interpolates nil values in strings" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("$value = nil;").should eq([] of String)
+    interpreter.eval("\"value is $value\";").should eq(["\"value is nil\""])
+  end
+
   it "enforces semicolons" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("$a = 1").should eq(["Error: missing semicolon at end of statement"])

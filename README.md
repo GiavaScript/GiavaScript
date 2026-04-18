@@ -13,6 +13,9 @@ At the current stage, it focuses on variable handling and arithmetic inside a RE
 - Interpolate variables in strings with `$name` or `${name}` syntax.
 - Evaluate expressions inside strings with `${...}` interpolation.
 - Define functions with local variables and `return` values (including `return;` for void).
+- Use the built-in `print(value);` function.
+- Use the built-in `len(value);` function for strings.
+- Use `nil` as an explicit empty value and `void` for no-return contexts.
 - End non-function statements with semicolons (`;`).
 - Print a variable by typing its name.
 - Show an error when a variable does not exist.
@@ -29,6 +32,10 @@ $value = 44;
 $line = "value is $value";
 $line2 = "value is ${value}";
 $line3 = "sum is ${$value + 6}";
+print($line3);
+len("hello");
+$empty = nil;
+print(void);
 
 fun sum_numbers($a, $b)
   return $a + $b + $value;
