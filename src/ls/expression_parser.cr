@@ -3,8 +3,9 @@ module Ls
     @source : String
     @index : Int32
     @env : Hash(String, Value)
+    @call_function : Proc(String, Array(Value), Value)?
 
-    def initialize(@source : String, @env : Hash(String, Value))
+    def initialize(@source : String, @env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)? = nil)
       @index = 0
     end
 
@@ -64,7 +65,10 @@ module Ls
       skip_whitespace
       raise invalid_rhs_error if end_of_input?
 
-      case current_char
+      char = current_char
+      raise invalid_rhs_error unless char
+
+      case char
       when '('
         advance
         value = parse_expression
@@ -84,145 +88,59 @@ module Ls
       when '"'
         parse_string
       else
-        parse_number
+        if identifier_start?(char)
+          parse_function_call
+        else
+          parse_number
+        end
       end
     end
 
-    private def parse_string : String
-      raise invalid_rhs_error unless current_char == '"'
-
-      advance
-      value = String::Builder.new
-
-      loop do
-        char = current_char
-        raise invalid_rhs_error unless char
-
-        if char == '"'
-          advance
-          break
-        end
-
-        if char == '\\'
-          advance
-          escaped = current_char
-          raise invalid_rhs_error unless escaped
-
-          case escaped
-          when '"', '\\'
-            value << escaped
-          when '$'
-            value << '$'
-          when 'n'
-            value << '\n'
-          when 't'
-            value << '\t'
-          else
-            raise invalid_rhs_error
-          end
-
-          advance
-          next
-        end
-
-        if char == '$'
-          value << parse_interpolated_variable
-          next
-        end
-
-        value << char
-        advance
-      end
-
-      value.to_s
-    end
-
-    private def parse_interpolated_variable : String
-      start = @index
-      advance
-
-      if current_char == '{'
-        return parse_braced_interpolation
-      end
-
-      unless identifier_start?(current_char)
-        @index = start
-        return "$"
-      end
-
+    private def parse_function_call : Value
+      name_start = @index
       advance
       while identifier_continue?(current_char)
         advance
       end
 
-      var_name = @source[start...@index]
-      if value = @env[var_name]?
-        return value_to_string(value)
-      end
-
-      raise ExpressionError.new("Error: variable '#{var_name}' does not exist")
-    end
-
-    private def parse_braced_interpolation : String
+      function_name = @source[name_start...@index]
+      skip_whitespace
+      raise invalid_rhs_error unless current_char == '('
       advance
-      content_start = @index
-      in_string = false
-      escaping = false
-      nested_braces = 0
 
-      loop do
-        char = current_char
-        raise invalid_rhs_error unless char
+      args = [] of Value
+      skip_whitespace
 
-        if in_string
-          if escaping
-            escaping = false
-          elsif char == '\\'
-            escaping = true
-          elsif char == '"'
-            in_string = false
-          end
+      unless current_char == ')'
+        loop do
+          args << parse_expression
+          skip_whitespace
 
-          advance
-          next
-        end
-
-        case char
-        when '"'
-          in_string = true
-          advance
-        when '{'
-          nested_braces += 1
-          advance
-        when '}'
-          if nested_braces == 0
-            content = @source[content_start...@index].strip
+          if current_char == ','
             advance
-            return evaluate_interpolation_content(content)
+            skip_whitespace
+            next
           end
 
-          nested_braces -= 1
-          advance
-        else
-          advance
+          break
         end
       end
+
+      raise invalid_rhs_error unless current_char == ')'
+      advance
+
+      unless call_function = @call_function
+        raise ExpressionError.new("Error: function '#{function_name}' does not exist")
+      end
+
+      call_function.call(function_name, args)
     end
 
-    private def evaluate_interpolation_content(content : String) : String
-      raise invalid_rhs_error if content.empty?
-
-      if content.matches?(/^[A-Za-z_][A-Za-z0-9_]*$/)
-        var_name = "$#{content}"
-        if value = @env[var_name]?
-          return value_to_string(value)
-        end
-
-        raise ExpressionError.new("Error: variable '#{var_name}' does not exist")
-      end
-
-      value = ExpressionParser.new(content, @env).parse
-      value_to_string(value)
+    private def parse_string : String
+      parser = StringLiteralParser.new(@source, @index, @env, @call_function)
+      value = parser.parse
+      @index = parser.index
+      value
     end
 
     private def parse_number : Number
@@ -350,10 +268,18 @@ module Ls
         raise ExpressionError.new("Error: operator '#{operator}' requires numeric operands")
       end
 
+      if value.nil?
+        raise ExpressionError.new("Error: void value cannot be used in expressions")
+      end
+
       value
     end
 
     private def value_to_string(value : Value) : String
+      if value.nil?
+        raise ExpressionError.new("Error: void value cannot be used in expressions")
+      end
+
       if value.is_a?(String)
         value
       else
@@ -372,6 +298,10 @@ module Ls
     private def negate(value : Value) : Number
       if value.is_a?(String)
         raise ExpressionError.new("Error: operator '-' requires numeric operands")
+      end
+
+      if value.nil?
+        raise ExpressionError.new("Error: void value cannot be used in expressions")
       end
 
       if value.is_a?(Int32)

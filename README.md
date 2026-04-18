@@ -12,6 +12,8 @@ At the current stage, it focuses on variable handling and arithmetic inside a RE
 - Concatenate strings with `+` (numbers are coerced to strings when needed).
 - Interpolate variables in strings with `$name` or `${name}` syntax.
 - Evaluate expressions inside strings with `${...}` interpolation.
+- Define functions with local variables and `return` values (including `return;` for void).
+- End non-function statements with semicolons (`;`).
 - Print a variable by typing its name.
 - Show an error when a variable does not exist.
 
@@ -27,10 +29,16 @@ $value = 44;
 $line = "value is $value";
 $line2 = "value is ${value}";
 $line3 = "sum is ${$value + 6}";
+
+fun sum_numbers($a, $b)
+  return $a + $b + $value;
+end
+
+$total = sum_numbers(1, 2);
 $another_value = $a;
 $result = ($a + $value) / $b;
-$message
-$another_value
+$message;
+$another_value;
 ```
 
 ## Run the REPL
@@ -47,7 +55,7 @@ Exit with:
 
 ## Current Limitations
 
-- No functions, control flow, or complex types yet.
+- No control flow or complex types yet.
 
 ## Development
 
