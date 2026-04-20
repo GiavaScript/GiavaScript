@@ -1,0 +1,155 @@
+module Ls
+  class Tokenizer
+    enum TokenKind
+      Eof
+      Identifier
+      Number
+      String
+      Plus
+      Minus
+      Star
+      Slash
+      Percent
+      Caret
+      LParen
+      RParen
+      Comma
+    end
+
+    record Token, kind : TokenKind, lexeme : String
+
+    def initialize(@source : String, @env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)?)
+      @index = 0
+    end
+
+    def next_token : Token
+      skip_whitespace
+
+      char = current_char
+      return Token.new(TokenKind::Eof, "") unless char
+
+      case char
+      when '+'
+        advance
+        Token.new(TokenKind::Plus, "+")
+      when '-'
+        advance
+        Token.new(TokenKind::Minus, "-")
+      when '*'
+        advance
+        Token.new(TokenKind::Star, "*")
+      when '/'
+        advance
+        Token.new(TokenKind::Slash, "/")
+      when '%'
+        advance
+        Token.new(TokenKind::Percent, "%")
+      when '^'
+        advance
+        Token.new(TokenKind::Caret, "^")
+      when '('
+        advance
+        Token.new(TokenKind::LParen, "(")
+      when ')'
+        advance
+        Token.new(TokenKind::RParen, ")")
+      when ','
+        advance
+        Token.new(TokenKind::Comma, ",")
+      when '"'
+        parse_string_token
+      else
+        if identifier_start?(char)
+          parse_identifier_token
+        elsif digit?(char) || char == '.'
+          parse_number_token
+        else
+          raise invalid_rhs_error
+        end
+      end
+    end
+
+    private def parse_string_token : Token
+      parser = StringLiteralParser.new(@source, @index, @env, @call_function)
+      value = parser.parse
+      @index = parser.index
+      Token.new(TokenKind::String, value)
+    end
+
+    private def parse_identifier_token : Token
+      start = @index
+      advance
+      while identifier_continue?(current_char)
+        advance
+      end
+
+      Token.new(TokenKind::Identifier, @source[start...@index])
+    end
+
+    private def parse_number_token : Token
+      start = @index
+      has_digits_before_dot = false
+
+      while digit?(current_char)
+        has_digits_before_dot = true
+        advance
+      end
+
+      if current_char == '.'
+        advance
+
+        digits_after_dot = false
+        while digit?(current_char)
+          digits_after_dot = true
+          advance
+        end
+
+        unless has_digits_before_dot || digits_after_dot
+          raise invalid_rhs_error
+        end
+      end
+
+      token = @source[start...@index]
+      raise invalid_rhs_error if token.empty?
+
+      Token.new(TokenKind::Number, token)
+    end
+
+    private def skip_whitespace
+      while whitespace?(current_char)
+        advance
+      end
+    end
+
+    private def current_char : Char?
+      @source[@index]?
+    end
+
+    private def advance
+      @index += 1
+    end
+
+    private def digit?(char : Char?) : Bool
+      return false unless char
+      char.ascii_number?
+    end
+
+    private def whitespace?(char : Char?) : Bool
+      char == ' ' || char == '\t' || char == '\n' || char == '\r'
+    end
+
+    private def identifier_start?(char : Char?) : Bool
+      return false unless char
+      char.ascii_letter? || char == '_'
+    end
+
+    private def identifier_continue?(char : Char?) : Bool
+      return false unless char
+      char.ascii_letter? || char.ascii_number? || char == '_'
+    end
+
+    private def invalid_rhs_error : ExpressionError
+      ExpressionError.new("Error: invalid right-hand side '#{@source}'")
+    end
+  end
+end

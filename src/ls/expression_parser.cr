@@ -1,18 +1,18 @@
 module Ls
   class ExpressionParser
-    @source : String
-    @index : Int32
     @env : Hash(String, Value)
     @call_function : Proc(String, Array(Value), Value)?
+    @tokenizer : Tokenizer
+    @current : Tokenizer::Token
 
     def initialize(@source : String, @env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)? = nil)
-      @index = 0
+      @tokenizer = Tokenizer.new(@source, @env, @call_function)
+      @current = @tokenizer.next_token
     end
 
     def parse : Value
       value = parse_expression
-      skip_whitespace
-      raise invalid_rhs_error unless end_of_input?
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Eof
       value
     end
 
@@ -20,13 +20,12 @@ module Ls
       left = parse_term
 
       loop do
-        skip_whitespace
-        operator = current_char
-        break unless operator == '+' || operator == '-'
+        operator = @current.kind
+        break unless operator == Tokenizer::TokenKind::Plus || operator == Tokenizer::TokenKind::Minus
 
-        advance
+        advance_token
         right = parse_term
-        left = apply_operator(left, right, operator.not_nil!)
+        left = apply_operator(left, right, operator == Tokenizer::TokenKind::Plus ? '+' : '-')
       end
 
       left
@@ -36,13 +35,12 @@ module Ls
       left = parse_power
 
       loop do
-        skip_whitespace
-        operator = current_char
-        break unless operator == '*' || operator == '/' || operator == '%'
+        operator = @current.kind
+        break unless operator == Tokenizer::TokenKind::Star || operator == Tokenizer::TokenKind::Slash || operator == Tokenizer::TokenKind::Percent
 
-        advance
+        advance_token
         right = parse_power
-        left = apply_operator(left, right, operator.not_nil!)
+        left = apply_operator(left, right, term_operator_char(operator))
       end
 
       left
@@ -51,9 +49,8 @@ module Ls
     private def parse_power : Value
       left = parse_factor
 
-      skip_whitespace
-      if current_char == '^'
-        advance
+      if @current.kind == Tokenizer::TokenKind::Caret
+        advance_token
         right = parse_power
         return apply_operator(left, right, '^')
       end
@@ -62,53 +59,48 @@ module Ls
     end
 
     private def parse_factor : Value
-      skip_whitespace
-      raise invalid_rhs_error if end_of_input?
+      if @current.kind == Tokenizer::TokenKind::Plus
+        advance_token
+        return parse_factor
+      end
 
-      char = current_char
-      raise invalid_rhs_error unless char
-
-      case char
-      when '('
-        advance
-        value = parse_expression
-        skip_whitespace
-        raise invalid_rhs_error unless current_char == ')'
-        advance
-        value
-      when '+'
-        advance
-        parse_factor
-      when '-'
-        advance
+      if @current.kind == Tokenizer::TokenKind::Minus
+        advance_token
         value = parse_factor
-        negate(value)
-      when '"'
-        parse_string
+        return negate(value)
+      end
+
+      case @current.kind
+      when Tokenizer::TokenKind::LParen
+        advance_token
+        value = parse_expression
+        raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RParen
+        advance_token
+        value
+      when Tokenizer::TokenKind::String
+        string_value = @current.lexeme
+        advance_token
+        string_value
+      when Tokenizer::TokenKind::Number
+        number_lexeme = @current.lexeme
+        advance_token
+        parse_number_value(number_lexeme)
+      when Tokenizer::TokenKind::Identifier
+        parse_identifier_expression
       else
-        if identifier_start?(char)
-          parse_identifier_expression
-        else
-          parse_number
-        end
+        raise invalid_rhs_error
       end
     end
 
     private def parse_identifier_expression : Value
-      name_start = @index
-      advance
-      while identifier_continue?(current_char)
-        advance
-      end
-
-      identifier = @source[name_start...@index]
+      identifier = @current.lexeme
+      advance_token
 
       if identifier == "null"
         return nil
       end
 
-      skip_whitespace
-      if current_char == '('
+      if @current.kind == Tokenizer::TokenKind::LParen
         return parse_function_call(identifier)
       end
 
@@ -120,21 +112,17 @@ module Ls
     end
 
     private def parse_function_call(function_name : String) : Value
-      skip_whitespace
-      raise invalid_rhs_error unless current_char == '('
-      advance
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LParen
+      advance_token
 
       args = [] of Value
-      skip_whitespace
 
-      unless current_char == ')'
+      unless @current.kind == Tokenizer::TokenKind::RParen
         loop do
           args << parse_expression
-          skip_whitespace
 
-          if current_char == ','
-            advance
-            skip_whitespace
+          if @current.kind == Tokenizer::TokenKind::Comma
+            advance_token
             next
           end
 
@@ -142,8 +130,8 @@ module Ls
         end
       end
 
-      raise invalid_rhs_error unless current_char == ')'
-      advance
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RParen
+      advance_token
 
       unless call_function = @call_function
         raise ExpressionError.new("Error: function '#{function_name}' does not exist")
@@ -152,43 +140,10 @@ module Ls
       call_function.call(function_name, args)
     end
 
-    private def parse_string : String
-      parser = StringLiteralParser.new(@source, @index, @env, @call_function)
-      value = parser.parse
-      @index = parser.index
-      value
-    end
-
-    private def parse_number : Number
-      start = @index
-      has_digits_before_dot = false
-
-      while digit?(current_char)
-        has_digits_before_dot = true
-        advance
-      end
-
-      is_float = false
-      if current_char == '.'
-        is_float = true
-        advance
-
-        digits_after_dot = false
-        while digit?(current_char)
-          digits_after_dot = true
-          advance
-        end
-
-        unless has_digits_before_dot || digits_after_dot
-          raise invalid_rhs_error
-        end
-      end
-
-      token = @source[start...@index]
-
-      return token.to_f64 if is_float
-      return token.to_i32 if has_digits_before_dot
-
+    private def parse_number_value(number_lexeme : String) : Number
+      return number_lexeme.to_f64 if number_lexeme.includes?('.')
+      number_lexeme.to_i32
+    rescue
       raise invalid_rhs_error
     end
 
@@ -309,48 +264,23 @@ module Ls
       end
     end
 
-    private def skip_whitespace
-      while whitespace?(current_char)
-        advance
+    private def term_operator_char(kind : Tokenizer::TokenKind) : Char
+      case kind
+      when Tokenizer::TokenKind::Star
+        '*'
+      when Tokenizer::TokenKind::Slash
+        '/'
+      else
+        '%'
       end
     end
 
-    private def current_char : Char?
-      @source[@index]?
-    end
-
-    private def advance
-      @index += 1
-    end
-
-    private def end_of_input? : Bool
-      @index >= @source.size
-    end
-
-    private def digit?(char : Char?) : Bool
-      return false unless char
-      char.ascii_number?
-    end
-
-    private def whitespace?(char : Char?) : Bool
-      char == ' ' || char == '\t'
-    end
-
-    private def identifier_start?(char : Char?) : Bool
-      return false unless char
-      char.ascii_letter? || char == '_'
-    end
-
-    private def identifier_continue?(char : Char?) : Bool
-      return false unless char
-      char.ascii_letter? || char.ascii_number? || char == '_'
+    private def advance_token
+      @current = @tokenizer.next_token
     end
 
     private def invalid_rhs_error : ExpressionError
       ExpressionError.new("Error: invalid right-hand side '#{@source}'")
     end
-  end
-
-  class ExpressionError < Exception
   end
 end
