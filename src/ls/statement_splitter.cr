@@ -11,7 +11,7 @@ module Ls
         index = skip_whitespace(index)
         break if index >= @input.size
 
-        if starts_with_keyword?(index, "fun")
+        if starts_with_keyword?(index, "function")
           fun_end_index = find_function_end_index(index)
           statements << @input[index...fun_end_index].strip
           index = skip_whitespace(fun_end_index)
@@ -77,8 +77,31 @@ module Ls
     end
 
     private def find_function_end_index(index : Int32) : Int32
-      current = index
-      depth = 0
+      header_end_index = find_function_header_end_index(index)
+      raise ExpressionError.new("Error: invalid function definition") unless @input[header_end_index]? == '{'
+
+      find_matching_brace_end_index(header_end_index) + 1
+    end
+
+    private def find_function_header_end_index(index : Int32) : Int32
+      current = index + "function".size
+      current = skip_whitespace(current)
+
+      unless identifier_start?(@input[current]?)
+        raise ExpressionError.new("Error: invalid function definition")
+      end
+
+      current += 1
+      while current < @input.size && identifier_continue?(@input[current])
+        current += 1
+      end
+
+      current = skip_whitespace(current)
+      unless @input[current]? == '('
+        raise ExpressionError.new("Error: invalid function definition")
+      end
+
+      paren_depth = 0
       in_string = false
       escaping = false
 
@@ -98,28 +121,55 @@ module Ls
           next
         end
 
-        if char == '"'
+        case char
+        when '"'
           in_string = true
+        when '('
+          paren_depth += 1
+        when ')'
+          paren_depth -= 1
+          if paren_depth == 0
+            current += 1
+            return skip_whitespace(current)
+          end
+        end
+
+        current += 1
+      end
+
+      raise ExpressionError.new("Error: invalid function definition")
+    end
+
+    private def find_matching_brace_end_index(index : Int32) : Int32
+      current = index
+      brace_depth = 0
+      in_string = false
+      escaping = false
+
+      while current < @input.size
+        char = @input[current]
+
+        if in_string
+          if escaping
+            escaping = false
+          elsif char == '\\'
+            escaping = true
+          elsif char == '"'
+            in_string = false
+          end
+
           current += 1
           next
         end
 
-        if identifier_start?(char)
-          token_start = current
-          current += 1
-          while current < @input.size && identifier_continue?(@input[current])
-            current += 1
-          end
-
-          token = @input[token_start...current]
-          if token == "fun"
-            depth += 1
-          elsif token == "end"
-            depth -= 1
-            return current if depth == 0
-          end
-
-          next
+        case char
+        when '"'
+          in_string = true
+        when '{'
+          brace_depth += 1
+        when '}'
+          brace_depth -= 1
+          return current if brace_depth == 0
         end
 
         current += 1

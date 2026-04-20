@@ -83,8 +83,6 @@ module Ls
         advance
         value = parse_factor
         negate(value)
-      when '$'
-        parse_variable
       when '"'
         parse_string
       else
@@ -105,15 +103,20 @@ module Ls
 
       identifier = @source[name_start...@index]
 
-      if identifier == "nil"
+      if identifier == "null"
         return nil
       end
 
-      if identifier == "void"
-        return VOID
+      skip_whitespace
+      if current_char == '('
+        return parse_function_call(identifier)
       end
 
-      parse_function_call(identifier)
+      if @env.has_key?(identifier)
+        return @env[identifier]
+      end
+
+      raise ExpressionError.new("Error: variable '#{identifier}' does not exist")
     end
 
     private def parse_function_call(function_name : String) : Value
@@ -189,24 +192,6 @@ module Ls
       raise invalid_rhs_error
     end
 
-    private def parse_variable : Value
-      start = @index
-      advance
-      raise invalid_rhs_error unless identifier_start?(current_char)
-
-      advance
-      while identifier_continue?(current_char)
-        advance
-      end
-
-      var_name = @source[start...@index]
-      if @env.has_key?(var_name)
-        return @env[var_name]
-      end
-
-      raise ExpressionError.new("Error: variable '#{var_name}' does not exist")
-    end
-
     private def apply_operator(left : Value, right : Value, operator : Char) : Value
       case operator
       when '+'
@@ -277,10 +262,6 @@ module Ls
     end
 
     private def number_operand(value : Value, operator : Char) : Number
-      if value.is_a?(VoidValue)
-        raise ExpressionError.new("Error: void value cannot be used in expressions")
-      end
-
       if value.is_a?(String)
         raise ExpressionError.new("Error: operator '#{operator}' requires numeric operands")
       end
@@ -293,12 +274,8 @@ module Ls
     end
 
     private def value_to_string(value : Value) : String
-      if value.is_a?(VoidValue)
-        raise ExpressionError.new("Error: void value cannot be used in expressions")
-      end
-
       if value.nil?
-        return "nil"
+        return "null"
       end
 
       if value.is_a?(String)
@@ -317,10 +294,6 @@ module Ls
     end
 
     private def negate(value : Value) : Number
-      if value.is_a?(VoidValue)
-        raise ExpressionError.new("Error: void value cannot be used in expressions")
-      end
-
       if value.is_a?(String)
         raise ExpressionError.new("Error: operator '-' requires numeric operands")
       end

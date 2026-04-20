@@ -1,53 +1,50 @@
-# LennaScript
+# GiavaScript
 
-[![Test](https://github.com/memburg/LennaScript/actions/workflows/test.yml/badge.svg)](https://github.com/memburg/LennaScript/actions/workflows/test.yml)
+[![GiavaScript CI](https://github.com/memburg/GiavaScript/actions/workflows/test.yml/badge.svg)](https://github.com/memburg/GiavaScript/actions/workflows/test.yml)
 
-LennaScript is a small interpreted language written in Crystal.
+GiavaScript is a small interpreted language written in Crystal.
 
 At the current stage, it focuses on variable handling and arithmetic inside a REPL.
 
-## What LennaScript Can Do Right Now
+## What GiavaScript Can Do Right Now
 
-- Declare variables with integer, float, or string values.
-- Assign one variable from another variable.
+- Declare variables with `var name = value;`.
+- Reassign existing variables with `name = value;`.
 - Evaluate arithmetic expressions with `+`, `-`, `*`, `/`, `%`, `^`, and parentheses.
 - Concatenate strings with `+` (numbers are coerced to strings when needed).
 - Interpolate variables in strings with `$name` or `${name}` syntax.
 - Evaluate expressions inside strings with `${...}` interpolation.
-- Define functions with local variables and `return` values (including `return;` for void).
-- Use the built-in `print(value);` function.
-- Use the built-in `len(value);` function for strings.
-- Use `nil` as an explicit empty value and `void` for no-return contexts.
-- End non-function statements with semicolons (`;`).
+- Define functions with local variables and `return` values (including `return;` for `null`).
+- Use `null` as an explicit empty value.
+- Use braces for block constructs like function bodies.
 - Print a variable by typing its name.
 - Show an error when a variable does not exist.
 
 Supported examples:
 
 ```txt
-$a = 5;
-$b = 2.5;
-$message = "hello world!";
-$greeting = "hello" + " world";
-$label = "count: " + 5;
-$value = 44;
-$line = "value is $value";
-$line2 = "value is ${value}";
-$line3 = "sum is ${$value + 6}";
-print($line3);
-len("hello");
-$empty = nil;
-print(void);
+var a = 5;
+var b = 2.5;
+var message = "hello world!";
+var greeting = "hello" + " world";
+var label = "count: " + 5;
+var value = 44;
+var line = "value is $value";
+var line2 = "value is ${value}";
+var line3 = "sum is ${value + 6}";
+var empty = null;
+line3;
+empty;
 
-fun sum_numbers($a, $b)
-  return $a + $b + $value;
-end
+function sum_numbers(a, b) {
+  return a + b + value;
+}
 
-$total = sum_numbers(1, 2);
-$another_value = $a;
-$result = ($a + $value) / $b;
-$message;
-$another_value;
+var total = sum_numbers(1, 2);
+var another_value = a;
+var result = (a + value) / b;
+message;
+another_value;
 ```
 
 ## Run the REPL

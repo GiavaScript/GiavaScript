@@ -72,12 +72,13 @@ module Ls
         return "$"
       end
 
+      var_start = @index
       advance
       while identifier_continue?(current_char)
         advance
       end
 
-      var_name = @source[start...@index]
+      var_name = @source[var_start...@index]
       if @env.has_key?(var_name)
         return value_to_string(@env[var_name])
       end
@@ -135,7 +136,7 @@ module Ls
       raise invalid_rhs_error if content.empty?
 
       if content.matches?(/^[A-Za-z_][A-Za-z0-9_]*$/)
-        var_name = "$#{content}"
+        var_name = content
         if @env.has_key?(var_name)
           return value_to_string(@env[var_name])
         end
@@ -148,12 +149,8 @@ module Ls
     end
 
     private def value_to_string(value : Value) : String
-      if value.is_a?(VoidValue)
-        raise ExpressionError.new("Error: void value cannot be used in expressions")
-      end
-
       if value.nil?
-        return "nil"
+        return "null"
       end
 
       if value.is_a?(String)

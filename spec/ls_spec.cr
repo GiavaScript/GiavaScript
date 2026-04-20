@@ -3,32 +3,43 @@ require "./spec_helper"
 describe Ls do
   it "assigns integer values" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = 5;").should eq([] of String)
-    interpreter.eval("$a;").should eq(["$a = 5"])
+    interpreter.eval("var a = 5;").should eq([] of String)
+    interpreter.eval("a;").should eq(["a = 5"])
+  end
+
+  it "prints error when assigning undeclared variables" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("a = 5;").should eq(["Error: variable 'a' does not exist"])
+  end
+
+  it "prints error when redeclaring variables" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var a = 5;").should eq([] of String)
+    interpreter.eval("var a = 6;").should eq(["Error: variable 'a' already exists"])
   end
 
   it "assigns from another variable" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = 5; $another_value = $a;").should eq([] of String)
-    interpreter.eval("$another_value;").should eq(["$another_value = 5"])
+    interpreter.eval("var a = 5; var another_value = a;").should eq([] of String)
+    interpreter.eval("another_value;").should eq(["another_value = 5"])
   end
 
   it "assigns string values" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = \"hello world!\";").should eq([] of String)
-    interpreter.eval("$a;").should eq(["$a = \"hello world!\""])
+    interpreter.eval("var a = \"hello world!\";").should eq([] of String)
+    interpreter.eval("a;").should eq(["a = \"hello world!\""])
   end
 
   it "assigns string values from another variable" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = \"hello\"; $b = $a;").should eq([] of String)
-    interpreter.eval("$b;").should eq(["$b = \"hello\""])
+    interpreter.eval("var a = \"hello\"; var b = a;").should eq([] of String)
+    interpreter.eval("b;").should eq(["b = \"hello\""])
   end
 
   it "evaluates integer arithmetic" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$result = 2 + 3 * 4;").should eq([] of String)
-    interpreter.eval("$result;").should eq(["$result = 14"])
+    interpreter.eval("var result = 2 + 3 * 4;").should eq([] of String)
+    interpreter.eval("result;").should eq(["result = 14"])
   end
 
   it "evaluates power expressions" do
@@ -54,8 +65,8 @@ describe Ls do
 
   it "prints expression result using variables" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = 5;").should eq([] of String)
-    interpreter.eval("$a + 1;").should eq(["6"])
+    interpreter.eval("var a = 5;").should eq([] of String)
+    interpreter.eval("a + 1;").should eq(["6"])
   end
 
   it "prints string literal result without assignment" do
@@ -70,8 +81,8 @@ describe Ls do
 
   it "concatenates string variables" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = \"hello\"; $b = \" world\"; $c = $a + $b;").should eq([] of String)
-    interpreter.eval("$c;").should eq(["$c = \"hello world\""])
+    interpreter.eval("var a = \"hello\"; var b = \" world\"; var c = a + b;").should eq([] of String)
+    interpreter.eval("c;").should eq(["c = \"hello world\""])
   end
 
   it "concatenates string with number using coercion" do
@@ -86,65 +97,65 @@ describe Ls do
 
   it "evaluates float arithmetic" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$ratio = 7 / 2;").should eq([] of String)
-    interpreter.eval("$ratio;").should eq(["$ratio = 3.5"])
+    interpreter.eval("var ratio = 7 / 2;").should eq([] of String)
+    interpreter.eval("ratio;").should eq(["ratio = 3.5"])
   end
 
   it "supports mixed arithmetic with variables" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = 10; $b = 2.5; $c = ($a - 2) * $b;").should eq([] of String)
-    interpreter.eval("$c;").should eq(["$c = 20.0"])
+    interpreter.eval("var a = 10; var b = 2.5; var c = (a - 2) * b;").should eq([] of String)
+    interpreter.eval("c;").should eq(["c = 20.0"])
   end
 
   it "prints error for division by zero" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$x = 4 / 0;").should eq(["Error: division by zero"])
+    interpreter.eval("var x = 4 / 0;").should eq(["Error: division by zero"])
   end
 
   it "prints error for modulo by zero" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$x = 4 % 0;").should eq(["Error: modulo by zero"])
+    interpreter.eval("var x = 4 % 0;").should eq(["Error: modulo by zero"])
   end
 
   it "prints error for invalid arithmetic" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$x = 5 + ;").should eq(["Error: invalid right-hand side '5 +'"])
+    interpreter.eval("var x = 5 + ;").should eq(["Error: invalid right-hand side '5 +'"])
   end
 
   it "supports mixed concatenation in assignments" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$value = 7; $x = \"value=\" + $value;").should eq([] of String)
-    interpreter.eval("$x;").should eq(["$x = \"value=7\""])
+    interpreter.eval("var value = 7; var x = \"value=\" + value;").should eq([] of String)
+    interpreter.eval("x;").should eq(["x = \"value=7\""])
   end
 
   it "interpolates numeric variables inside strings" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$value = 7;").should eq([] of String)
+    interpreter.eval("var value = 7;").should eq([] of String)
     interpreter.eval("\"value is $value\";").should eq(["\"value is 7\""])
   end
 
   it "interpolates string variables inside strings" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$name = \"Lenna\";").should eq([] of String)
+    interpreter.eval("var name = \"Lenna\";").should eq([] of String)
     interpreter.eval("\"hello $name!\";").should eq(["\"hello Lenna!\""])
   end
 
   it "interpolates variables with brace syntax" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$name = \"Lenna\"; $value = 7;").should eq([] of String)
+    interpreter.eval("var name = \"Lenna\"; var value = 7;").should eq([] of String)
     interpreter.eval("\"hello ${name}, value=${value}\";").should eq(["\"hello Lenna, value=7\""])
   end
 
   it "interpolates expressions with brace syntax" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = 5;").should eq([] of String)
-    interpreter.eval("\"total=${$a + 2}\";").should eq(["\"total=7\""])
+    interpreter.eval("var a = 5;").should eq([] of String)
+    interpreter.eval("\"total=${a + 2}\";").should eq(["\"total=7\""])
   end
 
   it "interpolates mixed string expressions with brace syntax" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$count = 5;").should eq([] of String)
-    interpreter.eval("\"label=${\"count: \" + $count}\";").should eq(["\"label=count: 5\""])
+    interpreter.eval("var count = 5;").should eq([] of String)
+    interpreter.eval("\"label=${\"count: \" + count}\";").should eq(["\"label=count: 5\""])
   end
 
   it "allows escaping dollar sign in strings" do
@@ -154,30 +165,30 @@ describe Ls do
 
   it "prints error for missing interpolated variables" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("\"hello $missing\";").should eq(["Error: variable '$missing' does not exist"])
+    interpreter.eval("\"hello $missing\";").should eq(["Error: variable 'missing' does not exist"])
   end
 
   it "prints error for missing braced interpolated variables" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("\"hello ${missing}\";").should eq(["Error: variable '$missing' does not exist"])
+    interpreter.eval("\"hello ${missing}\";").should eq(["Error: variable 'missing' does not exist"])
   end
 
   it "defines functions and reads outer values" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$outside_value = 0;\nfun sum_numbers($a, $b)\n  return $a + $b + $outside_value;\nend\n$result = sum_numbers(2, 3);").should eq([] of String)
-    interpreter.eval("$result;").should eq(["$result = 5"])
+    interpreter.eval("var outside_value = 0;\nfunction sum_numbers(a, b) {\n  return a + b + outside_value;\n}\nvar result = sum_numbers(2, 3);").should eq([] of String)
+    interpreter.eval("result;").should eq(["result = 5"])
   end
 
   it "keeps function variables local" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("fun get_local()\n  $temp = 10;\n  return $temp;\nend").should eq([] of String)
+    interpreter.eval("function get_local() {\n  var temp = 10;\n  return temp;\n}").should eq([] of String)
     interpreter.eval("get_local();").should eq(["10"])
-    interpreter.eval("$temp;").should eq(["Error: variable '$temp' does not exist"])
+    interpreter.eval("temp;").should eq(["Error: variable 'temp' does not exist"])
   end
 
   it "uses latest outer values when calling functions" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$outside_value = 1;\nfun from_outside()\n  return $outside_value;\nend\n$outside_value = 9;").should eq([] of String)
+    interpreter.eval("var outside_value = 1;\nfunction from_outside() {\n  return outside_value;\n}\noutside_value = 9;").should eq([] of String)
     interpreter.eval("from_outside();").should eq(["9"])
   end
 
@@ -186,79 +197,64 @@ describe Ls do
     interpreter.eval("return 5;").should eq(["Error: return can only be used inside functions"])
   end
 
-  it "handles explicit void returns" do
+  it "handles explicit null returns" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("fun no_return()\n  $a = 1;\n  return;\nend").should eq([] of String)
-    interpreter.eval("no_return();").should eq([] of String)
+    interpreter.eval("function no_return() {\n  var a = 1;\n  return;\n}").should eq([] of String)
+    interpreter.eval("no_return();").should eq(["null"])
   end
 
-  it "prints error when assigning from a void function" do
+  it "allows assigning from a function with empty return" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("fun no_return()\n  return;\nend").should eq([] of String)
-    interpreter.eval("$x = no_return();").should eq(["Error: function used in assignment must return a value"])
+    interpreter.eval("function no_return() {\n  return;\n}").should eq([] of String)
+    interpreter.eval("var x = no_return();").should eq([] of String)
+    interpreter.eval("x;").should eq(["x = null"])
   end
 
-  it "prints values with the built-in print function" do
+  it "prints error when print is not defined" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("print(\"hello world\");").should eq(["hello world"])
+    interpreter.eval("print(\"hello world\");").should eq(["Error: function 'print' does not exist"])
   end
 
-  it "prints expression values with the built-in print function" do
+  it "prints error when len is not defined" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = 4; print($a * 2);").should eq(["8"])
+    interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
   end
 
-  it "prints error when print gets the wrong number of arguments" do
+  it "supports null as a value" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("print();").should eq(["Error: function 'print' expects 1 argument but got 0"])
+    interpreter.eval("var value = null;").should eq([] of String)
+    interpreter.eval("value;").should eq(["value = null"])
   end
 
-  it "returns string length with len" do
+  it "rejects legacy nil literal" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("len(\"hello\");").should eq(["5"])
+    interpreter.eval("var value = nil;").should eq(["Error: variable 'nil' does not exist"])
   end
 
-  it "supports len in assignments" do
+  it "interpolates null values in strings" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$size = len(\"hello world\");").should eq([] of String)
-    interpreter.eval("$size;").should eq(["$size = 11"])
-  end
-
-  it "prints error when len gets the wrong number of arguments" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("len();").should eq(["Error: function 'len' expects 1 argument but got 0"])
-  end
-
-  it "prints error when len is called with non-string values" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("len(5);").should eq(["Error: function 'len' expects a string argument"])
-  end
-
-  it "supports nil as a value" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("$value = nil;").should eq([] of String)
-    interpreter.eval("$value;").should eq(["$value = nil"])
-  end
-
-  it "prints nil and void with print" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("print(nil);").should eq(["nil"])
-    interpreter.eval("print(void);").should eq(["void"])
-  end
-
-  it "interpolates nil values in strings" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("$value = nil;").should eq([] of String)
-    interpreter.eval("\"value is $value\";").should eq(["\"value is nil\""])
+    interpreter.eval("var value = null;").should eq([] of String)
+    interpreter.eval("\"value is $value\";").should eq(["\"value is null\""])
   end
 
   it "enforces semicolons" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$a = 1").should eq(["Error: missing semicolon at end of statement"])
+    interpreter.eval("var a = 1").should eq(["Error: missing semicolon at end of statement"])
+  end
+
+  it "defines functions with braced bodies" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("function sum_numbers(a, b) {\n  return a + b;\n}").should eq([] of String)
+    interpreter.eval("sum_numbers(2, 3);").should eq(["5"])
+  end
+
+  it "rejects legacy end-based function syntax" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("function sum_numbers(a, b)\n  return a + b;\nend").should eq(["Error: invalid function definition"])
   end
 
   it "prints error for missing variables" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("$missing;").should eq(["Error: variable '$missing' does not exist"])
+    interpreter.eval("missing;").should eq(["Error: variable 'missing' does not exist"])
   end
 end

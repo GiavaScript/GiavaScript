@@ -1,6 +1,6 @@
 module Ls
   class FunctionRuntime
-    VAR_REGEX = /^\$[A-Za-z_][A-Za-z0-9_]*$/
+    IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
     FUNCTION_NAME_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
 
     record FunctionDefinition, parameters : Array(String), body : String
@@ -18,7 +18,7 @@ module Ls
     end
 
     def define_function(stmt : String)
-      match = stmt.match(/\Afun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*(.*)\bend\s*\z/m)
+      match = stmt.match(/\Afunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*\{(.*)\}\s*\z/m)
       raise ExpressionError.new("Error: invalid function definition") unless match
 
       function_name = match[1]
@@ -58,7 +58,7 @@ module Ls
         return ex.value
       end
 
-      VOID
+      nil
     end
 
     private def parse_function_parameters(param_list : String) : Array(String)
@@ -68,7 +68,7 @@ module Ls
       parsed = [] of String
 
       params.each do |param|
-        unless param.matches?(VAR_REGEX)
+        unless param.matches?(IDENTIFIER_REGEX)
           raise ExpressionError.new("Error: invalid parameter '#{param}'")
         end
 
