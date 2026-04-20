@@ -23,7 +23,7 @@ At the current stage, it focuses on variable handling and arithmetic inside a RE
 
 Supported examples:
 
-```txt
+```javascript
 var a = 5;
 var b = 2.5;
 var message = "hello world!";
