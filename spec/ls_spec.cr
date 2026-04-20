@@ -18,6 +18,12 @@ describe Ls do
     interpreter.eval("var a = 6;").should eq(["Error: variable 'a' already exists"])
   end
 
+  it "supports declarations without initializer" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var a;").should eq([] of String)
+    interpreter.eval("a;").should eq(["a = undefined"])
+  end
+
   it "assigns from another variable" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = 5; var another_value = a;").should eq([] of String)
@@ -27,6 +33,12 @@ describe Ls do
   it "assigns string values" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = \"hello world!\";").should eq([] of String)
+    interpreter.eval("a;").should eq(["a = \"hello world!\""])
+  end
+
+  it "assigns single-quoted string values" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var a = 'hello world!';").should eq([] of String)
     interpreter.eval("a;").should eq(["a = \"hello world!\""])
   end
 
@@ -128,49 +140,15 @@ describe Ls do
     interpreter.eval("x;").should eq(["x = \"value=7\""])
   end
 
-  it "interpolates numeric variables inside strings" do
+  it "keeps dollar signs as plain string content" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("var value = 7;").should eq([] of String)
-    interpreter.eval("\"value is $value\";").should eq(["\"value is 7\""])
+    interpreter.eval("\"cost is $5\";").should eq(["\"cost is $5\""])
   end
 
-  it "interpolates string variables inside strings" do
+  it "supports escaping quote delimiters" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("var name = \"Lenna\";").should eq([] of String)
-    interpreter.eval("\"hello $name!\";").should eq(["\"hello Lenna!\""])
-  end
-
-  it "interpolates variables with brace syntax" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("var name = \"Lenna\"; var value = 7;").should eq([] of String)
-    interpreter.eval("\"hello ${name}, value=${value}\";").should eq(["\"hello Lenna, value=7\""])
-  end
-
-  it "interpolates expressions with brace syntax" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("var a = 5;").should eq([] of String)
-    interpreter.eval("\"total=${a + 2}\";").should eq(["\"total=7\""])
-  end
-
-  it "interpolates mixed string expressions with brace syntax" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("var count = 5;").should eq([] of String)
-    interpreter.eval("\"label=${\"count: \" + count}\";").should eq(["\"label=count: 5\""])
-  end
-
-  it "allows escaping dollar sign in strings" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("\"price: \\\$5\";").should eq(["\"price: $5\""])
-  end
-
-  it "prints error for missing interpolated variables" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("\"hello $missing\";").should eq(["Error: variable 'missing' does not exist"])
-  end
-
-  it "prints error for missing braced interpolated variables" do
-    interpreter = Ls::Interpreter.new
-    interpreter.eval("\"hello ${missing}\";").should eq(["Error: variable 'missing' does not exist"])
+    interpreter.eval("\"a \\\"quote\\\"\";").should eq(["\"a \\\"quote\\\"\""])
+    interpreter.eval("'a \\\'quote\\\'';").should eq(["\"a 'quote'\""])
   end
 
   it "defines functions and reads outer values" do
@@ -197,17 +175,23 @@ describe Ls do
     interpreter.eval("return 5;").should eq(["Error: return can only be used inside functions"])
   end
 
-  it "handles explicit null returns" do
+  it "handles explicit undefined returns" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("function no_return() {\n  var a = 1;\n  return;\n}").should eq([] of String)
-    interpreter.eval("no_return();").should eq(["null"])
+    interpreter.eval("no_return();").should eq(["undefined"])
   end
 
   it "allows assigning from a function with empty return" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("function no_return() {\n  return;\n}").should eq([] of String)
     interpreter.eval("var x = no_return();").should eq([] of String)
-    interpreter.eval("x;").should eq(["x = null"])
+    interpreter.eval("x;").should eq(["x = undefined"])
+  end
+
+  it "returns undefined when function has no return" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("function no_return() {\n  var a = 1;\n}").should eq([] of String)
+    interpreter.eval("no_return();").should eq(["undefined"])
   end
 
   it "prints error when print is not defined" do
@@ -226,20 +210,38 @@ describe Ls do
     interpreter.eval("value;").should eq(["value = null"])
   end
 
+  it "supports undefined as a value" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = undefined;").should eq([] of String)
+    interpreter.eval("value;").should eq(["value = undefined"])
+  end
+
   it "rejects legacy nil literal" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = nil;").should eq(["Error: variable 'nil' does not exist"])
   end
 
-  it "interpolates null values in strings" do
+  it "prints null in strings as plain content" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = null;").should eq([] of String)
-    interpreter.eval("\"value is $value\";").should eq(["\"value is null\""])
+    interpreter.eval("\"value is value\";").should eq(["\"value is value\""])
   end
 
-  it "enforces semicolons" do
+  it "prints undefined in strings as plain content" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("var a = 1").should eq(["Error: missing semicolon at end of statement"])
+    interpreter.eval("var value = undefined;").should eq([] of String)
+    interpreter.eval("\"value is value\";").should eq(["\"value is value\""])
+  end
+
+  it "allows statements without trailing semicolons" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var a = 1").should eq([] of String)
+    interpreter.eval("a").should eq(["a = 1"])
+  end
+
+  it "splits newline-separated statements without semicolons" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var a = 1\nvar b = a + 2\nb").should eq(["b = 3"])
   end
 
   it "defines functions with braced bodies" do

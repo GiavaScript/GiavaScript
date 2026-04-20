@@ -18,7 +18,7 @@ module Ls
 
     record Token, kind : TokenKind, lexeme : String
 
-    def initialize(@source : String, @env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)?)
+    def initialize(@source : String)
       @index = 0
     end
 
@@ -56,7 +56,7 @@ module Ls
       when ','
         advance
         Token.new(TokenKind::Comma, ",")
-      when '"'
+      when '"', '\''
         parse_string_token
       else
         if identifier_start?(char)
@@ -70,7 +70,10 @@ module Ls
     end
 
     private def parse_string_token : Token
-      parser = StringLiteralParser.new(@source, @index, @env, @call_function)
+      delimiter = current_char
+      raise invalid_rhs_error unless delimiter
+
+      parser = StringLiteralParser.new(@source, @index, delimiter)
       value = parser.parse
       @index = parser.index
       Token.new(TokenKind::String, value)

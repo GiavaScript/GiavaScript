@@ -58,7 +58,7 @@ module Ls
         return ex.value
       end
 
-      nil
+      UNDEFINED
     end
 
     private def parse_function_parameters(param_list : String) : Array(String)

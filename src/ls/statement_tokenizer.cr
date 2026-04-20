@@ -19,7 +19,16 @@ module Ls
 
         statement_end_index = find_statement_end_index(@index)
         statement = @source[@index...statement_end_index].strip
-        @index = statement_end_index + 1
+        @index = statement_end_index
+
+        delimiter = @source[@index]?
+        if delimiter == ';' || delimiter == '\n'
+          @index += 1
+        elsif delimiter == '\r'
+          @index += 1
+          @index += 1 if @source[@index]? == '\n'
+        end
+
         return statement unless statement.empty?
       end
     end
@@ -36,20 +45,20 @@ module Ls
 
     private def find_statement_end_index(index : Int32) : Int32
       current = index
-      in_string = false
+      string_delimiter = nil.as(Char?)
       escaping = false
       paren_depth = 0
 
       while current < @source.size
         char = @source[current]
 
-        if in_string
+        if delimiter = string_delimiter
           if escaping
             escaping = false
           elsif char == '\\'
             escaping = true
-          elsif char == '"'
-            in_string = false
+          elsif char == delimiter
+            string_delimiter = nil
           end
 
           current += 1
@@ -57,20 +66,22 @@ module Ls
         end
 
         case char
-        when '"'
-          in_string = true
+        when '"', '\''
+          string_delimiter = char
         when '('
           paren_depth += 1
         when ')'
           paren_depth -= 1 if paren_depth > 0
         when ';'
           return current if paren_depth == 0
+        when '\n', '\r'
+          return current if paren_depth == 0
         end
 
         current += 1
       end
 
-      raise ExpressionError.new("Error: missing semicolon at end of statement")
+      current
     end
 
     private def find_function_end_index(index : Int32) : Int32
@@ -97,19 +108,19 @@ module Ls
       raise ExpressionError.new("Error: invalid function definition") unless @source[current]? == '('
 
       paren_depth = 0
-      in_string = false
+      string_delimiter = nil.as(Char?)
       escaping = false
 
       while current < @source.size
         char = @source[current]
 
-        if in_string
+        if delimiter = string_delimiter
           if escaping
             escaping = false
           elsif char == '\\'
             escaping = true
-          elsif char == '"'
-            in_string = false
+          elsif char == delimiter
+            string_delimiter = nil
           end
 
           current += 1
@@ -117,8 +128,8 @@ module Ls
         end
 
         case char
-        when '"'
-          in_string = true
+        when '"', '\''
+          string_delimiter = char
         when '('
           paren_depth += 1
         when ')'
@@ -138,19 +149,19 @@ module Ls
     private def find_matching_brace_end_index(index : Int32) : Int32
       current = index
       brace_depth = 0
-      in_string = false
+      string_delimiter = nil.as(Char?)
       escaping = false
 
       while current < @source.size
         char = @source[current]
 
-        if in_string
+        if delimiter = string_delimiter
           if escaping
             escaping = false
           elsif char == '\\'
             escaping = true
-          elsif char == '"'
-            in_string = false
+          elsif char == delimiter
+            string_delimiter = nil
           end
 
           current += 1
@@ -158,8 +169,8 @@ module Ls
         end
 
         case char
-        when '"'
-          in_string = true
+        when '"', '\''
+          string_delimiter = char
         when '{'
           brace_depth += 1
         when '}'

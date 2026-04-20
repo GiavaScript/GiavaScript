@@ -52,11 +52,22 @@ module Ls
       if match = stmt.match(/^return(?:\s+(.+))?$/m)
         if inside_function
           return_value_expr = match[1]?
-          value = return_value_expr ? eval_rhs(return_value_expr.strip, env) : nil
+          value = return_value_expr ? eval_rhs(return_value_expr.strip, env) : UNDEFINED
           raise FunctionRuntime::ReturnSignal.new(value)
         end
 
         return "Error: return can only be used inside functions"
+      end
+
+      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)$/)
+        var_name = match[1]
+
+        if env.has_key?(var_name)
+          return "Error: variable '#{var_name}' already exists"
+        end
+
+        env[var_name] = UNDEFINED
+        return nil
       end
 
       if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/)
@@ -120,6 +131,7 @@ module Ls
 
     private def value_to_s(value : Value) : String
       return "null" if value.nil?
+      return "undefined" if value.is_a?(UndefinedValue)
 
       if value.is_a?(String)
         "\"#{escape_string(value)}\""

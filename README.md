@@ -2,20 +2,21 @@
 
 [![GiavaScript CI](https://github.com/memburg/GiavaScript/actions/workflows/test.yml/badge.svg)](https://github.com/memburg/GiavaScript/actions/workflows/test.yml)
 
-GiavaScript is a small interpreted language written in Crystal.
+GiavaScript is subset of JavaScript.
 
 At the current stage, it focuses on variable handling and arithmetic inside a REPL.
 
 ## What GiavaScript Can Do Right Now
 
 - Declare variables with `var name = value;`.
+- Declare variables with `var name;` (defaults to `undefined`).
 - Reassign existing variables with `name = value;`.
+- Use semicolons optionally; newlines also separate statements.
 - Evaluate arithmetic expressions with `+`, `-`, `*`, `/`, `%`, `^`, and parentheses.
 - Concatenate strings with `+` (numbers are coerced to strings when needed).
-- Interpolate variables in strings with `$name` or `${name}` syntax.
-- Evaluate expressions inside strings with `${...}` interpolation.
-- Define functions with local variables and `return` values (including `return;` for `null`).
-- Use `null` as an explicit empty value.
+- Use string literals with double quotes (`"text"`) or single quotes (`'text'`).
+- Define functions with local variables and `return` values (including `return;` for `undefined`).
+- Use `null` and `undefined` values.
 - Use braces for block constructs like function bodies.
 - Print a variable by typing its name.
 - Show an error when a variable does not exist.
@@ -26,15 +27,17 @@ Supported examples:
 var a = 5;
 var b = 2.5;
 var message = "hello world!";
-var greeting = "hello" + " world";
+var greeting = 'hello' + " world";
 var label = "count: " + 5;
 var value = 44;
-var line = "value is $value";
-var line2 = "value is ${value}";
-var line3 = "sum is ${value + 6}";
+var line = "plain text";
+var line2 = 'single quoted string';
+var line3 = "sum text";
 var empty = null;
+var not_set;
 line3;
 empty;
+not_set;
 
 function sum_numbers(a, b) {
   return a + b + value;

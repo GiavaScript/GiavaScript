@@ -6,7 +6,7 @@ module Ls
     @current : Tokenizer::Token
 
     def initialize(@source : String, @env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)? = nil)
-      @tokenizer = Tokenizer.new(@source, @env, @call_function)
+      @tokenizer = Tokenizer.new(@source)
       @current = @tokenizer.next_token
     end
 
@@ -98,6 +98,10 @@ module Ls
 
       if identifier == "null"
         return nil
+      end
+
+      if identifier == "undefined"
+        return UNDEFINED
       end
 
       if @current.kind == Tokenizer::TokenKind::LParen
@@ -217,6 +221,10 @@ module Ls
     end
 
     private def number_operand(value : Value, operator : Char) : Number
+      if value.is_a?(UndefinedValue)
+        raise ExpressionError.new("Error: operator '#{operator}' requires numeric operands")
+      end
+
       if value.is_a?(String)
         raise ExpressionError.new("Error: operator '#{operator}' requires numeric operands")
       end
@@ -231,6 +239,10 @@ module Ls
     private def value_to_string(value : Value) : String
       if value.nil?
         return "null"
+      end
+
+      if value.is_a?(UndefinedValue)
+        return "undefined"
       end
 
       if value.is_a?(String)
@@ -249,6 +261,10 @@ module Ls
     end
 
     private def negate(value : Value) : Number
+      if value.is_a?(UndefinedValue)
+        raise ExpressionError.new("Error: operator '-' requires numeric operands")
+      end
+
       if value.is_a?(String)
         raise ExpressionError.new("Error: operator '-' requires numeric operands")
       end
