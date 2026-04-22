@@ -12,22 +12,23 @@ module Ls
         if starts_with_keyword?(@index, "function")
           function_end_index = find_function_end_index(@index)
           statement = @source[@index...function_end_index].strip
-          @index = skip_whitespace(function_end_index)
-          @index += 1 if @source[@index]? == ';'
+          @index = function_end_index
+          @index = consume_statement_delimiter(@index)
+          return statement
+        end
+
+        if starts_with_keyword?(@index, "if")
+          if_end_index = IfStatementParser.new(@source).parse_from(@index).end_index
+          statement = @source[@index...if_end_index].strip
+          @index = if_end_index
+          @index = consume_statement_delimiter(@index)
           return statement
         end
 
         statement_end_index = find_statement_end_index(@index)
         statement = @source[@index...statement_end_index].strip
         @index = statement_end_index
-
-        delimiter = @source[@index]?
-        if delimiter == ';' || delimiter == '\n'
-          @index += 1
-        elsif delimiter == '\r'
-          @index += 1
-          @index += 1 if @source[@index]? == '\n'
-        end
+        @index = consume_statement_delimiter(@index)
 
         return statement unless statement.empty?
       end
@@ -41,6 +42,23 @@ module Ls
         current += 1
       end
       current
+    end
+
+    private def consume_statement_delimiter(index : Int32) : Int32
+      delimiter = @source[index]?
+      return index unless delimiter
+
+      if delimiter == ';' || delimiter == '\n'
+        return index + 1
+      end
+
+      if delimiter == '\r'
+        next_index = index + 1
+        next_index += 1 if @source[next_index]? == '\n'
+        return next_index
+      end
+
+      index
     end
 
     private def find_statement_end_index(index : Int32) : Int32

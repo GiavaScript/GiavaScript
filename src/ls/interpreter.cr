@@ -49,6 +49,10 @@ module Ls
         end
       end
 
+      if starts_with_keyword?(stmt, "if")
+        return eval_if_statement(stmt, env, inside_function)
+      end
+
       if match = stmt.match(/^return(?:\s+(.+))?$/m)
         if inside_function
           return_value_expr = match[1]?
@@ -121,6 +125,67 @@ module Ls
 
     private def eval_rhs(rhs : String, env : Hash(String, Value)) : Value
       ExpressionParser.new(rhs, env, ->(name : String, args : Array(Value)) { call_function(name, args, env) }).parse
+    end
+
+    private def eval_if_statement(stmt : String, env : Hash(String, Value), inside_function : Bool) : String?
+      parsed_if = begin
+        IfStatementParser.new(stmt).parse_from
+      rescue ex : ExpressionError
+        return ex.message || "Error: invalid if statement"
+      end
+
+      begin
+        condition_value = eval_rhs(parsed_if.condition, env)
+        branch = truthy?(condition_value) ? parsed_if.consequent : parsed_if.alternate
+        return nil unless branch
+
+        eval_if_branch(branch, env, inside_function)
+      rescue ex : ExpressionError
+        ex.message || "Error: invalid if statement"
+      end
+    end
+
+    private def eval_if_branch(branch : String, env : Hash(String, Value), inside_function : Bool) : String?
+      if block_statement?(branch)
+        block_body = branch[1...branch.size - 1]
+        statements = StatementSplitter.new(block_body).split
+        branch_message = nil.as(String?)
+
+        statements.each do |statement|
+          message = eval_statement(statement, env, inside_function)
+          branch_message = message if message
+        end
+
+        return branch_message
+      end
+
+      eval_statement(branch, env, inside_function)
+    end
+
+    private def block_statement?(stmt : String) : Bool
+      stmt.starts_with?("{") && stmt.ends_with?("}")
+    end
+
+    private def truthy?(value : Value) : Bool
+      return false if value.nil?
+      return false if value.is_a?(UndefinedValue)
+
+      if value.is_a?(String)
+        return !value.empty?
+      end
+
+      if value.is_a?(Int32)
+        return value != 0
+      end
+
+      value != 0.0
+    end
+
+    private def starts_with_keyword?(source : String, keyword : String) : Bool
+      return false unless source.starts_with?(keyword)
+
+      next_char = source[keyword.size]?
+      next_char.nil? || next_char == ' ' || next_char == '\t' || next_char == '\n' || next_char == '\r' || next_char == '('
     end
 
     private def call_function(name : String, args : Array(Value), env : Hash(String, Value)) : Value

@@ -26,8 +26,8 @@ describe Ls do
 
   it "assigns from another variable" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("var a = 5; var another_value = a;").should eq([] of String)
-    interpreter.eval("another_value;").should eq(["another_value = 5"])
+    interpreter.eval("var a = 5; var anotherValue = a;").should eq([] of String)
+    interpreter.eval("anotherValue;").should eq(["anotherValue = 5"])
   end
 
   it "assigns string values" do
@@ -153,21 +153,21 @@ describe Ls do
 
   it "defines functions and reads outer values" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("var outside_value = 0;\nfunction sum_numbers(a, b) {\n  return a + b + outside_value;\n}\nvar result = sum_numbers(2, 3);").should eq([] of String)
+    interpreter.eval("var outsideValue = 0;\nfunction sumNumbers(a, b) {\n  return a + b + outsideValue;\n}\nvar result = sumNumbers(2, 3);").should eq([] of String)
     interpreter.eval("result;").should eq(["result = 5"])
   end
 
   it "keeps function variables local" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("function get_local() {\n  var temp = 10;\n  return temp;\n}").should eq([] of String)
-    interpreter.eval("get_local();").should eq(["10"])
+    interpreter.eval("function getLocal() {\n  var temp = 10;\n  return temp;\n}").should eq([] of String)
+    interpreter.eval("getLocal();").should eq(["10"])
     interpreter.eval("temp;").should eq(["Error: variable 'temp' does not exist"])
   end
 
   it "uses latest outer values when calling functions" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("var outside_value = 1;\nfunction from_outside() {\n  return outside_value;\n}\noutside_value = 9;").should eq([] of String)
-    interpreter.eval("from_outside();").should eq(["9"])
+    interpreter.eval("var outsideValue = 1;\nfunction fromOutside() {\n  return outsideValue;\n}\noutsideValue = 9;").should eq([] of String)
+    interpreter.eval("fromOutside();").should eq(["9"])
   end
 
   it "prints error for return outside functions" do
@@ -177,21 +177,21 @@ describe Ls do
 
   it "handles explicit undefined returns" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("function no_return() {\n  var a = 1;\n  return;\n}").should eq([] of String)
-    interpreter.eval("no_return();").should eq(["undefined"])
+    interpreter.eval("function noReturn() {\n  var a = 1;\n  return;\n}").should eq([] of String)
+    interpreter.eval("noReturn();").should eq(["undefined"])
   end
 
   it "allows assigning from a function with empty return" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("function no_return() {\n  return;\n}").should eq([] of String)
-    interpreter.eval("var x = no_return();").should eq([] of String)
+    interpreter.eval("function noReturn() {\n  return;\n}").should eq([] of String)
+    interpreter.eval("var x = noReturn();").should eq([] of String)
     interpreter.eval("x;").should eq(["x = undefined"])
   end
 
   it "returns undefined when function has no return" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("function no_return() {\n  var a = 1;\n}").should eq([] of String)
-    interpreter.eval("no_return();").should eq(["undefined"])
+    interpreter.eval("function noReturn() {\n  var a = 1;\n}").should eq([] of String)
+    interpreter.eval("noReturn();").should eq(["undefined"])
   end
 
   it "prints error when print is not defined" do
@@ -246,13 +246,54 @@ describe Ls do
 
   it "defines functions with braced bodies" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("function sum_numbers(a, b) {\n  return a + b;\n}").should eq([] of String)
-    interpreter.eval("sum_numbers(2, 3);").should eq(["5"])
+    interpreter.eval("function sumNumbers(a, b) {\n  return a + b;\n}").should eq([] of String)
+    interpreter.eval("sumNumbers(2, 3);").should eq(["5"])
   end
 
   it "rejects legacy end-based function syntax" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("function sum_numbers(a, b)\n  return a + b;\nend").should eq(["Error: invalid function definition"])
+    interpreter.eval("function sumNumbers(a, b)\n  return a + b;\nend").should eq(["Error: invalid function definition"])
+  end
+
+  it "runs if branch when condition is truthy" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = 1; if (value) value = 2;").should eq([] of String)
+    interpreter.eval("value;").should eq(["value = 2"])
+  end
+
+  it "runs else branch when condition is falsy" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = 0; if (value) value = 2; else value = 3;").should eq([] of String)
+    interpreter.eval("value;").should eq(["value = 3"])
+  end
+
+  it "supports if without else" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = 4; if (0) value = 8;").should eq([] of String)
+    interpreter.eval("value;").should eq(["value = 4"])
+  end
+
+  it "supports braced blocks in if statements" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = 0; if (1) { value = 9; }").should eq([] of String)
+    interpreter.eval("value;").should eq(["value = 9"])
+  end
+
+  it "supports braced blocks in else statements" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = 0; if (0) { value = 1; } else { value = 7; }").should eq([] of String)
+    interpreter.eval("value;").should eq(["value = 7"])
+  end
+
+  it "supports nested if with dangling else" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = 0; if (1) if (0) value = 1; else value = 2;").should eq([] of String)
+    interpreter.eval("value;").should eq(["value = 2"])
+  end
+
+  it "returns error for invalid if syntax" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("if value) value = 1;").should eq(["Error: invalid if statement"])
   end
 
   it "prints error for missing variables" do

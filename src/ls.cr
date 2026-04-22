@@ -19,6 +19,7 @@ end
 require "./ls/string_literal_parser"
 require "./ls/tokenizer"
 require "./ls/expression_parser"
+require "./ls/if_statement_parser"
 require "./ls/statement_tokenizer"
 require "./ls/statement_splitter"
 require "./ls/function_runtime"
