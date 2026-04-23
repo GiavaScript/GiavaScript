@@ -5,12 +5,20 @@ module Ls
       Identifier
       Number
       String
+      True
+      False
       Plus
       Minus
       Star
       Slash
       Percent
       Caret
+      Less
+      Greater
+      LessEqual
+      GreaterEqual
+      EqualEqual
+      BangEqual
       LParen
       RParen
       Comma
@@ -47,6 +55,40 @@ module Ls
       when '^'
         advance
         Token.new(TokenKind::Caret, "^")
+      when '<'
+        advance
+
+        if current_char == '='
+          advance
+          Token.new(TokenKind::LessEqual, "<=")
+        else
+          Token.new(TokenKind::Less, "<")
+        end
+      when '>'
+        advance
+
+        if current_char == '='
+          advance
+          Token.new(TokenKind::GreaterEqual, ">=")
+        else
+          Token.new(TokenKind::Greater, ">")
+        end
+      when '='
+        advance
+        if current_char == '='
+          advance
+          Token.new(TokenKind::EqualEqual, "==")
+        else
+          raise invalid_rhs_error
+        end
+      when '!'
+        advance
+        if current_char == '='
+          advance
+          Token.new(TokenKind::BangEqual, "!=")
+        else
+          raise invalid_rhs_error
+        end
       when '('
         advance
         Token.new(TokenKind::LParen, "(")
@@ -86,7 +128,17 @@ module Ls
         advance
       end
 
-      Token.new(TokenKind::Identifier, @source[start...@index])
+      lexeme = @source[start...@index]
+      kind = case lexeme
+             when "true"
+               TokenKind::True
+             when "false"
+               TokenKind::False
+             else
+               TokenKind::Identifier
+             end
+
+      Token.new(kind, lexeme)
     end
 
     private def parse_number_token : Token

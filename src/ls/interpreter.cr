@@ -74,7 +74,7 @@ module Ls
         return nil
       end
 
-      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/)
+      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*(.+)$/)
         var_name = match[1]
         rhs = match[2].strip
 
@@ -91,7 +91,7 @@ module Ls
         end
       end
 
-      if match = stmt.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/)
+      if match = stmt.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*(.+)$/)
         var_name = match[1]
         rhs = match[2].strip
 
@@ -169,6 +169,10 @@ module Ls
     private def truthy?(value : Value) : Bool
       return false if value.nil?
       return false if value.is_a?(UndefinedValue)
+
+      if value.is_a?(Bool)
+        return value
+      end
 
       if value.is_a?(String)
         return !value.empty?

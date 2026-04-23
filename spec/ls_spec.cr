@@ -113,6 +113,47 @@ describe Ls do
     interpreter.eval("ratio;").should eq(["ratio = 3.5"])
   end
 
+  it "evaluates relational operators" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("1 < 2;").should eq(["true"])
+    interpreter.eval("3 > 5;").should eq(["false"])
+    interpreter.eval("(1 + 2) > 2;").should eq(["true"])
+  end
+
+  it "coerces numeric strings in relational comparisons" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"10\" > 9;").should eq(["true"])
+    interpreter.eval("9 < \"10\";").should eq(["true"])
+  end
+
+  it "returns false for non-numeric string and number comparisons" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"text\" > 10;").should eq(["false"])
+    interpreter.eval("\"text\" < 10;").should eq(["false"])
+  end
+
+  it "evaluates equality operators for numbers and booleans" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("4 == 4;").should eq(["true"])
+    interpreter.eval("4 != 4;").should eq(["false"])
+    interpreter.eval("true == false;").should eq(["false"])
+  end
+
+  it "uses comparison and equality precedence correctly" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("1 + 2 > 2 == true;").should eq(["true"])
+  end
+
+  it "prints error for incompatible relational comparisons" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("1 < true;").should eq(["Error: operator '<' requires numeric operands"])
+  end
+
+  it "prints error for incompatible equality comparisons" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("true == 1;").should eq(["Error: operator '==' requires both operands to be numbers or both operands to be booleans"])
+  end
+
   it "supports mixed arithmetic with variables" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = 10; var b = 2.5; var c = (a - 2) * b;").should eq([] of String)
