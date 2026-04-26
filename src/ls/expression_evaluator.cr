@@ -27,11 +27,23 @@ module Ls
           values << evaluate(element)
         end
         values
+      when ObjectLiteral
+        evaluate_object_literal(expr)
       when IndexExpr
         evaluate_index_expression(expr)
+      when PropertyAccessExpr
+        evaluate_property_access(expr)
       else
         raise ExpressionError.new("Error: invalid expression")
       end
+    end
+
+    private def evaluate_object_literal(expr : ObjectLiteral) : Value
+      object = Hash(String, Value).new
+      expr.properties.each do |property|
+        object[property.key] = evaluate(property.value)
+      end
+      object
     end
 
     private def evaluate_unary(expr : UnaryExpr) : Value
@@ -58,24 +70,62 @@ module Ls
 
     private def evaluate_index_expression(expr : IndexExpr) : Value
       target = evaluate(expr.target)
-      unless target.is_a?(Array)
-        raise ExpressionError.new("Error: indexing is only supported on arrays")
+      if target.is_a?(Array)
+        return evaluate_array_index(target, expr.index)
       end
 
-      index_value = evaluate(expr.index)
+      if target.is_a?(Hash(String, Value))
+        key = normalize_object_key(evaluate(expr.index))
+        return lookup_object_property(target, key)
+      end
+
+      raise ExpressionError.new("Error: indexing is only supported on arrays and objects")
+    end
+
+    private def evaluate_property_access(expr : PropertyAccessExpr) : Value
+      target = evaluate(expr.target)
+      unless target.is_a?(Hash(String, Value))
+        raise ExpressionError.new("Error: dot property access is only supported on objects")
+      end
+
+      lookup_object_property(target, expr.property)
+    end
+
+    private def evaluate_array_index(target : Array(Value), index_expr : Expr) : Value
+      index_value = evaluate(index_expr)
       unless index_value.is_a?(Int32)
         raise ExpressionError.new("Error: array index must be an integer")
       end
 
-      if index_value < 0
-        raise ExpressionError.new("Error: array index cannot be negative")
-      end
-
-      if index_value >= target.size
-        raise ExpressionError.new("Error: array index #{index_value} is out of bounds for array of size #{target.size}")
+      if index_value < 0 || index_value >= target.size
+        return UNDEFINED
       end
 
       target[index_value]
+    end
+
+    private def normalize_object_key(key_value : Value) : String
+      if key_value.is_a?(String)
+        return key_value
+      end
+
+      if key_value.is_a?(Int32)
+        return key_value.to_s
+      end
+
+      if key_value.is_a?(Float64)
+        return key_value.to_s
+      end
+
+      raise ExpressionError.new("Error: object property key must be a string or number")
+    end
+
+    private def lookup_object_property(target : Hash(String, Value), key : String) : Value
+      unless target.has_key?(key)
+        return UNDEFINED
+      end
+
+      target[key]
     end
 
     private def apply_binary_operator(left : Value, right : Value, operator : Tokenizer::TokenKind) : Value
@@ -261,9 +311,23 @@ module Ls
 
       if value.is_a?(String)
         value
+      elsif value.is_a?(Array)
+        "[#{value.map { |item| value_to_string(item) }.join(", ")}]"
+      elsif value.is_a?(Hash(String, Value))
+        properties = value.map do |key, property_value|
+          "\"#{escape_string(key)}\": #{value_to_string(property_value)}"
+        end
+        "{#{properties.join(", ")}}"
       else
         value.to_s
       end
+    end
+
+    private def escape_string(value : String) : String
+      value.gsub('\\', "\\\\")
+        .gsub('"', "\\\"")
+        .gsub('\n', "\\n")
+        .gsub('\t', "\\t")
     end
 
     private def pow_int(base : Int32, exponent : Int32) : Int32

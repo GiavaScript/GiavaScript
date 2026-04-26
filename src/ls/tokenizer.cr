@@ -23,7 +23,11 @@ module Ls
       RParen
       LBracket
       RBracket
+      LBrace
+      RBrace
+      Colon
       Comma
+      Dot
     end
 
     record Token, kind : TokenKind, lexeme : String
@@ -103,15 +107,31 @@ module Ls
       when ']'
         advance
         Token.new(TokenKind::RBracket, "]")
+      when '{'
+        advance
+        Token.new(TokenKind::LBrace, "{")
+      when '}'
+        advance
+        Token.new(TokenKind::RBrace, "}")
+      when ':'
+        advance
+        Token.new(TokenKind::Colon, ":")
       when ','
         advance
         Token.new(TokenKind::Comma, ",")
+      when '.'
+        if digit?(peek_char)
+          parse_number_token
+        else
+          advance
+          Token.new(TokenKind::Dot, ".")
+        end
       when '"', '\''
         parse_string_token
       else
         if identifier_start?(char)
           parse_identifier_token
-        elsif digit?(char) || char == '.'
+        elsif digit?(char)
           parse_number_token
         else
           raise invalid_rhs_error
@@ -190,6 +210,10 @@ module Ls
 
     private def advance
       @index += 1
+    end
+
+    private def peek_char : Char?
+      @source[@index + 1]?
     end
 
     private def digit?(char : Char?) : Bool

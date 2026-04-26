@@ -13,7 +13,7 @@ module Ls
   UNDEFINED = UndefinedValue.new
 
   alias Number = Int32 | Float64
-  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value)
+  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value)
 end
 
 require "./ls/string_literal_parser"

@@ -91,20 +91,17 @@ module Ls
         end
       end
 
-      if match = stmt.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*(.+)$/)
-        var_name = match[1]
-        rhs = match[2].strip
-
-        unless env.has_key?(var_name)
-          return "Error: variable '#{var_name}' does not exist"
-        end
+      if assignment = split_assignment_statement(stmt)
+        lhs = assignment[:lhs]
+        rhs = assignment[:rhs]
 
         begin
           value = eval_rhs(rhs, env)
-          env[var_name] = value
+          assignment_target = parse_assignment_target(lhs)
+          assign_to_target(assignment_target, value, env)
           return nil
         rescue ex : ExpressionError
-          return ex.message || "Error: invalid right-hand side '#{rhs}'"
+          return ex.message || "Error: invalid assignment"
         end
       end
 
@@ -125,7 +122,157 @@ module Ls
 
     private def eval_rhs(rhs : String, env : Hash(String, Value)) : Value
       ast = ExpressionParser.new(rhs).parse
-      ExpressionEvaluator.new(env, ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) }).evaluate(ast)
+      evaluate_expression(ast, env)
+    end
+
+    private def evaluate_expression(expr : Expr, env : Hash(String, Value)) : Value
+      ExpressionEvaluator.new(env, ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) }).evaluate(expr)
+    end
+
+    private def parse_assignment_target(lhs : String) : Expr
+      ExpressionParser.new(lhs).parse
+    rescue ex : ExpressionError
+      raise ExpressionError.new("Error: invalid assignment target '#{lhs}'")
+    end
+
+    private def assign_to_target(target_expr : Expr, value : Value, env : Hash(String, Value))
+      case target_expr
+      when VariableExpr
+        assign_to_variable(target_expr, value, env)
+      when IndexExpr
+        assign_to_index(target_expr, value, env)
+      when PropertyAccessExpr
+        assign_to_property(target_expr, value, env)
+      else
+        raise ExpressionError.new("Error: invalid assignment target")
+      end
+    end
+
+    private def assign_to_variable(target_expr : VariableExpr, value : Value, env : Hash(String, Value))
+      unless env.has_key?(target_expr.name)
+        raise ExpressionError.new("Error: variable '#{target_expr.name}' does not exist")
+      end
+
+      env[target_expr.name] = value
+    end
+
+    private def assign_to_index(target_expr : IndexExpr, value : Value, env : Hash(String, Value))
+      target_value = evaluate_expression(target_expr.target, env)
+      index_value = evaluate_expression(target_expr.index, env)
+
+      if target_value.is_a?(Array)
+        assign_to_array_index(target_value, index_value, value)
+        return
+      end
+
+      if target_value.is_a?(Hash(String, Value))
+        key = normalize_object_key(index_value)
+        target_value[key] = value
+        return
+      end
+
+      raise ExpressionError.new("Error: indexing assignment is only supported on arrays and objects")
+    end
+
+    private def assign_to_property(target_expr : PropertyAccessExpr, value : Value, env : Hash(String, Value))
+      target_value = evaluate_expression(target_expr.target, env)
+      unless target_value.is_a?(Hash(String, Value))
+        raise ExpressionError.new("Error: dot property assignment is only supported on objects")
+      end
+
+      target_value[target_expr.property] = value
+    end
+
+    private def assign_to_array_index(target : Array(Value), index_value : Value, value : Value)
+      unless index_value.is_a?(Int32)
+        raise ExpressionError.new("Error: array index must be an integer")
+      end
+
+      if index_value < 0
+        raise ExpressionError.new("Error: array index must be a non-negative integer")
+      end
+
+      while target.size <= index_value
+        target << UNDEFINED
+      end
+
+      target[index_value] = value
+    end
+
+    private def normalize_object_key(key_value : Value) : String
+      if key_value.is_a?(String)
+        return key_value
+      end
+
+      if key_value.is_a?(Int32)
+        return key_value.to_s
+      end
+
+      if key_value.is_a?(Float64)
+        return key_value.to_s
+      end
+
+      raise ExpressionError.new("Error: object property key must be a string or number")
+    end
+
+    private def split_assignment_statement(stmt : String) : NamedTuple(lhs: String, rhs: String)?
+      current = 0
+      string_delimiter = nil.as(Char?)
+      escaping = false
+      paren_depth = 0
+      bracket_depth = 0
+      brace_depth = 0
+
+      while current < stmt.size
+        char = stmt[current]
+
+        if delimiter = string_delimiter
+          if escaping
+            escaping = false
+          elsif char == '\\'
+            escaping = true
+          elsif char == delimiter
+            string_delimiter = nil
+          end
+
+          current += 1
+          next
+        end
+
+        case char
+        when '"', '\''
+          string_delimiter = char
+        when '('
+          paren_depth += 1
+        when ')'
+          paren_depth -= 1 if paren_depth > 0
+        when '['
+          bracket_depth += 1
+        when ']'
+          bracket_depth -= 1 if bracket_depth > 0
+        when '{'
+          brace_depth += 1
+        when '}'
+          brace_depth -= 1 if brace_depth > 0
+        when '='
+          previous_char = current > 0 ? stmt[current - 1] : nil
+          next_char = stmt[current + 1]?
+
+          if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0 &&
+             previous_char != '!' && previous_char != '<' && previous_char != '>' && previous_char != '=' &&
+             next_char != '='
+            lhs = stmt[0...current].strip
+            rhs = stmt[current + 1...stmt.size].strip
+            return nil if lhs.empty? || rhs.empty?
+
+            return {lhs: lhs, rhs: rhs}
+          end
+        end
+
+        current += 1
+      end
+
+      nil
     end
 
     private def eval_if_statement(stmt : String, env : Hash(String, Value), inside_function : Bool) : String?
@@ -209,6 +356,13 @@ module Ls
 
       if value.is_a?(String)
         "\"#{escape_string(value)}\""
+      elsif value.is_a?(Array)
+        "[#{value.map { |item| value_to_s(item) }.join(", ")}]"
+      elsif value.is_a?(Hash(String, Value))
+        properties = value.map do |key, property_value|
+          "\"#{escape_string(key)}\": #{value_to_s(property_value)}"
+        end
+        "{#{properties.join(", ")}}"
       else
         value.to_s
       end

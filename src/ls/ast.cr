@@ -48,11 +48,28 @@ module Ls
     end
   end
 
+  record ObjectProperty, key : String, value : Expr
+
+  class ObjectLiteral < Expr
+    getter properties : Array(ObjectProperty)
+
+    def initialize(@properties : Array(ObjectProperty))
+    end
+  end
+
   class IndexExpr < Expr
     getter target : Expr
     getter index : Expr
 
     def initialize(@target : Expr, @index : Expr)
+    end
+  end
+
+  class PropertyAccessExpr < Expr
+    getter target : Expr
+    getter property : String
+
+    def initialize(@target : Expr, @property : String)
     end
   end
 end

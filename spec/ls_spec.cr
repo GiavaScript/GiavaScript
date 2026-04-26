@@ -281,12 +281,62 @@ describe Ls do
     interpreter.eval("r[1][0];").should eq(["2"])
   end
 
-  it "returns explicit array indexing errors" do
+  it "supports assigning to existing array indexes" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var alreadyDeclaredArray = [10, 20, 30];").should eq([] of String)
+    interpreter.eval("alreadyDeclaredArray[0] = 42;").should eq([] of String)
+    interpreter.eval("alreadyDeclaredArray;").should eq(["[42, 20, 30]"])
+  end
+
+  it "returns undefined for out-of-range array indexes" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var r = [10, 20, 30];").should eq([] of String)
-    interpreter.eval("r[3];").should eq(["Error: array index 3 is out of bounds for array of size 3"])
-    interpreter.eval("r[-1];").should eq(["Error: array index cannot be negative"])
+    interpreter.eval("r[3];").should eq(["undefined"])
+    interpreter.eval("r[-1];").should eq(["undefined"])
     interpreter.eval("r[1.5];").should eq(["Error: array index must be an integer"])
+  end
+
+  it "supports object literals with dot and bracket property access" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var o = { a: 10, b: 2 };").should eq([] of String)
+    interpreter.eval("o.a;").should eq(["10"])
+    interpreter.eval("o[\"a\"];").should eq(["10"])
+  end
+
+  it "supports empty and nested objects" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("{};").should eq(["{}"])
+    interpreter.eval("var o = { x: { y: [1, 2, 3] } };").should eq([] of String)
+    interpreter.eval("o.x.y[2];").should eq(["3"])
+  end
+
+  it "prints objects using colon notation" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("{ a: 1, nested: { b: 2 } };").should eq(["{\"a\": 1, \"nested\": {\"b\": 2}}"])
+    interpreter.eval("[{ a: 1 }];").should eq(["[{\"a\": 1}]"])
+  end
+
+  it "supports heterogeneous object values and key normalization" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var o = { aKeyValue: 12, \"another-key\": \"some text here\", 99: \"ninety nine\", \"an-object\": { \"something-inside\": [1, 2, 3] } };").should eq([] of String)
+    interpreter.eval("o.aKeyValue;").should eq(["12"])
+    interpreter.eval("o[\"another-key\"];").should eq(["\"some text here\""])
+    interpreter.eval("o[\"99\"];").should eq(["\"ninety nine\""])
+    interpreter.eval("o[\"an-object\"][\"something-inside\"][1];").should eq(["2"])
+  end
+
+  it "supports numeric key lookup with bracket expressions" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var o = { 99: \"ninety nine\" }; var k = 99;").should eq([] of String)
+    interpreter.eval("o[k];").should eq(["\"ninety nine\""])
+  end
+
+  it "returns undefined for missing object properties" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var o = { a: 10 };").should eq([] of String)
+    interpreter.eval("o.b;").should eq(["undefined"])
+    interpreter.eval("o[\"missing\"];").should eq(["undefined"])
+    interpreter.eval("o[true];").should eq(["Error: object property key must be a string or number"])
   end
 
   it "rejects legacy nil literal" do

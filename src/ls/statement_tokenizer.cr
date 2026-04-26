@@ -67,6 +67,7 @@ module Ls
       escaping = false
       paren_depth = 0
       bracket_depth = 0
+      brace_depth = 0
 
       while current < @source.size
         char = @source[current]
@@ -95,10 +96,14 @@ module Ls
           bracket_depth += 1
         when ']'
           bracket_depth -= 1 if bracket_depth > 0
+        when '{'
+          brace_depth += 1
+        when '}'
+          brace_depth -= 1 if brace_depth > 0
         when ';'
-          return current if paren_depth == 0 && bracket_depth == 0
+          return current if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
         when '\n', '\r'
-          return current if paren_depth == 0 && bracket_depth == 0
+          return current if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
         end
 
         current += 1

@@ -108,12 +108,26 @@ module Ls
     private def parse_postfix : Expr
       value = parse_primary
 
-      while @current.kind == Tokenizer::TokenKind::LBracket
-        advance_token
-        index = parse_expression
-        raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RBracket
-        advance_token
-        value = IndexExpr.new(value, index)
+      loop do
+        if @current.kind == Tokenizer::TokenKind::LBracket
+          advance_token
+          index = parse_expression
+          raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RBracket
+          advance_token
+          value = IndexExpr.new(value, index)
+          next
+        end
+
+        if @current.kind == Tokenizer::TokenKind::Dot
+          advance_token
+          raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
+          property = @current.lexeme
+          advance_token
+          value = PropertyAccessExpr.new(value, property)
+          next
+        end
+
+        break
       end
 
       value
@@ -129,6 +143,8 @@ module Ls
         value
       when Tokenizer::TokenKind::LBracket
         parse_array_literal
+      when Tokenizer::TokenKind::LBrace
+        parse_object_literal
       when Tokenizer::TokenKind::String
         string_value = @current.lexeme
         advance_token
@@ -173,6 +189,52 @@ module Ls
       advance_token
 
       ArrayLiteral.new(elements)
+    end
+
+    private def parse_object_literal : Expr
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LBrace
+      advance_token
+
+      properties = [] of ObjectProperty
+
+      unless @current.kind == Tokenizer::TokenKind::RBrace
+        loop do
+          key = parse_object_key
+          raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Colon
+          advance_token
+
+          value = parse_expression
+          properties << ObjectProperty.new(key, value)
+
+          if @current.kind == Tokenizer::TokenKind::Comma
+            advance_token
+            next
+          end
+
+          break
+        end
+      end
+
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RBrace
+      advance_token
+
+      ObjectLiteral.new(properties)
+    end
+
+    private def parse_object_key : String
+      case @current.kind
+      when Tokenizer::TokenKind::Identifier,
+           Tokenizer::TokenKind::String
+        key = @current.lexeme
+        advance_token
+        key
+      when Tokenizer::TokenKind::Number
+        number_lexeme = @current.lexeme
+        advance_token
+        parse_number_value(number_lexeme).to_s
+      else
+        raise invalid_rhs_error
+      end
     end
 
     private def parse_identifier_expression : Expr
