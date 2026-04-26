@@ -66,6 +66,7 @@ module Ls
       string_delimiter = nil.as(Char?)
       escaping = false
       paren_depth = 0
+      bracket_depth = 0
 
       while current < @source.size
         char = @source[current]
@@ -90,10 +91,14 @@ module Ls
           paren_depth += 1
         when ')'
           paren_depth -= 1 if paren_depth > 0
+        when '['
+          bracket_depth += 1
+        when ']'
+          bracket_depth -= 1 if bracket_depth > 0
         when ';'
-          return current if paren_depth == 0
+          return current if paren_depth == 0 && bracket_depth == 0
         when '\n', '\r'
-          return current if paren_depth == 0
+          return current if paren_depth == 0 && bracket_depth == 0
         end
 
         current += 1

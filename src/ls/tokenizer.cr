@@ -21,6 +21,8 @@ module Ls
       BangEqual
       LParen
       RParen
+      LBracket
+      RBracket
       Comma
     end
 
@@ -95,6 +97,12 @@ module Ls
       when ')'
         advance
         Token.new(TokenKind::RParen, ")")
+      when '['
+        advance
+        Token.new(TokenKind::LBracket, "[")
+      when ']'
+        advance
+        Token.new(TokenKind::RBracket, "]")
       when ','
         advance
         Token.new(TokenKind::Comma, ",")

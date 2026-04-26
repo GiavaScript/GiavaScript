@@ -110,7 +110,7 @@ module Ls
 
       if stmt.matches?(IDENTIFIER_REGEX)
         if env.has_key?(stmt)
-          return "#{stmt} = #{value_to_s(env[stmt])}"
+          return value_to_s(env[stmt])
         end
         return "Error: variable '#{stmt}' does not exist"
       end
@@ -124,7 +124,8 @@ module Ls
     end
 
     private def eval_rhs(rhs : String, env : Hash(String, Value)) : Value
-      ExpressionParser.new(rhs, env, ->(name : String, args : Array(Value)) { call_function(name, args, env) }).parse
+      ast = ExpressionParser.new(rhs).parse
+      ExpressionEvaluator.new(env, ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) }).evaluate(ast)
     end
 
     private def eval_if_statement(stmt : String, env : Hash(String, Value), inside_function : Bool) : String?
@@ -182,7 +183,11 @@ module Ls
         return value != 0
       end
 
-      value != 0.0
+      if value.is_a?(Float64)
+        return value != 0.0
+      end
+
+      true
     end
 
     private def starts_with_keyword?(source : String, keyword : String) : Bool

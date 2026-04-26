@@ -4,7 +4,7 @@ describe Ls do
   it "assigns integer values" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = 5;").should eq([] of String)
-    interpreter.eval("a;").should eq(["a = 5"])
+    interpreter.eval("a;").should eq(["5"])
   end
 
   it "prints error when assigning undeclared variables" do
@@ -21,37 +21,37 @@ describe Ls do
   it "supports declarations without initializer" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a;").should eq([] of String)
-    interpreter.eval("a;").should eq(["a = undefined"])
+    interpreter.eval("a;").should eq(["undefined"])
   end
 
   it "assigns from another variable" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = 5; var anotherValue = a;").should eq([] of String)
-    interpreter.eval("anotherValue;").should eq(["anotherValue = 5"])
+    interpreter.eval("anotherValue;").should eq(["5"])
   end
 
   it "assigns string values" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = \"hello world!\";").should eq([] of String)
-    interpreter.eval("a;").should eq(["a = \"hello world!\""])
+    interpreter.eval("a;").should eq(["\"hello world!\""])
   end
 
   it "assigns single-quoted string values" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = 'hello world!';").should eq([] of String)
-    interpreter.eval("a;").should eq(["a = \"hello world!\""])
+    interpreter.eval("a;").should eq(["\"hello world!\""])
   end
 
   it "assigns string values from another variable" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = \"hello\"; var b = a;").should eq([] of String)
-    interpreter.eval("b;").should eq(["b = \"hello\""])
+    interpreter.eval("b;").should eq(["\"hello\""])
   end
 
   it "evaluates integer arithmetic" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var result = 2 + 3 * 4;").should eq([] of String)
-    interpreter.eval("result;").should eq(["result = 14"])
+    interpreter.eval("result;").should eq(["14"])
   end
 
   it "evaluates power expressions" do
@@ -94,7 +94,7 @@ describe Ls do
   it "concatenates string variables" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = \"hello\"; var b = \" world\"; var c = a + b;").should eq([] of String)
-    interpreter.eval("c;").should eq(["c = \"hello world\""])
+    interpreter.eval("c;").should eq(["\"hello world\""])
   end
 
   it "concatenates string with number using coercion" do
@@ -110,7 +110,7 @@ describe Ls do
   it "evaluates float arithmetic" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var ratio = 7 / 2;").should eq([] of String)
-    interpreter.eval("ratio;").should eq(["ratio = 3.5"])
+    interpreter.eval("ratio;").should eq(["3.5"])
   end
 
   it "evaluates relational operators" do
@@ -157,7 +157,7 @@ describe Ls do
   it "supports mixed arithmetic with variables" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = 10; var b = 2.5; var c = (a - 2) * b;").should eq([] of String)
-    interpreter.eval("c;").should eq(["c = 20.0"])
+    interpreter.eval("c;").should eq(["20.0"])
   end
 
   it "prints error for division by zero" do
@@ -178,7 +178,7 @@ describe Ls do
   it "supports mixed concatenation in assignments" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 7; var x = \"value=\" + value;").should eq([] of String)
-    interpreter.eval("x;").should eq(["x = \"value=7\""])
+    interpreter.eval("x;").should eq(["\"value=7\""])
   end
 
   it "keeps dollar signs as plain string content" do
@@ -195,7 +195,7 @@ describe Ls do
   it "defines functions and reads outer values" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var outsideValue = 0;\nfunction sumNumbers(a, b) {\n  return a + b + outsideValue;\n}\nvar result = sumNumbers(2, 3);").should eq([] of String)
-    interpreter.eval("result;").should eq(["result = 5"])
+    interpreter.eval("result;").should eq(["5"])
   end
 
   it "keeps function variables local" do
@@ -226,7 +226,7 @@ describe Ls do
     interpreter = Ls::Interpreter.new
     interpreter.eval("function noReturn() {\n  return;\n}").should eq([] of String)
     interpreter.eval("var x = noReturn();").should eq([] of String)
-    interpreter.eval("x;").should eq(["x = undefined"])
+    interpreter.eval("x;").should eq(["undefined"])
   end
 
   it "returns undefined when function has no return" do
@@ -248,13 +248,45 @@ describe Ls do
   it "supports null as a value" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = null;").should eq([] of String)
-    interpreter.eval("value;").should eq(["value = null"])
+    interpreter.eval("value;").should eq(["null"])
   end
 
   it "supports undefined as a value" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = undefined;").should eq([] of String)
-    interpreter.eval("value;").should eq(["value = undefined"])
+    interpreter.eval("value;").should eq(["undefined"])
+  end
+
+  it "supports heterogeneous array literals" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("[\"a\", 1, 2.5];").should eq(["[\"a\", 1, 2.5]"])
+  end
+
+  it "supports empty arrays and nested arrays" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("[];").should eq(["[]"])
+    interpreter.eval("[1, [2, 3], []];").should eq(["[1, [2, 3], []]"])
+  end
+
+  it "supports zero-based array indexing" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var r = [10, 20, 30];").should eq([] of String)
+    interpreter.eval("r[0];").should eq(["10"])
+    interpreter.eval("r[2];").should eq(["30"])
+  end
+
+  it "supports indexing nested arrays" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var r = [1, [2, 3], []];").should eq([] of String)
+    interpreter.eval("r[1][0];").should eq(["2"])
+  end
+
+  it "returns explicit array indexing errors" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var r = [10, 20, 30];").should eq([] of String)
+    interpreter.eval("r[3];").should eq(["Error: array index 3 is out of bounds for array of size 3"])
+    interpreter.eval("r[-1];").should eq(["Error: array index cannot be negative"])
+    interpreter.eval("r[1.5];").should eq(["Error: array index must be an integer"])
   end
 
   it "rejects legacy nil literal" do
@@ -277,12 +309,12 @@ describe Ls do
   it "allows statements without trailing semicolons" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = 1").should eq([] of String)
-    interpreter.eval("a").should eq(["a = 1"])
+    interpreter.eval("a").should eq(["1"])
   end
 
   it "splits newline-separated statements without semicolons" do
     interpreter = Ls::Interpreter.new
-    interpreter.eval("var a = 1\nvar b = a + 2\nb").should eq(["b = 3"])
+    interpreter.eval("var a = 1\nvar b = a + 2\nb").should eq(["3"])
   end
 
   it "defines functions with braced bodies" do
@@ -299,37 +331,37 @@ describe Ls do
   it "runs if branch when condition is truthy" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 1; if (value) value = 2;").should eq([] of String)
-    interpreter.eval("value;").should eq(["value = 2"])
+    interpreter.eval("value;").should eq(["2"])
   end
 
   it "runs else branch when condition is falsy" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 0; if (value) value = 2; else value = 3;").should eq([] of String)
-    interpreter.eval("value;").should eq(["value = 3"])
+    interpreter.eval("value;").should eq(["3"])
   end
 
   it "supports if without else" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 4; if (0) value = 8;").should eq([] of String)
-    interpreter.eval("value;").should eq(["value = 4"])
+    interpreter.eval("value;").should eq(["4"])
   end
 
   it "supports braced blocks in if statements" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 0; if (1) { value = 9; }").should eq([] of String)
-    interpreter.eval("value;").should eq(["value = 9"])
+    interpreter.eval("value;").should eq(["9"])
   end
 
   it "supports braced blocks in else statements" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 0; if (0) { value = 1; } else { value = 7; }").should eq([] of String)
-    interpreter.eval("value;").should eq(["value = 7"])
+    interpreter.eval("value;").should eq(["7"])
   end
 
   it "supports nested if with dangling else" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 0; if (1) if (0) value = 1; else value = 2;").should eq([] of String)
-    interpreter.eval("value;").should eq(["value = 2"])
+    interpreter.eval("value;").should eq(["2"])
   end
 
   it "returns error for invalid if syntax" do
