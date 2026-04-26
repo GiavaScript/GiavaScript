@@ -339,6 +339,29 @@ describe Ls do
     interpreter.eval("o[true];").should eq(["Error: object property key must be a string or number"])
   end
 
+  it "resolves string and array builtins through type objects" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("\"hello\".length;").should eq(["5"])
+    interpreter.eval("\"abc\".startsWith(\"a\");").should eq(["true"])
+    interpreter.eval("[1, 2, 3].length;").should eq(["3"])
+    interpreter.eval("var items = [1, 2, 3];").should eq([] of String)
+    interpreter.eval("items.push(4);").should eq(["4"])
+    interpreter.eval("items;").should eq(["[1, 2, 3, 4]"])
+  end
+
+  it "falls back from object properties to type methods" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("{ a: 1 }.a;").should eq(["1"])
+    interpreter.eval("true.toString;").should eq(["[builtin Bool.toString]"])
+    interpreter.eval("true.toString();").should eq(["\"true\""])
+  end
+
+  it "rejects property access on undefined and null" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("undefined.foo;").should eq(["Error: cannot access property 'foo' of undefined"])
+    interpreter.eval("null.bar;").should eq(["Error: cannot access property 'bar' of null"])
+  end
+
   it "rejects legacy nil literal" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = nil;").should eq(["Error: variable 'nil' does not exist"])

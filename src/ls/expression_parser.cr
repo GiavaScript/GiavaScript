@@ -109,6 +109,12 @@ module Ls
       value = parse_primary
 
       loop do
+        if @current.kind == Tokenizer::TokenKind::LParen
+          args = parse_call_arguments
+          value = FunctionCallExpr.new(value, args)
+          next
+        end
+
         if @current.kind == Tokenizer::TokenKind::LBracket
           advance_token
           index = parse_expression
@@ -249,14 +255,10 @@ module Ls
         return LiteralExpr.new(UNDEFINED)
       end
 
-      if @current.kind == Tokenizer::TokenKind::LParen
-        return parse_function_call(identifier)
-      end
-
       VariableExpr.new(identifier)
     end
 
-    private def parse_function_call(function_name : String) : Expr
+    private def parse_call_arguments : Array(Expr)
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LParen
       advance_token
 
@@ -278,7 +280,7 @@ module Ls
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RParen
       advance_token
 
-      FunctionCallExpr.new(function_name, args)
+      args
     end
 
     private def parse_number_value(number_lexeme : String) : Number

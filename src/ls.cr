@@ -13,13 +13,18 @@ module Ls
   UNDEFINED = UndefinedValue.new
 
   alias Number = Int32 | Float64
-  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value)
+
+  class BuiltinFunction
+  end
+
+  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction
 end
 
 require "./ls/string_literal_parser"
 require "./ls/tokenizer"
 require "./ls/ast"
 require "./ls/expression_parser"
+require "./ls/runtime_types"
 require "./ls/expression_evaluator"
 require "./ls/if_statement_parser"
 require "./ls/statement_tokenizer"

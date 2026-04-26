@@ -61,15 +61,29 @@ module Ls
         args << evaluate(arg)
       end
 
-      unless call_function = @call_function
-        raise ExpressionError.new("Error: function '#{expr.name}' does not exist")
+      callee_expr = expr.callee
+      if callee_expr.is_a?(VariableExpr)
+        callee_name = callee_expr.name
+
+        if @env.has_key?(callee_name)
+          return invoke_callable(@env[callee_name], args, callee_name)
+        end
+
+        unless call_function = @call_function
+          raise ExpressionError.new("Error: function '#{callee_name}' does not exist")
+        end
+
+        return call_function.call(callee_name, args)
       end
 
-      call_function.call(expr.name, args)
+      callee = evaluate(callee_expr)
+      invoke_callable(callee, args)
     end
 
     private def evaluate_index_expression(expr : IndexExpr) : Value
       target = evaluate(expr.target)
+      raise_undefined_null_property_error(target) if target.nil? || target.is_a?(UndefinedValue)
+
       if target.is_a?(Array)
         return evaluate_array_index(target, expr.index)
       end
@@ -84,11 +98,19 @@ module Ls
 
     private def evaluate_property_access(expr : PropertyAccessExpr) : Value
       target = evaluate(expr.target)
-      unless target.is_a?(Hash(String, Value))
-        raise ExpressionError.new("Error: dot property access is only supported on objects")
+      raise_undefined_null_property_error(target, expr.property) if target.nil? || target.is_a?(UndefinedValue)
+
+      instance_lookup = lookup_instance_property(target, expr.property)
+      if instance_lookup[:found]
+        return instance_lookup[:value]
       end
 
-      lookup_object_property(target, expr.property)
+      type_lookup = RuntimeTypes.lookup_type_property(target, expr.property)
+      if type_lookup[:found]
+        return type_lookup[:value]
+      end
+
+      UNDEFINED
     end
 
     private def evaluate_array_index(target : Array(Value), index_expr : Expr) : Value
@@ -126,6 +148,48 @@ module Ls
       end
 
       target[key]
+    end
+
+    private def lookup_instance_property(target : Value, property : String) : NamedTuple(found: Bool, value: Value)
+      if target.is_a?(Hash(String, Value))
+        if target.has_key?(property)
+          return {found: true, value: target[property]}
+        end
+
+        return {found: false, value: UNDEFINED}
+      end
+
+      {found: false, value: UNDEFINED}
+    end
+
+    private def invoke_callable(value : Value, args : Array(Value), variable_name : String? = nil) : Value
+      if value.is_a?(BuiltinFunction)
+        return value.call(args)
+      end
+
+      if variable_name
+        raise ExpressionError.new("Error: variable '#{variable_name}' is not callable")
+      end
+
+      raise ExpressionError.new("Error: value is not callable")
+    end
+
+    private def raise_undefined_null_property_error(target : Value, property : String? = nil)
+      if target.nil?
+        if property
+          raise ExpressionError.new("Error: cannot access property '#{property}' of null")
+        end
+
+        raise ExpressionError.new("Error: cannot access properties of null")
+      end
+
+      if target.is_a?(UndefinedValue)
+        if property
+          raise ExpressionError.new("Error: cannot access property '#{property}' of undefined")
+        end
+
+        raise ExpressionError.new("Error: cannot access properties of undefined")
+      end
     end
 
     private def apply_binary_operator(left : Value, right : Value, operator : Tokenizer::TokenKind) : Value

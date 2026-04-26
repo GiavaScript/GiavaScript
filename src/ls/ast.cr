@@ -34,10 +34,10 @@ module Ls
   end
 
   class FunctionCallExpr < Expr
-    getter name : String
+    getter callee : Expr
     getter args : Array(Expr)
 
-    def initialize(@name : String, @args : Array(Expr))
+    def initialize(@callee : Expr, @args : Array(Expr))
     end
   end
 
