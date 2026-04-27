@@ -396,6 +396,23 @@ describe Ls do
     interpreter.eval("sumNumbers(2, 3);").should eq(["5"])
   end
 
+  it "treats functions as first-class values" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("function addOne(x) {\n  return x + 1;\n}\nvar f = addOne;\nvar result = f(2);").should eq([] of String)
+    interpreter.eval("result;").should eq(["3"])
+  end
+
+  it "passes and returns function values" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("function addOne(x) {\n  return x + 1;\n}\nfunction applyTwice(fn, value) {\n  return fn(fn(value));\n}\nfunction getFn() {\n  return addOne;\n}\nvar fromReturn = getFn();\nvar result = applyTwice(fromReturn, 1);").should eq([] of String)
+    interpreter.eval("result;").should eq(["3"])
+  end
+
+  it "raises a runtime error when calling non-callable values" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("5();").should eq(["Error: value is not callable"])
+  end
+
   it "rejects legacy end-based function syntax" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("function sumNumbers(a, b)\n  return a + b;\nend").should eq(["Error: invalid function definition"])

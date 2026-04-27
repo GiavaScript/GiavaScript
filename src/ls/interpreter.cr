@@ -126,7 +126,17 @@ module Ls
     end
 
     private def evaluate_expression(expr : Expr, env : Hash(String, Value)) : Value
-      ExpressionEvaluator.new(env, ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) }).evaluate(expr)
+      ExpressionEvaluator.new(
+        env,
+        ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) },
+        ->(name : String) { resolve_function_reference(name, env) }
+      ).evaluate(expr)
+    end
+
+    private def resolve_function_reference(name : String, env : Hash(String, Value)) : BuiltinFunction?
+      return nil unless @function_runtime.function_defined?(name)
+
+      BuiltinFunction.new(name, ->(_receiver : Value, args : Array(Value)) { call_function(name, args, env).as(Value) })
     end
 
     private def parse_assignment_target(lhs : String) : Expr

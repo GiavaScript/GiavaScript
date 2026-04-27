@@ -1,6 +1,6 @@
 module Ls
   class ExpressionEvaluator
-    def initialize(@env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)? = nil)
+    def initialize(@env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)? = nil, @resolve_function : Proc(String, BuiltinFunction?)? = nil)
     end
 
     def evaluate(expr : Expr) : Value
@@ -10,6 +10,13 @@ module Ls
       when VariableExpr
         if @env.has_key?(expr.name)
           @env[expr.name]
+        elsif resolve_function = @resolve_function
+          function_value = resolve_function.call(expr.name)
+          if function_value
+            function_value
+          else
+            raise ExpressionError.new("Error: variable '#{expr.name}' does not exist")
+          end
         else
           raise ExpressionError.new("Error: variable '#{expr.name}' does not exist")
         end
@@ -56,28 +63,14 @@ module Ls
     end
 
     private def evaluate_function_call(expr : FunctionCallExpr) : Value
+      callee_with_receiver = evaluate_callee_with_receiver(expr.callee)
+
       args = [] of Value
       expr.args.each do |arg|
         args << evaluate(arg)
       end
 
-      callee_expr = expr.callee
-      if callee_expr.is_a?(VariableExpr)
-        callee_name = callee_expr.name
-
-        if @env.has_key?(callee_name)
-          return invoke_callable(@env[callee_name], args, callee_name)
-        end
-
-        unless call_function = @call_function
-          raise ExpressionError.new("Error: function '#{callee_name}' does not exist")
-        end
-
-        return call_function.call(callee_name, args)
-      end
-
-      callee = evaluate(callee_expr)
-      invoke_callable(callee, args)
+      invoke_callable(callee_with_receiver[:callable], callee_with_receiver[:receiver], args)
     end
 
     private def evaluate_index_expression(expr : IndexExpr) : Value
@@ -98,14 +91,43 @@ module Ls
 
     private def evaluate_property_access(expr : PropertyAccessExpr) : Value
       target = evaluate(expr.target)
-      raise_undefined_null_property_error(target, expr.property) if target.nil? || target.is_a?(UndefinedValue)
+      resolve_property_access_value(target, expr.property)
+    end
 
-      instance_lookup = lookup_instance_property(target, expr.property)
+    private def evaluate_callee_with_receiver(callee_expr : Expr) : NamedTuple(callable: Value, receiver: Value)
+      if callee_expr.is_a?(PropertyAccessExpr)
+        target = evaluate(callee_expr.target)
+        callable = resolve_property_access_value(target, callee_expr.property)
+        return {callable: callable, receiver: target}
+      end
+
+      if callee_expr.is_a?(VariableExpr)
+        if @env.has_key?(callee_expr.name)
+          return {callable: @env[callee_expr.name], receiver: nil}
+        end
+
+        if resolve_function = @resolve_function
+          function_value = resolve_function.call(callee_expr.name)
+          if function_value
+            return {callable: function_value, receiver: nil}
+          end
+        end
+
+        raise ExpressionError.new("Error: function '#{callee_expr.name}' does not exist")
+      end
+
+      {callable: evaluate(callee_expr), receiver: nil}
+    end
+
+    private def resolve_property_access_value(target : Value, property : String) : Value
+      raise_undefined_null_property_error(target, property) if target.nil? || target.is_a?(UndefinedValue)
+
+      instance_lookup = lookup_instance_property(target, property)
       if instance_lookup[:found]
         return instance_lookup[:value]
       end
 
-      type_lookup = RuntimeTypes.lookup_type_property(target, expr.property)
+      type_lookup = RuntimeTypes.lookup_type_property(target, property)
       if type_lookup[:found]
         return type_lookup[:value]
       end
@@ -162,13 +184,9 @@ module Ls
       {found: false, value: UNDEFINED}
     end
 
-    private def invoke_callable(value : Value, args : Array(Value), variable_name : String? = nil) : Value
+    private def invoke_callable(value : Value, receiver : Value, args : Array(Value)) : Value
       if value.is_a?(BuiltinFunction)
-        return value.call(args)
-      end
-
-      if variable_name
-        raise ExpressionError.new("Error: variable '#{variable_name}' is not callable")
+        return value.call(receiver, args)
       end
 
       raise ExpressionError.new("Error: value is not callable")

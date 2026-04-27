@@ -8,11 +8,11 @@ module Ls
   class BuiltinFunction
     getter name : String
 
-    def initialize(@name : String, @receiver : Value, @body : BuiltinMethodBody)
+    def initialize(@name : String, @body : BuiltinMethodBody)
     end
 
-    def call(args : Array(Value)) : Value
-      @body.call(@receiver, args)
+    def call(receiver : Value, args : Array(Value)) : Value
+      @body.call(receiver, args)
     end
 
     def to_s(io : IO)
@@ -98,7 +98,7 @@ module Ls
       end
 
       if method = type_object.methods[property]?
-        return {found: true, value: BuiltinFunction.new(method.name, value, method.body)}
+        return {found: true, value: BuiltinFunction.new(method.name, method.body)}
       end
 
       {found: false, value: UNDEFINED}
