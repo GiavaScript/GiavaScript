@@ -1,9 +1,11 @@
 module Ls
   class Interpreter
     IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
+    @env : Hash(String, Value)
+    @function_runtime : FunctionRuntime
 
-    def initialize
-      @env = Hash(String, Value).new
+    def initialize(@console_output : IO = STDOUT)
+      @env = build_global_env
       @function_runtime = FunctionRuntime.new
     end
 
@@ -383,6 +385,89 @@ module Ls
         .gsub('"', "\\\"")
         .gsub('\n', "\\n")
         .gsub('\t', "\\t")
+    end
+
+    private def build_global_env : Hash(String, Value)
+      env = Hash(String, Value).new
+      env["console"] = build_console_object
+      env["Math"] = build_math_object
+      env
+    end
+
+    private def build_console_object : Hash(String, Value)
+      console = Hash(String, Value).new
+
+      console["log"] = BuiltinFunction.new("console.log", ->(receiver : Value, args : Array(Value)) do
+        unless receiver.is_a?(Hash(String, Value))
+          raise ExpressionError.new("Error: console.log receiver must be an object")
+        end
+
+        @console_output.puts(args.map { |arg| console_value_to_s(arg) }.join(" "))
+        UNDEFINED.as(Value)
+      end)
+
+      console
+    end
+
+    private def console_value_to_s(value : Value) : String
+      return "null" if value.nil?
+      return "undefined" if value.is_a?(UndefinedValue)
+      return value if value.is_a?(String)
+
+      if value.is_a?(Array(Value))
+        return "[#{value.map { |item| console_value_to_s(item) }.join(", ")}]"
+      end
+
+      if value.is_a?(Hash(String, Value))
+        properties = value.map do |key, property_value|
+          "\"#{console_value_to_s(key)}\": #{console_value_to_s(property_value)}"
+        end
+        return "{#{properties.join(", ")}}"
+      end
+
+      value.to_s
+    end
+
+    private def build_math_object : Hash(String, Value)
+      math = Hash(String, Value).new
+
+      math["sqrt"] = BuiltinFunction.new("Math.sqrt", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.sqrt")
+        assert_builtin_arity(args, 1, "Math.sqrt")
+        Math.sqrt(number_argument(args[0], "Math.sqrt", 0).to_f64).as(Value)
+      end)
+
+      math["abs"] = BuiltinFunction.new("Math.abs", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.abs")
+        assert_builtin_arity(args, 1, "Math.abs")
+        value = number_argument(args[0], "Math.abs", 0)
+        if value.is_a?(Int32)
+          value.abs.as(Value)
+        else
+          value.abs.to_f64.as(Value)
+        end
+      end)
+
+      math
+    end
+
+    private def assert_builtin_receiver_object(receiver : Value, method_name : String)
+      return if receiver.is_a?(Hash(String, Value))
+
+      raise ExpressionError.new("Error: #{method_name} receiver must be an object")
+    end
+
+    private def assert_builtin_arity(args : Array(Value), expected : Int32, method_name : String)
+      return if args.size == expected
+
+      raise ExpressionError.new("Error: #{method_name} expects #{expected} arguments but got #{args.size}")
+    end
+
+    private def number_argument(value : Value, method_name : String, index : Int32) : Number
+      return value if value.is_a?(Int32)
+      return value if value.is_a?(Float64)
+
+      raise ExpressionError.new("Error: #{method_name} argument #{index + 1} must be a number")
     end
   end
 end

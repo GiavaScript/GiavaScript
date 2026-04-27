@@ -240,6 +240,52 @@ describe Ls do
     interpreter.eval("print(\"hello world\");").should eq(["Error: function 'print' does not exist"])
   end
 
+  it "provides console.log as a global built-in method" do
+    output = IO::Memory.new
+    interpreter = Ls::Interpreter.new(output)
+
+    interpreter.eval("console.log(\"hello\");").should eq(["undefined"])
+    output.to_s.should eq("hello\n")
+  end
+
+  it "prints all console.log arguments in readable format" do
+    output = IO::Memory.new
+    interpreter = Ls::Interpreter.new(output)
+
+    interpreter.eval("console.log(\"value:\", 42, true);").should eq(["undefined"])
+    output.to_s.should eq("value: 42 true\n")
+  end
+
+  it "raises runtime error when console.log is overwritten with non-callable" do
+    interpreter = Ls::Interpreter.new
+
+    interpreter.eval("console.log = 5;").should eq([] of String)
+    interpreter.eval("console.log();").should eq(["Error: value is not callable"])
+  end
+
+  it "provides Math.sqrt and Math.abs as global built-in methods" do
+    interpreter = Ls::Interpreter.new
+
+    interpreter.eval("Math.sqrt(9);").should eq(["3.0"])
+    interpreter.eval("Math.abs(-5);").should eq(["5"])
+    interpreter.eval("Math.abs(-2.5);").should eq(["2.5"])
+  end
+
+  it "validates Math builtin arity and argument types" do
+    interpreter = Ls::Interpreter.new
+
+    interpreter.eval("Math.sqrt();").should eq(["Error: Math.sqrt expects 1 arguments but got 0"])
+    interpreter.eval("Math.abs(1, 2);").should eq(["Error: Math.abs expects 1 arguments but got 2"])
+    interpreter.eval("Math.sqrt(\"nine\");").should eq(["Error: Math.sqrt argument 1 must be a number"])
+  end
+
+  it "raises runtime error when Math method is overwritten with non-callable" do
+    interpreter = Ls::Interpreter.new
+
+    interpreter.eval("Math.sqrt = 5;").should eq([] of String)
+    interpreter.eval("Math.sqrt(9);").should eq(["Error: value is not callable"])
+  end
+
   it "prints error when len is not defined" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
