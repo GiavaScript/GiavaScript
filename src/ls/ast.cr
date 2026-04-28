@@ -98,4 +98,20 @@ module Ls
     def initialize(@condition : Expr, @then_branch : Statement, @else_branch : Statement?)
     end
   end
+
+  class ForStatement < Statement
+    getter init : RawStatement?
+    getter condition : Expr?
+    getter update : RawStatement?
+    getter body : Statement
+
+    def initialize(@init : RawStatement?, @condition : Expr?, @update : RawStatement?, @body : Statement)
+    end
+  end
+
+  class BreakStatement < Statement
+  end
+
+  class ContinueStatement < Statement
+  end
 end

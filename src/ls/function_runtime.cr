@@ -35,7 +35,7 @@ module Ls
       @functions.has_key?(name)
     end
 
-    def invoke_function(name : String, args : Array(Value), outer_env : Hash(String, Value), &evaluate_statement : String, Hash(String, Value), Bool -> String?) : Value
+    def invoke_function(name : String, args : Array(Value), outer_env : Hash(String, Value), &evaluate_statement : String, Hash(String, Value), Bool, Bool -> String?) : Value
       function = @functions[name]?
       raise ExpressionError.new("Error: function '#{name}' does not exist") unless function
 
@@ -56,7 +56,7 @@ module Ls
 
       begin
         statements.each do |stmt|
-          evaluate_statement.call(stmt, local_env, true)
+          evaluate_statement.call(stmt, local_env, true, false)
         end
       rescue ex : ReturnSignal
         return ex.value

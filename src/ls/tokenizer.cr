@@ -9,6 +9,9 @@ module Ls
       False
       If
       Else
+      For
+      Break
+      Continue
       Plus
       Minus
       Star
@@ -168,6 +171,12 @@ module Ls
                TokenKind::If
              when "else"
                TokenKind::Else
+             when "for"
+               TokenKind::For
+             when "break"
+               TokenKind::Break
+             when "continue"
+               TokenKind::Continue
              else
                TokenKind::Identifier
              end

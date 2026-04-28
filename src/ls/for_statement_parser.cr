@@ -1,73 +1,152 @@
 module Ls
-  class IfStatementParser
-    INVALID_IF_ERROR = "Error: invalid if statement"
+  class ForStatementParser
+    INVALID_FOR_ERROR = "Error: invalid for statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"
 
-    record ParsedIf, statement : IfStatement, end_index : Int32
+    record ParsedFor, statement : ForStatement, end_index : Int32
     record ParsedStatement, statement : Statement, end_index : Int32
 
     def initialize(@source : String)
     end
 
-    def parse_from(start_index : Int32 = 0) : ParsedIf
-      parse_if_statement(skip_whitespace(start_index))
+    def parse_from(start_index : Int32 = 0) : ParsedFor
+      parse_for_statement(skip_whitespace(start_index))
     end
 
-    private def parse_if_statement(index : Int32) : ParsedIf
+    private def parse_for_statement(index : Int32) : ParsedFor
       current = skip_whitespace(index)
-      raise invalid_if_error unless starts_with_keyword?(current, "if")
+      raise invalid_for_error unless starts_with_keyword?(current, "for")
 
-      current += "if".size
+      current += "for".size
       current = skip_whitespace(current)
-      raise invalid_if_error unless @source[current]? == '('
+      raise invalid_for_error unless @source[current]? == '('
 
-      condition_start = current + 1
-      condition_end = find_matching_paren_end_index(current)
-      condition_source = @source[condition_start...condition_end].strip
-      raise invalid_if_error if condition_source.empty?
+      header = parse_for_header(current)
+      current = skip_whitespace(header[:end_paren_index] + 1)
 
-      condition = begin
-        ExpressionParser.new(condition_source).parse
-      rescue ExpressionError
-        raise invalid_if_error
-      end
+      body = parse_statement(current)
 
-      current = skip_whitespace(condition_end + 1)
-
-      consequent = parse_statement(current, true)
-      current = skip_whitespace(advance_past_statement_delimiter(consequent.end_index))
-
-      alternate = nil.as(Statement?)
-      if starts_with_keyword?(current, "else")
-        current += "else".size
-        current = skip_whitespace(current)
-
-        alternate_result = parse_statement(current, false)
-        alternate = alternate_result.statement
-        current = alternate_result.end_index
-      end
-
-      ParsedIf.new(IfStatement.new(condition, consequent.statement, alternate), current)
+      ParsedFor.new(
+        ForStatement.new(
+          parse_optional_init_clause(header[:init_source]),
+          parse_optional_condition_clause(header[:condition_source]),
+          parse_optional_update_clause(header[:update_source]),
+          body.statement
+        ),
+        body.end_index
+      )
     end
 
-    private def parse_statement(index : Int32, stop_before_else : Bool) : ParsedStatement
+    private def parse_optional_init_clause(source : String) : RawStatement?
+      clause = source.strip
+      return nil if clause.empty?
+
+      RawStatement.new(clause)
+    end
+
+    private def parse_optional_condition_clause(source : String) : Expr?
+      clause = source.strip
+      return nil if clause.empty?
+
+      begin
+        ExpressionParser.new(clause).parse
+      rescue ExpressionError
+        raise invalid_for_error
+      end
+    end
+
+    private def parse_optional_update_clause(source : String) : RawStatement?
+      clause = source.strip
+      return nil if clause.empty?
+
+      RawStatement.new(clause)
+    end
+
+    private def parse_for_header(index : Int32) : NamedTuple(init_source: String, condition_source: String, update_source: String, end_paren_index: Int32)
+      current = index
+      paren_depth = 0
+      bracket_depth = 0
+      brace_depth = 0
+      string_delimiter = nil.as(Char?)
+      escaping = false
+      segment_start = index + 1
+      segments = [] of String
+
+      while current < @source.size
+        char = @source[current]
+
+        if delimiter = string_delimiter
+          if escaping
+            escaping = false
+          elsif char == '\\'
+            escaping = true
+          elsif char == delimiter
+            string_delimiter = nil
+          end
+
+          current += 1
+          next
+        end
+
+        case char
+        when '"', '\''
+          string_delimiter = char
+        when '('
+          paren_depth += 1
+        when ')'
+          paren_depth -= 1
+          if paren_depth == 0
+            segments << @source[segment_start...current]
+            break
+          end
+        when '['
+          bracket_depth += 1
+        when ']'
+          bracket_depth -= 1 if bracket_depth > 0
+        when '{'
+          brace_depth += 1
+        when '}'
+          brace_depth -= 1 if brace_depth > 0
+        when ';'
+          if paren_depth == 1 && bracket_depth == 0 && brace_depth == 0
+            segments << @source[segment_start...current]
+            segment_start = current + 1
+          end
+        end
+
+        current += 1
+      end
+
+      raise invalid_for_error unless paren_depth == 0
+      raise invalid_for_error unless @source[current]? == ')'
+      raise invalid_for_error unless segments.size == 3
+
+      {
+        init_source: segments[0],
+        condition_source: segments[1],
+        update_source: segments[2],
+        end_paren_index: current,
+      }
+    end
+
+    private def parse_statement(index : Int32) : ParsedStatement
       current = skip_whitespace(index)
-      raise invalid_if_error if current >= @source.size
+      raise invalid_for_error if current >= @source.size
 
       if starts_with_keyword?(current, "if")
-        parsed_if = parse_if_statement(current)
+        parsed_if = IfStatementParser.new(@source).parse_from(current)
         return ParsedStatement.new(parsed_if.statement, parsed_if.end_index)
       end
 
       if starts_with_keyword?(current, "for")
-        parsed_for = ForStatementParser.new(@source).parse_from(current)
+        parsed_for = parse_for_statement(current)
         return ParsedStatement.new(parsed_for.statement, parsed_for.end_index)
       end
 
       if starts_with_keyword?(current, "function")
         function_end_index = find_function_end_index(current)
         source = @source[current...function_end_index].strip
-        raise invalid_if_error if source.empty?
+        raise invalid_for_error if source.empty?
 
         return ParsedStatement.new(RawStatement.new(source), function_end_index)
       end
@@ -80,11 +159,11 @@ module Ls
         return ParsedStatement.new(BlockStatement.new(statements), block_end_index)
       end
 
-      simple_end_index = find_simple_statement_end_index(current, stop_before_else)
+      simple_end_index = find_simple_statement_end_index(current)
       source = @source[current...simple_end_index].strip
-      raise invalid_if_error if source.empty?
+      raise invalid_for_error if source.empty?
 
-      ParsedStatement.new(RawStatement.new(source), simple_end_index)
+      ParsedStatement.new(parse_statement_source(source), simple_end_index)
     end
 
     private def parse_block_statements(block_body : String) : Array(Statement)
@@ -123,7 +202,7 @@ module Ls
       next_char.nil? || !identifier_continue?(next_char)
     end
 
-    private def find_simple_statement_end_index(index : Int32, stop_before_else : Bool) : Int32
+    private def find_simple_statement_end_index(index : Int32) : Int32
       current = index
       string_delimiter = nil.as(Char?)
       escaping = false
@@ -143,10 +222,6 @@ module Ls
 
           current += 1
           next
-        end
-
-        if stop_before_else && paren_depth == 0 && starts_with_keyword?(current, "else")
-          return current
         end
 
         case char
@@ -232,45 +307,7 @@ module Ls
       raise ExpressionError.new(INVALID_FUNCTION_ERROR)
     end
 
-    private def find_matching_paren_end_index(index : Int32) : Int32
-      current = index
-      paren_depth = 0
-      string_delimiter = nil.as(Char?)
-      escaping = false
-
-      while current < @source.size
-        char = @source[current]
-
-        if delimiter = string_delimiter
-          if escaping
-            escaping = false
-          elsif char == '\\'
-            escaping = true
-          elsif char == delimiter
-            string_delimiter = nil
-          end
-
-          current += 1
-          next
-        end
-
-        case char
-        when '"', '\''
-          string_delimiter = char
-        when '('
-          paren_depth += 1
-        when ')'
-          paren_depth -= 1
-          return current if paren_depth == 0
-        end
-
-        current += 1
-      end
-
-      raise invalid_if_error
-    end
-
-    private def find_matching_brace_end_index(index : Int32, error_message : String = INVALID_IF_ERROR) : Int32
+    private def find_matching_brace_end_index(index : Int32, error_message : String = INVALID_FOR_ERROR) : Int32
       current = index
       brace_depth = 0
       string_delimiter = nil.as(Char?)
@@ -318,23 +355,6 @@ module Ls
       current
     end
 
-    private def advance_past_statement_delimiter(index : Int32) : Int32
-      delimiter = @source[index]?
-      return index unless delimiter
-
-      if delimiter == ';' || delimiter == '\n'
-        return index + 1
-      end
-
-      if delimiter == '\r'
-        next_index = index + 1
-        next_index += 1 if @source[next_index]? == '\n'
-        return next_index
-      end
-
-      index
-    end
-
     private def starts_with_keyword?(index : Int32, keyword : String) : Bool
       return false unless @source[index, keyword.size]? == keyword
 
@@ -357,8 +377,8 @@ module Ls
       char.ascii_letter? || char.ascii_number? || char == '_'
     end
 
-    private def invalid_if_error : ExpressionError
-      ExpressionError.new(INVALID_IF_ERROR)
+    private def invalid_for_error : ExpressionError
+      ExpressionError.new(INVALID_FOR_ERROR)
     end
   end
 end

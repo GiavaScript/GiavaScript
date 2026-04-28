@@ -520,9 +520,63 @@ describe Ls do
     output.to_s.should eq("hello!\n")
   end
 
+  it "supports ECMAScript-style for loop with all components" do
+    output = IO::Memory.new
+    interpreter = Ls::Interpreter.new(output)
+
+    interpreter.eval("for (var i = 0; i < 3; i = i + 1) console.log(i);").should eq([] of String)
+    output.to_s.should eq("0\n1\n2\n")
+  end
+
+  it "supports for loop with missing components" do
+    output = IO::Memory.new
+    interpreter = Ls::Interpreter.new(output)
+
+    interpreter.eval("var i = 0; for (; i < 2;) { console.log(i); i = i + 1; }").should eq([] of String)
+    output.to_s.should eq("0\n1\n")
+  end
+
+  it "supports for (;;) with break" do
+    interpreter = Ls::Interpreter.new
+
+    interpreter.eval("var i = 0; for (;;) { i = i + 1; break; }").should eq([] of String)
+    interpreter.eval("i;").should eq(["1"])
+  end
+
+  it "supports continue in for loops" do
+    output = IO::Memory.new
+    interpreter = Ls::Interpreter.new(output)
+
+    interpreter.eval("for (var i = 0; i < 4; i = i + 1) { if (i == 2) continue; console.log(i); }").should eq([] of String)
+    output.to_s.should eq("0\n1\n3\n")
+  end
+
+  it "runs update before next condition check on continue" do
+    interpreter = Ls::Interpreter.new
+
+    interpreter.eval("var i = 0; var seen = 0; for (; i < 3; i = i + 1) { if (i == 1) continue; seen = seen + 1; }").should eq([] of String)
+    interpreter.eval("i;").should eq(["3"])
+    interpreter.eval("seen;").should eq(["2"])
+  end
+
+  it "returns runtime error for break outside loops" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("break;").should eq(["Error: break can only be used inside loops"])
+  end
+
+  it "returns runtime error for continue outside loops" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("continue;").should eq(["Error: continue can only be used inside loops"])
+  end
+
   it "returns error for invalid if syntax" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("if value) value = 1;").should eq(["Error: invalid if statement"])
+  end
+
+  it "returns error for invalid for syntax" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("for (var i = 0 i < 3; i = i + 1) console.log(i);").should eq(["Error: invalid for statement"])
   end
 
   it "prints error for missing variables" do

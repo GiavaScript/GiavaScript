@@ -1,6 +1,19 @@
 module Ls
   class Interpreter
     IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
+
+    class BreakSignal < Exception
+      def initialize
+        super("break")
+      end
+    end
+
+    class ContinueSignal < Exception
+      def initialize
+        super("continue")
+      end
+    end
+
     @env : Hash(String, Value)
     @function_runtime : FunctionRuntime
 
@@ -35,13 +48,13 @@ module Ls
       end
 
       statements.each do |stmt|
-        message = eval_statement(stmt, @env, false)
+        message = eval_statement(stmt, @env, false, false)
         messages << message if message
       end
       messages
     end
 
-    private def eval_statement(stmt : String, env : Hash(String, Value), inside_function : Bool) : String?
+    private def eval_statement(stmt : String, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
       if stmt.starts_with?("function ")
         begin
           @function_runtime.define_function(stmt)
@@ -52,7 +65,21 @@ module Ls
       end
 
       if starts_with_keyword?(stmt, "if")
-        return eval_if_statement(stmt, env, inside_function)
+        return eval_if_statement(stmt, env, inside_function, inside_loop)
+      end
+
+      if starts_with_keyword?(stmt, "for")
+        return eval_for_statement(stmt, env, inside_function, inside_loop)
+      end
+
+      if stmt == "break"
+        return "Error: break can only be used inside loops" unless inside_loop
+        raise BreakSignal.new
+      end
+
+      if stmt == "continue"
+        return "Error: continue can only be used inside loops" unless inside_loop
+        raise ContinueSignal.new
       end
 
       if match = stmt.match(/^return(?:\s+(.+))?$/m)
@@ -287,43 +314,97 @@ module Ls
       nil
     end
 
-    private def eval_if_statement(stmt : String, env : Hash(String, Value), inside_function : Bool) : String?
+    private def eval_if_statement(stmt : String, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
       parsed_if = begin
         IfStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
         return ex.message || "Error: invalid if statement"
       end
 
-      eval_if_ast(parsed_if.statement, env, inside_function)
+      eval_if_ast(parsed_if.statement, env, inside_function, inside_loop)
     end
 
-    private def eval_if_ast(if_statement : IfStatement, env : Hash(String, Value), inside_function : Bool) : String?
+    private def eval_if_ast(if_statement : IfStatement, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
       begin
         condition_value = evaluate_expression(if_statement.condition, env)
         branch = truthy?(condition_value) ? if_statement.then_branch : if_statement.else_branch
         return nil unless branch
 
-        eval_statement_node(branch, env, inside_function)
+        eval_statement_node(branch, env, inside_function, inside_loop)
       rescue ex : ExpressionError
         ex.message || "Error: invalid if statement"
       end
     end
 
-    private def eval_statement_node(statement : Statement, env : Hash(String, Value), inside_function : Bool) : String?
+    private def eval_for_statement(stmt : String, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
+      parsed_for = begin
+        ForStatementParser.new(stmt).parse_from
+      rescue ex : ExpressionError
+        return ex.message || "Error: invalid for statement"
+      end
+
+      eval_for_ast(parsed_for.statement, env, inside_function, inside_loop)
+    end
+
+    private def eval_for_ast(for_statement : ForStatement, env : Hash(String, Value), inside_function : Bool, _inside_loop : Bool) : String?
+      begin
+        if init = for_statement.init
+          init_message = eval_statement(init.source, env, inside_function, true)
+          if init_message && init_message.starts_with?("Error:")
+            return init_message
+          end
+        end
+
+        loop do
+          if condition = for_statement.condition
+            condition_value = evaluate_expression(condition, env)
+            break unless truthy?(condition_value)
+          end
+
+          begin
+            eval_statement_node(for_statement.body, env, inside_function, true)
+          rescue ContinueSignal
+          rescue BreakSignal
+            break
+          end
+
+          if update = for_statement.update
+            update_message = eval_statement(update.source, env, inside_function, true)
+            if update_message && update_message.starts_with?("Error:")
+              return update_message
+            end
+          end
+        end
+
+        nil
+      rescue ex : ExpressionError
+        ex.message || "Error: invalid for statement"
+      end
+    end
+
+    private def eval_statement_node(statement : Statement, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
       case statement
       when RawStatement
-        eval_statement(statement.source, env, inside_function)
+        eval_statement(statement.source, env, inside_function, inside_loop)
       when BlockStatement
         block_message = nil.as(String?)
         statement.statements.each do |inner_statement|
-          message = eval_statement_node(inner_statement, env, inside_function)
+          message = eval_statement_node(inner_statement, env, inside_function, inside_loop)
           block_message = message if message
         end
         block_message
       when IfStatement
-        eval_if_ast(statement, env, inside_function)
+        eval_if_ast(statement, env, inside_function, inside_loop)
+      when ForStatement
+        eval_for_ast(statement, env, inside_function, inside_loop)
+      when BreakStatement
+        return "Error: break can only be used inside loops" unless inside_loop
+        raise BreakSignal.new
+      when ContinueStatement
+        return "Error: continue can only be used inside loops" unless inside_loop
+        raise ContinueSignal.new
       else
-        raise ExpressionError.new("Error: invalid if statement")
+        raise ExpressionError.new("Error: invalid statement")
       end
     end
 
@@ -358,8 +439,8 @@ module Ls
     end
 
     private def call_function(name : String, args : Array(Value), env : Hash(String, Value)) : Value
-      @function_runtime.invoke_function(name, args, env) do |stmt, local_env, inside_function|
-        eval_statement(stmt, local_env, inside_function)
+      @function_runtime.invoke_function(name, args, env) do |stmt, local_env, inside_function, inside_loop|
+        eval_statement(stmt, local_env, inside_function, inside_loop)
       end
     end
 

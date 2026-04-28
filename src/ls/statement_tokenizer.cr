@@ -25,6 +25,14 @@ module Ls
           return statement
         end
 
+        if starts_with_keyword?(@index, "for")
+          for_end_index = ForStatementParser.new(@source).parse_from(@index).end_index
+          statement = @source[@index...for_end_index].strip
+          @index = for_end_index
+          @index = consume_statement_delimiter(@index)
+          return statement
+        end
+
         statement_end_index = find_statement_end_index(@index)
         statement = @source[@index...statement_end_index].strip
         @index = statement_end_index
