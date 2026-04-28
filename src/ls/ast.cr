@@ -72,4 +72,30 @@ module Ls
     def initialize(@target : Expr, @property : String)
     end
   end
+
+  abstract class Statement
+  end
+
+  class RawStatement < Statement
+    getter source : String
+
+    def initialize(@source : String)
+    end
+  end
+
+  class BlockStatement < Statement
+    getter statements : Array(Statement)
+
+    def initialize(@statements : Array(Statement))
+    end
+  end
+
+  class IfStatement < Statement
+    getter condition : Expr
+    getter then_branch : Statement
+    getter else_branch : Statement?
+
+    def initialize(@condition : Expr, @then_branch : Statement, @else_branch : Statement?)
+    end
+  end
 end

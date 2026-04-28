@@ -3,13 +3,18 @@ module Ls
     INVALID_IF_ERROR = "Error: invalid if statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"
 
-    record ParsedIf, condition : String, consequent : String, alternate : String?, end_index : Int32
+    record ParsedIf, statement : IfStatement, end_index : Int32
+    record ParsedStatement, statement : Statement, end_index : Int32
 
     def initialize(@source : String)
     end
 
     def parse_from(start_index : Int32 = 0) : ParsedIf
-      current = skip_whitespace(start_index)
+      parse_if_statement(skip_whitespace(start_index))
+    end
+
+    private def parse_if_statement(index : Int32) : ParsedIf
+      current = skip_whitespace(index)
       raise invalid_if_error unless starts_with_keyword?(current, "if")
 
       current += "if".size
@@ -18,51 +23,92 @@ module Ls
 
       condition_start = current + 1
       condition_end = find_matching_paren_end_index(current)
-      condition = @source[condition_start...condition_end].strip
-      raise invalid_if_error if condition.empty?
+      condition_source = @source[condition_start...condition_end].strip
+      raise invalid_if_error if condition_source.empty?
+
+      condition = begin
+        ExpressionParser.new(condition_source).parse
+      rescue ExpressionError
+        raise invalid_if_error
+      end
 
       current = skip_whitespace(condition_end + 1)
 
-      consequent_start = current
-      consequent_end = find_statement_end_index(current, true)
-      consequent = @source[consequent_start...consequent_end].strip
-      raise invalid_if_error if consequent.empty?
+      consequent = parse_statement(current, true)
+      current = skip_whitespace(advance_past_statement_delimiter(consequent.end_index))
 
-      alternate = nil.as(String?)
-      current = skip_whitespace(advance_past_statement_delimiter(consequent_end))
-
+      alternate = nil.as(Statement?)
       if starts_with_keyword?(current, "else")
         current += "else".size
         current = skip_whitespace(current)
 
-        alternate_start = current
-        alternate_end = find_statement_end_index(current, false)
-        alternate = @source[alternate_start...alternate_end].strip
-        raise invalid_if_error if alternate.empty?
-
-        current = alternate_end
+        alternate_result = parse_statement(current, false)
+        alternate = alternate_result.statement
+        current = alternate_result.end_index
       end
 
-      ParsedIf.new(condition, consequent, alternate, current)
+      ParsedIf.new(IfStatement.new(condition, consequent.statement, alternate), current)
     end
 
-    private def find_statement_end_index(index : Int32, stop_before_else : Bool) : Int32
+    private def parse_statement(index : Int32, stop_before_else : Bool) : ParsedStatement
       current = skip_whitespace(index)
       raise invalid_if_error if current >= @source.size
 
       if starts_with_keyword?(current, "if")
-        return parse_from(current).end_index
+        parsed_if = parse_if_statement(current)
+        return ParsedStatement.new(parsed_if.statement, parsed_if.end_index)
       end
 
       if starts_with_keyword?(current, "function")
-        return find_function_end_index(current)
+        function_end_index = find_function_end_index(current)
+        source = @source[current...function_end_index].strip
+        raise invalid_if_error if source.empty?
+
+        return ParsedStatement.new(RawStatement.new(source), function_end_index)
       end
 
       if @source[current]? == '{'
-        return find_matching_brace_end_index(current) + 1
+        block_end_index = find_matching_brace_end_index(current) + 1
+        block_body = @source[current + 1...block_end_index - 1]
+        statements = parse_block_statements(block_body)
+
+        return ParsedStatement.new(BlockStatement.new(statements), block_end_index)
       end
 
-      find_simple_statement_end_index(current, stop_before_else)
+      simple_end_index = find_simple_statement_end_index(current, stop_before_else)
+      source = @source[current...simple_end_index].strip
+      raise invalid_if_error if source.empty?
+
+      ParsedStatement.new(RawStatement.new(source), simple_end_index)
+    end
+
+    private def parse_block_statements(block_body : String) : Array(Statement)
+      statements = [] of Statement
+      tokenizer = StatementTokenizer.new(block_body)
+
+      while statement_source = tokenizer.next_statement
+        statement_source = statement_source.strip
+        next if statement_source.empty?
+
+        statements << parse_statement_source(statement_source)
+      end
+
+      statements
+    end
+
+    private def parse_statement_source(source : String) : Statement
+      if starts_with_keyword_in_source?(source, "if")
+        return IfStatementParser.new(source).parse_from.statement
+      end
+
+      RawStatement.new(source)
+    end
+
+    private def starts_with_keyword_in_source?(source : String, keyword : String) : Bool
+      return false unless source.starts_with?(keyword)
+
+      next_char = source[keyword.size]?
+      next_char.nil? || !identifier_continue?(next_char)
     end
 
     private def find_simple_statement_end_index(index : Int32, stop_before_else : Bool) : Int32

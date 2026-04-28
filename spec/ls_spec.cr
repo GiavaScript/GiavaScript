@@ -482,6 +482,12 @@ describe Ls do
     interpreter.eval("value;").should eq(["4"])
   end
 
+  it "supports if / else if / else chains" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = 0; if (0) value = 1; else if (1) value = 2; else value = 3;").should eq([] of String)
+    interpreter.eval("value;").should eq(["2"])
+  end
+
   it "supports braced blocks in if statements" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 0; if (1) { value = 9; }").should eq([] of String)
@@ -498,6 +504,20 @@ describe Ls do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var value = 0; if (1) if (0) value = 1; else value = 2;").should eq([] of String)
     interpreter.eval("value;").should eq(["2"])
+  end
+
+  it "executes only the selected if chain branch" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var value = 0; if (0) value = missing; else if (1) value = 7; else value = anotherMissing;").should eq([] of String)
+    interpreter.eval("value;").should eq(["7"])
+  end
+
+  it "supports single-line if statements without braces" do
+    output = IO::Memory.new
+    interpreter = Ls::Interpreter.new(output)
+
+    interpreter.eval("if (true) console.log(\"hello!\");").should eq(["undefined"])
+    output.to_s.should eq("hello!\n")
   end
 
   it "returns error for invalid if syntax" do

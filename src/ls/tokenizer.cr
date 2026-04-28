@@ -7,6 +7,8 @@ module Ls
       String
       True
       False
+      If
+      Else
       Plus
       Minus
       Star
@@ -162,6 +164,10 @@ module Ls
                TokenKind::True
              when "false"
                TokenKind::False
+             when "if"
+               TokenKind::If
+             when "else"
+               TokenKind::Else
              else
                TokenKind::Identifier
              end

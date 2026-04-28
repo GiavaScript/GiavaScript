@@ -294,36 +294,37 @@ module Ls
         return ex.message || "Error: invalid if statement"
       end
 
+      eval_if_ast(parsed_if.statement, env, inside_function)
+    end
+
+    private def eval_if_ast(if_statement : IfStatement, env : Hash(String, Value), inside_function : Bool) : String?
       begin
-        condition_value = eval_rhs(parsed_if.condition, env)
-        branch = truthy?(condition_value) ? parsed_if.consequent : parsed_if.alternate
+        condition_value = evaluate_expression(if_statement.condition, env)
+        branch = truthy?(condition_value) ? if_statement.then_branch : if_statement.else_branch
         return nil unless branch
 
-        eval_if_branch(branch, env, inside_function)
+        eval_statement_node(branch, env, inside_function)
       rescue ex : ExpressionError
         ex.message || "Error: invalid if statement"
       end
     end
 
-    private def eval_if_branch(branch : String, env : Hash(String, Value), inside_function : Bool) : String?
-      if block_statement?(branch)
-        block_body = branch[1...branch.size - 1]
-        statements = StatementSplitter.new(block_body).split
-        branch_message = nil.as(String?)
-
-        statements.each do |statement|
-          message = eval_statement(statement, env, inside_function)
-          branch_message = message if message
+    private def eval_statement_node(statement : Statement, env : Hash(String, Value), inside_function : Bool) : String?
+      case statement
+      when RawStatement
+        eval_statement(statement.source, env, inside_function)
+      when BlockStatement
+        block_message = nil.as(String?)
+        statement.statements.each do |inner_statement|
+          message = eval_statement_node(inner_statement, env, inside_function)
+          block_message = message if message
         end
-
-        return branch_message
+        block_message
+      when IfStatement
+        eval_if_ast(statement, env, inside_function)
+      else
+        raise ExpressionError.new("Error: invalid if statement")
       end
-
-      eval_statement(branch, env, inside_function)
-    end
-
-    private def block_statement?(stmt : String) : Bool
-      stmt.starts_with?("{") && stmt.ends_with?("}")
     end
 
     private def truthy?(value : Value) : Bool
