@@ -16,6 +16,14 @@ Exit with:
 :quit
 ```
 
+## Run a Source File
+
+```bash
+crystal run src/ls_cli.cr -- path/to/program.ls
+```
+
+The interpreter reads the file and executes it through the same evaluation pipeline used for in-memory strings.
+
 ## Current Limitations
 
 - No control flow or complex types yet.

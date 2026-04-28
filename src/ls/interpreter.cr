@@ -92,6 +92,21 @@ module Ls
         return "Error: return can only be used inside functions"
       end
 
+      if match = stmt.match(/^(.+?)\s*(\+\+|--)$/)
+        target_source = match[1].strip
+        operator = match[2]
+
+        begin
+          target_expr = parse_assignment_target(target_source)
+          current_value = evaluate_expression(target_expr, env)
+          next_value = incremented_value(current_value, operator)
+          assign_to_target(target_expr, next_value, env)
+          return nil
+        rescue ex : ExpressionError
+          return ex.message || "Error: invalid increment expression"
+        end
+      end
+
       if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)$/)
         var_name = match[1]
 
@@ -123,10 +138,17 @@ module Ls
       if assignment = split_assignment_statement(stmt)
         lhs = assignment[:lhs]
         rhs = assignment[:rhs]
+        operator = assignment[:operator]
 
         begin
-          value = eval_rhs(rhs, env)
           assignment_target = parse_assignment_target(lhs)
+          value = if operator == "="
+                    eval_rhs(rhs, env)
+                  else
+                    current_value = evaluate_expression(assignment_target, env)
+                    rhs_value = eval_rhs(rhs, env)
+                    apply_compound_assignment_operator(current_value, rhs_value, operator, env)
+                  end
           assign_to_target(assignment_target, value, env)
           return nil
         rescue ex : ExpressionError
@@ -254,7 +276,7 @@ module Ls
       raise ExpressionError.new("Error: object property key must be a string or number")
     end
 
-    private def split_assignment_statement(stmt : String) : NamedTuple(lhs: String, rhs: String)?
+    private def split_assignment_statement(stmt : String) : NamedTuple(lhs: String, rhs: String, operator: String)?
       current = 0
       string_delimiter = nil.as(Char?)
       escaping = false
@@ -295,16 +317,30 @@ module Ls
           brace_depth -= 1 if brace_depth > 0
         when '='
           previous_char = current > 0 ? stmt[current - 1] : nil
+          previous_previous_char = current > 1 ? stmt[current - 2] : nil
           next_char = stmt[current + 1]?
 
           if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0 &&
              previous_char != '!' && previous_char != '<' && previous_char != '>' && previous_char != '=' &&
              next_char != '='
-            lhs = stmt[0...current].strip
+            operator = "="
+            lhs_end = current
+
+            if previous_char == '+' || previous_char == '-' || previous_char == '*' || previous_char == '/'
+              operator = "#{previous_char}="
+              lhs_end = current - 1
+
+              if previous_previous_char == previous_char
+                current += 1
+                next
+              end
+            end
+
+            lhs = stmt[0...lhs_end].strip
             rhs = stmt[current + 1...stmt.size].strip
             return nil if lhs.empty? || rhs.empty?
 
-            return {lhs: lhs, rhs: rhs}
+            return {lhs: lhs, rhs: rhs, operator: operator}
           end
         end
 
@@ -550,6 +586,41 @@ module Ls
       return value if value.is_a?(Float64)
 
       raise ExpressionError.new("Error: #{method_name} argument #{index + 1} must be a number")
+    end
+
+    private def incremented_value(value : Value, operator : String) : Value
+      if value.is_a?(Int32)
+        return operator == "++" ? value + 1 : value - 1
+      end
+
+      if value.is_a?(Float64)
+        return operator == "++" ? value + 1.0 : value - 1.0
+      end
+
+      raise ExpressionError.new("Error: operator '#{operator}' requires numeric operand")
+    end
+
+    private def apply_compound_assignment_operator(left : Value, right : Value, operator : String, env : Hash(String, Value)) : Value
+      token_kind = case operator
+                   when "+="
+                     Tokenizer::TokenKind::Plus
+                   when "-="
+                     Tokenizer::TokenKind::Minus
+                   when "*="
+                     Tokenizer::TokenKind::Star
+                   when "/="
+                     Tokenizer::TokenKind::Slash
+                   else
+                     raise ExpressionError.new("Error: invalid assignment operator '#{operator}'")
+                   end
+
+      ExpressionEvaluator.new(env).evaluate(
+        BinaryExpr.new(
+          LiteralExpr.new(left),
+          token_kind,
+          LiteralExpr.new(right)
+        )
+      )
     end
   end
 end

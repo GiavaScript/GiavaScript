@@ -30,6 +30,18 @@ describe Ls do
     interpreter.eval("anotherValue;").should eq(["5"])
   end
 
+  it "supports compound assignment operators" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var a = 10; a += 5; a -= 3; a *= 2; a /= 4;").should eq([] of String)
+    interpreter.eval("a;").should eq(["6.0"])
+  end
+
+  it "supports string concatenation with plus-equals" do
+    interpreter = Ls::Interpreter.new
+    interpreter.eval("var a = \"hello\"; a += \" world\";").should eq([] of String)
+    interpreter.eval("a;").should eq(["\"hello world\""])
+  end
+
   it "assigns string values" do
     interpreter = Ls::Interpreter.new
     interpreter.eval("var a = \"hello world!\";").should eq([] of String)
@@ -525,6 +537,22 @@ describe Ls do
     interpreter = Ls::Interpreter.new(output)
 
     interpreter.eval("for (var i = 0; i < 3; i = i + 1) console.log(i);").should eq([] of String)
+    output.to_s.should eq("0\n1\n2\n")
+  end
+
+  it "supports postfix increment in for update" do
+    output = IO::Memory.new
+    interpreter = Ls::Interpreter.new(output)
+
+    interpreter.eval("for (var i = 0; i < 3; i++) console.log(i);").should eq([] of String)
+    output.to_s.should eq("0\n1\n2\n")
+  end
+
+  it "supports compound assignment in for update" do
+    output = IO::Memory.new
+    interpreter = Ls::Interpreter.new(output)
+
+    interpreter.eval("for (var i = 0; i < 3; i += 1) console.log(i);").should eq([] of String)
     output.to_s.should eq("0\n1\n2\n")
   end
 
