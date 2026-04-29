@@ -70,9 +70,13 @@ jobs:
           export NVM_DIR="$HOME/.nvm"
           source "$NVM_DIR/nvm.sh"
 
-          giavascript_seconds=$(python3 scripts/benchmark_avg.py "./bin/giavascript examples/bubbleSort.js" --runs 10)
-          node_lts_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec '$LTS_VERSION' node examples/bubbleSort.js" --runs 10)
-          node_012_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec 0.12.18 node examples/bubbleSort.js" --runs 10)
+          bubble_giavascript_seconds=$(python3 scripts/benchmark_avg.py "./bin/giavascript examples/bubbleSort.js" --runs 20)
+          bubble_node_lts_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec '$LTS_VERSION' node examples/bubbleSort.js" --runs 20)
+          bubble_node_012_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec 0.12.18 node examples/bubbleSort.js" --runs 20)
+
+          matrix_giavascript_seconds=$(python3 scripts/benchmark_avg.py "./bin/giavascript examples/matrixMultiply.js" --runs 20)
+          matrix_node_lts_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec '$LTS_VERSION' node examples/matrixMultiply.js" --runs 20)
+          matrix_node_012_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec 0.12.18 node examples/matrixMultiply.js" --runs 20)
 
           report_date=$(date -u +'%d-%m-%Y')
           report_file="reports/performance-comparison-${report_date}.md"
@@ -81,11 +85,12 @@ jobs:
           cat > "$report_file" <<EOF
           # Performance comparison - ${report_date}
 
-          Average execution time over 10 runs for \`examples/bubbleSort.js\` across GiavaScript and Node.js runtimes.
+          Average execution time over 20 runs across GiavaScript and Node.js runtimes.
 
           | Script | GiavaScript (s) | Node LTS ${LTS_VERSION} (s) | Node 0.12.18 (s) |
           | --- | ---: | ---: | ---: |
-          | \`examples/bubbleSort.js\` | ${giavascript_seconds} | ${node_lts_seconds} | ${node_012_seconds} |
+          | \`examples/bubbleSort.js\` | ${bubble_giavascript_seconds} | ${bubble_node_lts_seconds} | ${bubble_node_012_seconds} |
+          | \`examples/matrixMultiply.js\` | ${matrix_giavascript_seconds} | ${matrix_node_lts_seconds} | ${matrix_node_012_seconds} |
           EOF
 
           echo "report_file=$report_file" >> "$GITHUB_OUTPUT"

@@ -35,3 +35,20 @@ Run tests:
 ```bash
 crystal spec
 ```
+
+## Benchmarks
+
+Example benchmark scripts are available in:
+
+- `examples/bubbleSort.js`
+- `examples/matrixMultiply.js`
+
+Run a benchmark locally with:
+
+```bash
+crystal run src/giavascript_cli.cr -- examples/bubbleSort.js
+crystal run src/giavascript_cli.cr -- examples/matrixMultiply.js
+```
+
+A monthly GitHub Actions report compares GiavaScript with Node.js runtimes using these scripts.
+See `.github/workflows/performance-comparison.yml`.
