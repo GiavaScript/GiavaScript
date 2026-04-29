@@ -1,0 +1,115 @@
+name: Performance Comparison
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 28-31 * *"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check whether today is the last day
+        id: last_day
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$(date -u -d '+1 day' +%d)" == "01" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip non-last-day scheduled run
+        if: steps.last_day.outputs.run != 'true'
+        run: echo "Not the last day of the month. Skipping benchmark."
+
+      - name: Install Crystal
+        if: steps.last_day.outputs.run == 'true'
+        uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: 1.19.1
+
+      - name: Install dependencies
+        if: steps.last_day.outputs.run == 'true'
+        run: shards install
+
+      - name: Build LennaScript interpreter
+        if: steps.last_day.outputs.run == 'true'
+        run: crystal build src/ls_cli.cr -o bin/lenna
+
+      - name: Install NVM and Node versions
+        if: steps.last_day.outputs.run == 'true'
+        id: node
+        shell: bash
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+
+          nvm install --lts
+          nvm install 0.12.18
+
+          echo "lts_version=$(nvm version lts/*)" >> "$GITHUB_OUTPUT"
+
+      - name: Benchmark and generate markdown report
+        if: steps.last_day.outputs.run == 'true'
+        id: report
+        shell: bash
+        env:
+          LTS_VERSION: ${{ steps.node.outputs.lts_version }}
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+          measure_avg() {
+            local cmd="$1"
+            python3 -c 'import subprocess, sys, time
+            cmd = sys.argv[1]
+            runs = 10
+            total = 0.0
+            for _ in range(runs):
+                start = time.perf_counter()
+                subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                total += time.perf_counter() - start
+            print(f"{total / runs:.3f}")' "$cmd"
+          }
+
+          lenna_seconds=$(measure_avg "./bin/lenna examples/bubbleSort.js")
+          node_lts_seconds=$(measure_avg "source '$NVM_DIR/nvm.sh' && nvm exec '$LTS_VERSION' node examples/bubbleSort.js")
+          node_012_seconds=$(measure_avg "source '$NVM_DIR/nvm.sh' && nvm exec 0.12.18 node examples/bubbleSort.js")
+
+          report_date=$(date -u +'%d-%m-%Y')
+          report_file="reports/performance-comparison-${report_date}.md"
+
+          mkdir -p reports
+          cat > "$report_file" <<EOF
+          # Performance comparison - ${report_date}
+
+          Average execution time over 10 runs for \`examples/bubbleSort.js\` across LennaScript and Node.js runtimes.
+
+          | Script | LennaScript (s) | Node LTS ${LTS_VERSION} (s) | Node 0.12.18 (s) |
+          | --- | ---: | ---: | ---: |
+          | \`examples/bubbleSort.js\` | ${lenna_seconds} | ${node_lts_seconds} | ${node_012_seconds} |
+          EOF
+
+          echo "report_file=$report_file" >> "$GITHUB_OUTPUT"
+
+      - name: Upload report artifact
+        if: steps.last_day.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-comparison-report
+          path: ${{ steps.report.outputs.report_file }}
+
+      - name: Add report to workflow summary
+        if: steps.last_day.outputs.run == 'true'
+        shell: bash
+        run: cat "${{ steps.report.outputs.report_file }}" >> "$GITHUB_STEP_SUMMARY"
