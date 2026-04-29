@@ -44,7 +44,7 @@ jobs:
 
       - name: Build LennaScript interpreter
         if: steps.last_day.outputs.run == 'true'
-        run: crystal build src/ls_cli.cr -o bin/lenna
+        run: mkdir -p bin && crystal build src/ls_cli.cr -o bin/lenna
 
       - name: Install NVM and Node versions
         if: steps.last_day.outputs.run == 'true'
