@@ -1,4 +1,4 @@
-require "./ls"
+require "./giavascript"
 
 def run_file(path : String) : Int32
   source = begin
@@ -16,7 +16,7 @@ def run_file(path : String) : Int32
     return 1
   end
 
-  interpreter = Ls::Interpreter.new
+  interpreter = GiavaScript::Interpreter.new
   messages = interpreter.eval(source)
 
   messages.each do |message|
@@ -31,10 +31,10 @@ def run_file(path : String) : Int32
 end
 
 if ARGV.empty?
-  Ls::Interpreter.new.repl
+  GiavaScript::Interpreter.new.repl
 elsif ARGV.size == 1
   exit run_file(ARGV[0])
 else
-  STDERR.puts "Usage: crystal run src/ls_cli.cr -- [path/to/file.ls]"
+  STDERR.puts "Usage: crystal run src/giavascript_cli.cr -- [path/to/file.ls]"
   exit 1
 end

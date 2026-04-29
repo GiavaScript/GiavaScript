@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class ForStatementParser
     INVALID_FOR_ERROR = "Error: invalid for statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"

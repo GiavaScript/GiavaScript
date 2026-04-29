@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class Tokenizer
     enum TokenKind
       Eof

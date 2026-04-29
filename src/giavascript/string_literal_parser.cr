@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class StringLiteralParser
     @source : String
     @index : Int32

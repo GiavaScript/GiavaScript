@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   alias BuiltinMethodBody = Proc(Value, Array(Value), Value)
   alias BuiltinPropertyGetter = Proc(Value, Value)
 

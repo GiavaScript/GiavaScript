@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class StatementTokenizer
     def initialize(@source : String)
       @index = 0

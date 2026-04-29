@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class FunctionRuntime
     IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
     FUNCTION_NAME_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/

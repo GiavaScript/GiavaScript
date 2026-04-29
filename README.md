@@ -7,7 +7,7 @@ GiavaScript is a non-standard-compliant ECMAScript engine written in Crystal.
 ## Run the REPL
 
 ```bash
-crystal run src/ls_cli.cr
+crystal run src/giavascript_cli.cr
 ```
 
 Exit with:
@@ -19,7 +19,7 @@ Exit with:
 ## Run a Source File
 
 ```bash
-crystal run src/ls_cli.cr -- path/to/program.ls
+crystal run src/giavascript_cli.cr -- path/to/program.ls
 ```
 
 The interpreter reads the file and executes it through the same evaluation pipeline used for in-memory strings.

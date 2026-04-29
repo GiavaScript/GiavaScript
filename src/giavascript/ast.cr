@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   abstract class Expr
   end
 

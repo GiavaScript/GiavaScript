@@ -1,2 +1,2 @@
 require "spec"
-require "../src/ls"
+require "../src/giavascript"

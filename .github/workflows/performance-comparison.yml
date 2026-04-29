@@ -42,9 +42,9 @@ jobs:
         if: steps.last_day.outputs.run == 'true'
         run: shards install
 
-      - name: Build LennaScript interpreter
+      - name: Build GiavaScript interpreter
         if: steps.last_day.outputs.run == 'true'
-        run: mkdir -p bin && crystal build src/ls_cli.cr -o bin/lenna
+        run: mkdir -p bin && crystal build src/giavascript_cli.cr -o bin/giavascript
 
       - name: Install NVM and Node versions
         if: steps.last_day.outputs.run == 'true'
@@ -70,7 +70,7 @@ jobs:
           export NVM_DIR="$HOME/.nvm"
           source "$NVM_DIR/nvm.sh"
 
-          lenna_seconds=$(python3 scripts/benchmark_avg.py "./bin/lenna examples/bubbleSort.js" --runs 10)
+          giavascript_seconds=$(python3 scripts/benchmark_avg.py "./bin/giavascript examples/bubbleSort.js" --runs 10)
           node_lts_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec '$LTS_VERSION' node examples/bubbleSort.js" --runs 10)
           node_012_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec 0.12.18 node examples/bubbleSort.js" --runs 10)
 
@@ -81,11 +81,11 @@ jobs:
           cat > "$report_file" <<EOF
           # Performance comparison - ${report_date}
 
-          Average execution time over 10 runs for \`examples/bubbleSort.js\` across LennaScript and Node.js runtimes.
+          Average execution time over 10 runs for \`examples/bubbleSort.js\` across GiavaScript and Node.js runtimes.
 
-          | Script | LennaScript (s) | Node LTS ${LTS_VERSION} (s) | Node 0.12.18 (s) |
+          | Script | GiavaScript (s) | Node LTS ${LTS_VERSION} (s) | Node 0.12.18 (s) |
           | --- | ---: | ---: | ---: |
-          | \`examples/bubbleSort.js\` | ${lenna_seconds} | ${node_lts_seconds} | ${node_012_seconds} |
+          | \`examples/bubbleSort.js\` | ${giavascript_seconds} | ${node_lts_seconds} | ${node_012_seconds} |
           EOF
 
           echo "report_file=$report_file" >> "$GITHUB_OUTPUT"

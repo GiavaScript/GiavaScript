@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class ExpressionParser
     @tokenizer : Tokenizer
     @current : Tokenizer::Token

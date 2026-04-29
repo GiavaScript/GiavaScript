@@ -1,12 +1,12 @@
-name: ls
+name: giavascript
 version: 0.1.0
 
 authors:
   - Ramb Memburg <46289413+memburg@users.noreply.github.com>
 
 targets:
-  ls:
-    main: src/ls_cli.cr
+  giavascript:
+    main: src/giavascript_cli.cr
 
 crystal: '>= 1.19.1'
 

@@ -24,6 +24,7 @@ def main() -> None:
         subprocess.run(
             args.command,
             shell=True,
+            executable="/bin/bash",
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

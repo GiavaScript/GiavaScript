@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class Interpreter
     IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
 

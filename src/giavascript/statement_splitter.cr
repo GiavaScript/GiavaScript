@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class StatementSplitter
     def initialize(@input : String)
     end

@@ -1,4 +1,4 @@
-module Ls
+module GiavaScript
   class ExpressionEvaluator
     def initialize(@env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)? = nil, @resolve_function : Proc(String, BuiltinFunction?)? = nil)
     end
