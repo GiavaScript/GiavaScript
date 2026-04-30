@@ -283,6 +283,19 @@ describe GiavaScript do
     interpreter.eval("Math.abs(-2.5);").should eq(["2.5"])
   end
 
+  it "provides Math constants as global static properties" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Math.E;").should eq(["2.718281828459045"])
+    interpreter.eval("Math.LN10;").should eq(["2.302585092994046"])
+    interpreter.eval("Math.LN2;").should eq(["0.6931471805599453"])
+    interpreter.eval("Math.LOG10E;").should eq(["0.4342944819032518"])
+    interpreter.eval("Math.LOG2E;").should eq(["1.4426950408889634"])
+    interpreter.eval("Math.PI;").should eq(["3.141592653589793"])
+    interpreter.eval("Math.SQRT1_2;").should eq(["0.7071067811865476"])
+    interpreter.eval("Math.SQRT2;").should eq(["1.4142135623730951"])
+  end
+
   it "validates Math builtin arity and argument types" do
     interpreter = GiavaScript::Interpreter.new
 

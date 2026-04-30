@@ -549,6 +549,15 @@ module GiavaScript
     private def build_math_object : Hash(String, Value)
       math = Hash(String, Value).new
 
+      math["E"] = 2.718281828459045
+      math["LN10"] = 2.302585092994046
+      math["LN2"] = 0.6931471805599453
+      math["LOG10E"] = 0.4342944819032518
+      math["LOG2E"] = 1.4426950408889634
+      math["PI"] = 3.141592653589793
+      math["SQRT1_2"] = 0.7071067811865476
+      math["SQRT2"] = 1.4142135623730951
+
       math["sqrt"] = BuiltinFunction.new("Math.sqrt", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.sqrt")
         assert_builtin_arity(args, 1, "Math.sqrt")
