@@ -575,6 +575,84 @@ module GiavaScript
         end
       end)
 
+      math["ceil"] = BuiltinFunction.new("Math.ceil", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.ceil")
+        assert_builtin_arity(args, 1, "Math.ceil")
+        number_argument(args[0], "Math.ceil", 0).to_f64.ceil.to_i32.as(Value)
+      end)
+
+      math["floor"] = BuiltinFunction.new("Math.floor", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.floor")
+        assert_builtin_arity(args, 1, "Math.floor")
+        number_argument(args[0], "Math.floor", 0).to_f64.floor.to_i32.as(Value)
+      end)
+
+      math["round"] = BuiltinFunction.new("Math.round", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.round")
+        assert_builtin_arity(args, 1, "Math.round")
+        number_argument(args[0], "Math.round", 0).round.to_i32.as(Value)
+      end)
+
+      math["trunc"] = BuiltinFunction.new("Math.trunc", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.trunc")
+        assert_builtin_arity(args, 1, "Math.trunc")
+        number_argument(args[0], "Math.trunc", 0).trunc.to_i32.as(Value)
+      end)
+
+      math["sign"] = BuiltinFunction.new("Math.sign", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.sign")
+        assert_builtin_arity(args, 1, "Math.sign")
+
+        value = number_argument(args[0], "Math.sign", 0).to_f64
+        if value < 0
+          -1.as(Value)
+        elsif value > 0
+          1.as(Value)
+        else
+          0.as(Value)
+        end
+      end)
+
+      math["pow"] = BuiltinFunction.new("Math.pow", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.pow")
+        assert_builtin_arity(args, 2, "Math.pow")
+        base = number_argument(args[0], "Math.pow", 0).to_f64
+        exponent = number_argument(args[1], "Math.pow", 1).to_f64
+        (base ** exponent).as(Value)
+      end)
+
+      math["max"] = BuiltinFunction.new("Math.max", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.max")
+        if args.empty?
+          (-Float64::INFINITY).as(Value)
+        else
+          max_value = number_argument(args[0], "Math.max", 0).to_f64
+          index = 1
+          while index < args.size
+            value = number_argument(args[index], "Math.max", index).to_f64
+            max_value = value if value > max_value
+            index += 1
+          end
+          max_value.as(Value)
+        end
+      end)
+
+      math["min"] = BuiltinFunction.new("Math.min", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.min")
+        if args.empty?
+          Float64::INFINITY.as(Value)
+        else
+          min_value = number_argument(args[0], "Math.min", 0).to_f64
+          index = 1
+          while index < args.size
+            value = number_argument(args[index], "Math.min", index).to_f64
+            min_value = value if value < min_value
+            index += 1
+          end
+          min_value.as(Value)
+        end
+      end)
+
       math
     end
 

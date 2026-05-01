@@ -2,14 +2,20 @@
 
 [![GiavaScript CI](https://github.com/memburg/GiavaScript/actions/workflows/test.yml/badge.svg)](https://github.com/memburg/GiavaScript/actions/workflows/test.yml)
 
-GiavaScript is a non-standard-compliant ECMAScript engine written in Crystal.
+GiavaScript is a non-standard-compliant ECMAScript runtime written in Crystal.
 
 ## JavaScript Feature Reference
 
 Use the reference docs to track which standard JavaScript features are currently available:
 
-- Consolidated view: `reference/REFERENCE.md`
-- Topic files: `reference/Language.md`, `reference/Types.md`, `reference/Math.md`, `reference/JSON.md`
+- [Consolidated Reference](reference/REFERENCE.md)
+
+Table of Contents:
+
+- [Language](reference/Language.md)
+- [Types](reference/Types.md)
+- [Math](reference/Math.md)
+- [JSON](reference/JSON.md)
 
 Regenerate the consolidated file with:
 

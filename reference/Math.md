@@ -29,14 +29,14 @@ Status of the JavaScript `Math` global object in GiavaScript.
 | `atan2()` | Not available |
 | `atanh()` | Not available |
 | `cbrt()` | Not available |
-| `ceil()` | Not available |
+| `ceil()` | Available |
 | `clz32()` | Not available |
 | `cos()` | Not available |
 | `cosh()` | Not available |
 | `exp()` | Not available |
 | `expm1()` | Not available |
 | `f16round()` | Not available |
-| `floor()` | Not available |
+| `floor()` | Available |
 | `fround()` | Not available |
 | `hypot()` | Not available |
 | `imul()` | Not available |
@@ -44,15 +44,15 @@ Status of the JavaScript `Math` global object in GiavaScript.
 | `log10()` | Not available |
 | `log1p()` | Not available |
 | `log2()` | Not available |
-| `max()` | Not available |
-| `min()` | Not available |
-| `pow()` | Not available |
+| `max()` | Available |
+| `min()` | Available |
+| `pow()` | Available |
 | `random()` | Not available |
-| `round()` | Not available |
-| `sign()` | Not available |
+| `round()` | Available |
+| `sign()` | Available |
 | `sin()` | Not available |
 | `sinh()` | Not available |
 | `sumPrecise()` | Not available |
 | `tan()` | Not available |
 | `tanh()` | Not available |
-| `trunc()` | Not available |
+| `trunc()` | Available |
