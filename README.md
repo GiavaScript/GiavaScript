@@ -4,6 +4,25 @@
 
 GiavaScript is a non-standard-compliant ECMAScript engine written in Crystal.
 
+## JavaScript Feature Reference
+
+Use the reference docs to track which standard JavaScript features are currently available:
+
+- Consolidated view: `reference/REFERENCE.md`
+- Topic files: `reference/Language.md`, `reference/Types.md`, `reference/Math.md`, `reference/JSON.md`
+
+Regenerate the consolidated file with:
+
+```bash
+python3 scripts/generate_reference.py
+```
+
+or the short wrapper:
+
+```bash
+./scripts/reference.sh
+```
+
 ## Run the REPL
 
 ```bash
@@ -26,7 +45,7 @@ The interpreter reads the file and executes it through the same evaluation pipel
 
 ## Current Limitations
 
-- No control flow or complex types yet.
+- Partial JavaScript support; many standard globals and language features are still missing.
 
 ## Development
 
