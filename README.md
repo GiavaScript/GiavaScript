@@ -1,8 +1,9 @@
 # GiavaScript
 
 [![GiavaScript CI](https://github.com/memburg/GiavaScript/actions/workflows/test.yml/badge.svg)](https://github.com/memburg/GiavaScript/actions/workflows/test.yml)
+![crystal](https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white)
 
-GiavaScript is a non-standard-compliant ECMAScript runtime written in Crystal.
+GiavaScript is an open-source, cross-platform, non-standard-compliant JavaScript runtime environment.
 
 ## JavaScript Feature Reference
 
