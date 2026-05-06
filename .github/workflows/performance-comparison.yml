@@ -59,6 +59,8 @@ jobs:
           nvm install 0.12.18
 
           echo "lts_version=$(nvm version lts/*)" >> "$GITHUB_OUTPUT"
+          echo "node_lts_bin=$(nvm which lts/*)" >> "$GITHUB_OUTPUT"
+          echo "node_012_bin=$(nvm which 0.12.18)" >> "$GITHUB_OUTPUT"
 
       - name: Benchmark and generate markdown report
         if: steps.last_day.outputs.run == 'true'
@@ -66,21 +68,24 @@ jobs:
         shell: bash
         env:
           LTS_VERSION: ${{ steps.node.outputs.lts_version }}
+          NODE_LTS_BIN: ${{ steps.node.outputs.node_lts_bin }}
+          NODE_012_BIN: ${{ steps.node.outputs.node_012_bin }}
         run: |
-          export NVM_DIR="$HOME/.nvm"
-          source "$NVM_DIR/nvm.sh"
+          BENCH_RUNS=30
+          BENCH_WARMUP=5
+          BENCH_STATS=median,p95
 
-          bubble_giavascript_seconds=$(python3 scripts/benchmark_avg.py "./bin/giavascript examples/bubbleSort.js" --runs 20)
-          bubble_node_lts_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec '$LTS_VERSION' node examples/bubbleSort.js" --runs 20)
-          bubble_node_012_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec 0.12.18 node examples/bubbleSort.js" --runs 20)
+          read bubble_giavascript_median bubble_giavascript_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do ./bin/giavascript examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read bubble_node_lts_median bubble_node_lts_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_LTS_BIN' examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read bubble_node_012_median bubble_node_012_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_012_BIN' examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
 
-          matrix_giavascript_seconds=$(python3 scripts/benchmark_avg.py "./bin/giavascript examples/matrixMultiply.js" --runs 20)
-          matrix_node_lts_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec '$LTS_VERSION' node examples/matrixMultiply.js" --runs 20)
-          matrix_node_012_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec 0.12.18 node examples/matrixMultiply.js" --runs 20)
+          read matrix_giavascript_median matrix_giavascript_p95 < <(python3 scripts/benchmark_avg.py "./bin/giavascript examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read matrix_node_lts_median matrix_node_lts_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_LTS_BIN' examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read matrix_node_012_median matrix_node_012_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_012_BIN' examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
 
-          bst_giavascript_seconds=$(python3 scripts/benchmark_avg.py "./bin/giavascript examples/binarySearchTree.js" --runs 20)
-          bst_node_lts_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec '$LTS_VERSION' node examples/binarySearchTree.js" --runs 20)
-          bst_node_012_seconds=$(python3 scripts/benchmark_avg.py "source '$NVM_DIR/nvm.sh' && nvm exec 0.12.18 node examples/binarySearchTree.js" --runs 20)
+          read bst_giavascript_median bst_giavascript_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do ./bin/giavascript examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read bst_node_lts_median bst_node_lts_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_LTS_BIN' examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read bst_node_012_median bst_node_012_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_012_BIN' examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
 
           report_date=$(date -u +'%d-%m-%Y')
           report_file="reports/performance-comparison-${report_date}.md"
@@ -89,13 +94,13 @@ jobs:
           cat > "$report_file" <<EOF
           # Performance comparison - ${report_date}
 
-          Average execution time over 20 runs across GiavaScript and Node.js runtimes.
+          Median and p95 execution time in seconds (${BENCH_RUNS} timed runs, ${BENCH_WARMUP} warmups).
 
-          | Script | GiavaScript (s) | Node LTS ${LTS_VERSION} (s) | Node 0.12.18 (s) |
-          | --- | ---: | ---: | ---: |
-          | \`examples/bubbleSort.js\` | ${bubble_giavascript_seconds} | ${bubble_node_lts_seconds} | ${bubble_node_012_seconds} |
-          | \`examples/matrixMultiply.js\` | ${matrix_giavascript_seconds} | ${matrix_node_lts_seconds} | ${matrix_node_012_seconds} |
-          | \`examples/binarySearchTree.js\` | ${bst_giavascript_seconds} | ${bst_node_lts_seconds} | ${bst_node_012_seconds} |
+          | Script | GiavaScript median (s) | GiavaScript p95 (s) | Node LTS ${LTS_VERSION} median (s) | Node LTS ${LTS_VERSION} p95 (s) | Node 0.12.18 median (s) | Node 0.12.18 p95 (s) |
+          | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+          | \`examples/bubbleSort.js\` (x25/run) | ${bubble_giavascript_median} | ${bubble_giavascript_p95} | ${bubble_node_lts_median} | ${bubble_node_lts_p95} | ${bubble_node_012_median} | ${bubble_node_012_p95} |
+          | \`examples/matrixMultiply.js\` | ${matrix_giavascript_median} | ${matrix_giavascript_p95} | ${matrix_node_lts_median} | ${matrix_node_lts_p95} | ${matrix_node_012_median} | ${matrix_node_012_p95} |
+          | \`examples/binarySearchTree.js\` (x25/run) | ${bst_giavascript_median} | ${bst_giavascript_p95} | ${bst_node_lts_median} | ${bst_node_lts_p95} | ${bst_node_012_median} | ${bst_node_012_p95} |
           EOF
 
           echo "report_file=$report_file" >> "$GITHUB_OUTPUT"
