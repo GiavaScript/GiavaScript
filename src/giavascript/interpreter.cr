@@ -14,7 +14,7 @@ module GiavaScript
       end
     end
 
-    @env : Hash(String, Value)
+    @env : Environment
     @function_runtime : FunctionRuntime
 
     def initialize(@console_output : IO = STDOUT)
@@ -54,7 +54,7 @@ module GiavaScript
       messages
     end
 
-    private def eval_statement(stmt : String, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
       if stmt.starts_with?("function ")
         begin
           @function_runtime.define_function(stmt)
@@ -147,7 +147,7 @@ module GiavaScript
                   else
                     current_value = evaluate_expression(assignment_target, env)
                     rhs_value = eval_rhs(rhs, env)
-                    apply_compound_assignment_operator(current_value, rhs_value, operator, env)
+                    apply_compound_assignment_operator(current_value, rhs_value, operator)
                   end
           assign_to_target(assignment_target, value, env)
           return nil
@@ -171,12 +171,12 @@ module GiavaScript
       end
     end
 
-    private def eval_rhs(rhs : String, env : Hash(String, Value)) : Value
+    private def eval_rhs(rhs : String, env : Environment) : Value
       ast = ExpressionParser.new(rhs).parse
       evaluate_expression(ast, env)
     end
 
-    private def evaluate_expression(expr : Expr, env : Hash(String, Value)) : Value
+    private def evaluate_expression(expr : Expr, env : Environment) : Value
       ExpressionEvaluator.new(
         env,
         ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) },
@@ -184,7 +184,7 @@ module GiavaScript
       ).evaluate(expr)
     end
 
-    private def resolve_function_reference(name : String, env : Hash(String, Value)) : BuiltinFunction?
+    private def resolve_function_reference(name : String, env : Environment) : BuiltinFunction?
       return nil unless @function_runtime.function_defined?(name)
 
       BuiltinFunction.new(name, ->(_receiver : Value, args : Array(Value)) { call_function(name, args, env).as(Value) })
@@ -196,7 +196,7 @@ module GiavaScript
       raise ExpressionError.new("Error: invalid assignment target '#{lhs}'")
     end
 
-    private def assign_to_target(target_expr : Expr, value : Value, env : Hash(String, Value))
+    private def assign_to_target(target_expr : Expr, value : Value, env : Environment)
       case target_expr
       when VariableExpr
         assign_to_variable(target_expr, value, env)
@@ -209,7 +209,7 @@ module GiavaScript
       end
     end
 
-    private def assign_to_variable(target_expr : VariableExpr, value : Value, env : Hash(String, Value))
+    private def assign_to_variable(target_expr : VariableExpr, value : Value, env : Environment)
       unless env.has_key?(target_expr.name)
         raise ExpressionError.new("Error: variable '#{target_expr.name}' does not exist")
       end
@@ -217,7 +217,7 @@ module GiavaScript
       env[target_expr.name] = value
     end
 
-    private def assign_to_index(target_expr : IndexExpr, value : Value, env : Hash(String, Value))
+    private def assign_to_index(target_expr : IndexExpr, value : Value, env : Environment)
       target_value = evaluate_expression(target_expr.target, env)
       index_value = evaluate_expression(target_expr.index, env)
 
@@ -235,7 +235,7 @@ module GiavaScript
       raise ExpressionError.new("Error: indexing assignment is only supported on arrays and objects")
     end
 
-    private def assign_to_property(target_expr : PropertyAccessExpr, value : Value, env : Hash(String, Value))
+    private def assign_to_property(target_expr : PropertyAccessExpr, value : Value, env : Environment)
       target_value = evaluate_expression(target_expr.target, env)
       unless target_value.is_a?(Hash(String, Value))
         raise ExpressionError.new("Error: dot property assignment is only supported on objects")
@@ -350,7 +350,7 @@ module GiavaScript
       nil
     end
 
-    private def eval_if_statement(stmt : String, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_if_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
       parsed_if = begin
         IfStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
@@ -360,7 +360,7 @@ module GiavaScript
       eval_if_ast(parsed_if.statement, env, inside_function, inside_loop)
     end
 
-    private def eval_if_ast(if_statement : IfStatement, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_if_ast(if_statement : IfStatement, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
       begin
         condition_value = evaluate_expression(if_statement.condition, env)
         branch = truthy?(condition_value) ? if_statement.then_branch : if_statement.else_branch
@@ -372,7 +372,7 @@ module GiavaScript
       end
     end
 
-    private def eval_for_statement(stmt : String, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_for_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
       parsed_for = begin
         ForStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
@@ -382,7 +382,7 @@ module GiavaScript
       eval_for_ast(parsed_for.statement, env, inside_function, inside_loop)
     end
 
-    private def eval_for_ast(for_statement : ForStatement, env : Hash(String, Value), inside_function : Bool, _inside_loop : Bool) : String?
+    private def eval_for_ast(for_statement : ForStatement, env : Environment, inside_function : Bool, _inside_loop : Bool) : String?
       begin
         if init = for_statement.init
           init_message = eval_statement(init.source, env, inside_function, true)
@@ -418,7 +418,7 @@ module GiavaScript
       end
     end
 
-    private def eval_statement_node(statement : Statement, env : Hash(String, Value), inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
       case statement
       when RawStatement
         eval_statement(statement.source, env, inside_function, inside_loop)
@@ -474,7 +474,7 @@ module GiavaScript
       next_char.nil? || next_char == ' ' || next_char == '\t' || next_char == '\n' || next_char == '\r' || next_char == '('
     end
 
-    private def call_function(name : String, args : Array(Value), env : Hash(String, Value)) : Value
+    private def call_function(name : String, args : Array(Value), env : Environment) : Value
       @function_runtime.invoke_function(name, args, env) do |stmt, local_env, inside_function, inside_loop|
         eval_statement(stmt, local_env, inside_function, inside_loop)
       end
@@ -505,8 +505,8 @@ module GiavaScript
         .gsub('\t', "\\t")
     end
 
-    private def build_global_env : Hash(String, Value)
-      env = Hash(String, Value).new
+    private def build_global_env : Environment
+      env = Environment.new
       env["console"] = build_console_object
       env["Math"] = build_math_object
       env
@@ -687,27 +687,81 @@ module GiavaScript
       raise ExpressionError.new("Error: operator '#{operator}' requires numeric operand")
     end
 
-    private def apply_compound_assignment_operator(left : Value, right : Value, operator : String, env : Hash(String, Value)) : Value
-      token_kind = case operator
-                   when "+="
-                     Tokenizer::TokenKind::Plus
-                   when "-="
-                     Tokenizer::TokenKind::Minus
-                   when "*="
-                     Tokenizer::TokenKind::Star
-                   when "/="
-                     Tokenizer::TokenKind::Slash
-                   else
-                     raise ExpressionError.new("Error: invalid assignment operator '#{operator}'")
-                   end
+    private def apply_compound_assignment_operator(left : Value, right : Value, operator : String) : Value
+      case operator
+      when "+="
+        if left.is_a?(String) || right.is_a?(String)
+          return compound_value_to_string(left) + compound_value_to_string(right)
+        end
 
-      ExpressionEvaluator.new(env).evaluate(
-        BinaryExpr.new(
-          LiteralExpr.new(left),
-          token_kind,
-          LiteralExpr.new(right)
-        )
-      )
+        left_number = compound_number_operand(left, "+")
+        right_number = compound_number_operand(right, "+")
+
+        if left_number.is_a?(Int32) && right_number.is_a?(Int32)
+          left_number + right_number
+        else
+          left_number.to_f64 + right_number.to_f64
+        end
+      when "-="
+        left_number = compound_number_operand(left, "-")
+        right_number = compound_number_operand(right, "-")
+
+        if left_number.is_a?(Int32) && right_number.is_a?(Int32)
+          left_number - right_number
+        else
+          left_number.to_f64 - right_number.to_f64
+        end
+      when "*="
+        left_number = compound_number_operand(left, "*")
+        right_number = compound_number_operand(right, "*")
+
+        if left_number.is_a?(Int32) && right_number.is_a?(Int32)
+          left_number * right_number
+        else
+          left_number.to_f64 * right_number.to_f64
+        end
+      when "/="
+        left_number = compound_number_operand(left, "/")
+        right_number = compound_number_operand(right, "/")
+
+        if right_number.to_f64 == 0.0
+          raise ExpressionError.new("Error: division by zero")
+        end
+
+        left_number.to_f64 / right_number.to_f64
+      else
+        raise ExpressionError.new("Error: invalid assignment operator '#{operator}'")
+      end
+    end
+
+    private def compound_number_operand(value : Value, operator : String) : Number
+      if value.is_a?(Int32)
+        return value
+      end
+
+      if value.is_a?(Float64)
+        return value
+      end
+
+      raise ExpressionError.new("Error: operator '#{operator}' requires numeric operands")
+    end
+
+    private def compound_value_to_string(value : Value) : String
+      return "null" if value.nil?
+      return "undefined" if value.is_a?(UndefinedValue)
+
+      if value.is_a?(String)
+        value
+      elsif value.is_a?(Array)
+        "[#{value.map { |item| compound_value_to_string(item) }.join(", ")}]"
+      elsif value.is_a?(Hash(String, Value))
+        properties = value.map do |key, property_value|
+          "\"#{escape_string(key)}\": #{compound_value_to_string(property_value)}"
+        end
+        "{#{properties.join(", ")}}"
+      else
+        value.to_s
+      end
     end
   end
 end

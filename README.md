@@ -74,6 +74,7 @@ Run a benchmark locally with:
 ```bash
 crystal run src/giavascript_cli.cr -- examples/bubbleSort.js
 crystal run src/giavascript_cli.cr -- examples/matrixMultiply.js
+crystal run --release scripts/benchmark_interpreter.cr
 ```
 
 A monthly GitHub Actions report compares GiavaScript with Node.js runtimes using these scripts.

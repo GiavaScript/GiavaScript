@@ -3,7 +3,7 @@ module GiavaScript
     IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
     FUNCTION_NAME_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
 
-    record FunctionDefinition, parameters : Array(String), body : String
+    record FunctionDefinition, parameters : Array(String), statements : Array(String)
 
     class ReturnSignal < Exception
       getter value : Value
@@ -28,14 +28,15 @@ module GiavaScript
       raise ExpressionError.new("Error: invalid function name '#{function_name}'") unless function_name.matches?(FUNCTION_NAME_REGEX)
 
       parameters = parse_function_parameters(param_list)
-      @functions[function_name] = FunctionDefinition.new(parameters, body)
+      statements = StatementSplitter.new(body).split
+      @functions[function_name] = FunctionDefinition.new(parameters, statements)
     end
 
     def function_defined?(name : String) : Bool
       @functions.has_key?(name)
     end
 
-    def invoke_function(name : String, args : Array(Value), outer_env : Hash(String, Value), &evaluate_statement : String, Hash(String, Value), Bool, Bool -> String?) : Value
+    def invoke_function(name : String, args : Array(Value), outer_env : Environment, &evaluate_statement : String, Environment, Bool, Bool -> String?) : Value
       function = @functions[name]?
       raise ExpressionError.new("Error: function '#{name}' does not exist") unless function
 
@@ -43,19 +44,14 @@ module GiavaScript
         raise ExpressionError.new("Error: function '#{name}' expects #{function.parameters.size} arguments but got #{args.size}")
       end
 
-      local_env = Hash(String, Value).new
-      outer_env.each do |key, value|
-        local_env[key] = value
-      end
+      local_env = Environment.new(outer_env)
 
       function.parameters.each_with_index do |param, index|
         local_env[param] = args[index]
       end
 
-      statements = StatementSplitter.new(function.body).split
-
       begin
-        statements.each do |stmt|
+        function.statements.each do |stmt|
           evaluate_statement.call(stmt, local_env, true, false)
         end
       rescue ex : ReturnSignal

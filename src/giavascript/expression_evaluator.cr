@@ -1,6 +1,6 @@
 module GiavaScript
   class ExpressionEvaluator
-    def initialize(@env : Hash(String, Value), @call_function : Proc(String, Array(Value), Value)? = nil, @resolve_function : Proc(String, BuiltinFunction?)? = nil)
+    def initialize(@env : Environment, @call_function : Proc(String, Array(Value), Value)? = nil, @resolve_function : Proc(String, BuiltinFunction?)? = nil)
     end
 
     def evaluate(expr : Expr) : Value
@@ -414,9 +414,18 @@ module GiavaScript
 
     private def pow_int(base : Int32, exponent : Int32) : Int32
       result = 1
-      exponent.times do
-        result *= base
+      current_base = base
+      current_exponent = exponent
+
+      while current_exponent > 0
+        if (current_exponent & 1) == 1
+          result *= current_base
+        end
+
+        current_exponent >>= 1
+        current_base *= current_base if current_exponent > 0
       end
+
       result
     end
 
