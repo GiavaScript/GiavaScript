@@ -1,3 +1,6 @@
+require "json"
+require "set"
+
 module GiavaScript
   VERSION = "0.1.0"
 

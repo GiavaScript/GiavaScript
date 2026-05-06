@@ -346,6 +346,48 @@ describe GiavaScript do
     interpreter.eval("Math.sqrt(9);").should eq(["Error: value is not callable"])
   end
 
+  it "provides JSON.parse and JSON.stringify as global built-in methods" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("JSON.parse(\"{\\\"a\\\":1,\\\"b\\\":[true,null,\\\"x\\\"]}\")[\"a\"];").should eq(["1"])
+    interpreter.eval("JSON.parse(\"[1,2,3]\")[2];").should eq(["3"])
+    interpreter.eval("JSON.stringify({\"a\":1,\"b\":[true,null,\"x\"]});").should eq(["\"{\\\"a\\\":1,\\\"b\\\":[true,null,\\\"x\\\"]}\""])
+    interpreter.eval("JSON.stringify(undefined);").should eq(["undefined"])
+  end
+
+  it "matches basic JavaScript-like JSON.stringify omission and null rules" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var o = {\"a\": 1};").should eq([] of String)
+    interpreter.eval("o[\"skip\"] = undefined;").should eq([] of String)
+    interpreter.eval("JSON.stringify(o);").should eq(["\"{\\\"a\\\":1}\""])
+    interpreter.eval("JSON.stringify([1, undefined, 3]);").should eq(["\"[1,null,3]\""])
+    interpreter.eval("JSON.stringify([Math.max()]);").should eq(["\"[null]\""])
+  end
+
+  it "detects circular references in JSON.stringify" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var a = []; a[0] = a;").should eq([] of String)
+    interpreter.eval("JSON.stringify(a);").should eq(["Error: JSON.stringify cannot serialize circular arrays"])
+  end
+
+  it "validates JSON builtin arity, argument types, and parse errors" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("JSON.parse();").should eq(["Error: JSON.parse expects 1 arguments but got 0"])
+    interpreter.eval("JSON.stringify(1, 2);").should eq(["Error: JSON.stringify expects 1 arguments but got 2"])
+    interpreter.eval("JSON.parse(5);").should eq(["Error: JSON.parse argument 1 must be a string"])
+    interpreter.eval("JSON.parse(\"{\");").should eq(["Error: JSON.parse argument 1 must be valid JSON"])
+  end
+
+  it "raises runtime error when JSON method is overwritten with non-callable" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("JSON.parse = 5;").should eq([] of String)
+    interpreter.eval("JSON.parse(\"{}\");").should eq(["Error: value is not callable"])
+  end
+
   it "prints error when len is not defined" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])

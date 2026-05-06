@@ -1,6 +1,7 @@
 module GiavaScript
   class Interpreter
-    IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
+    IDENTIFIER_REGEX         = /^[A-Za-z_][A-Za-z0-9_]*$/
+    MAX_JSON_STRINGIFY_DEPTH = 1000
 
     class BreakSignal < Exception
       def initialize
@@ -508,6 +509,7 @@ module GiavaScript
     private def build_global_env : Environment
       env = Environment.new
       env["console"] = build_console_object
+      env["JSON"] = build_json_object
       env["Math"] = build_math_object
       env
     end
@@ -544,6 +546,42 @@ module GiavaScript
       end
 
       value.to_s
+    end
+
+    private def build_json_object : Hash(String, Value)
+      json = Hash(String, Value).new
+
+      json["parse"] = BuiltinFunction.new("JSON.parse", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "JSON.parse")
+        assert_builtin_arity(args, 1, "JSON.parse")
+
+        source = args[0]
+        unless source.is_a?(String)
+          raise ExpressionError.new("Error: JSON.parse argument 1 must be a string")
+        end
+
+        begin
+          json_any_to_value(::JSON.parse(source)).as(Value)
+        rescue ::JSON::ParseException
+          raise ExpressionError.new("Error: JSON.parse argument 1 must be valid JSON")
+        end
+      end)
+
+      json["stringify"] = BuiltinFunction.new("JSON.stringify", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "JSON.stringify")
+        assert_builtin_arity(args, 1, "JSON.stringify")
+
+        value = args[0]
+        if value.is_a?(UndefinedValue) || value.is_a?(BuiltinFunction)
+          UNDEFINED.as(Value)
+        else
+          io = IO::Memory.new
+          json_stringify_into(io, value, Set(UInt64).new, 0)
+          io.to_s.as(Value)
+        end
+      end)
+
+      json
     end
 
     private def build_math_object : Hash(String, Value)
@@ -725,6 +763,116 @@ module GiavaScript
         number_argument(args[0], method_name, 0).to_f64,
         number_argument(args[1], method_name, 1).to_f64,
       }
+    end
+
+    private def json_any_to_value(value : ::JSON::Any) : Value
+      raw = value.raw
+
+      case raw
+      when Nil
+        nil
+      when Bool
+        raw
+      when String
+        raw
+      when Int32
+        raw
+      when Int64
+        int64_to_js_number(raw)
+      when UInt64
+        uint64_to_js_number(raw)
+      when Float64
+        raw
+      when Array(::JSON::Any)
+        values = Array(Value).new(raw.size)
+        raw.each do |item|
+          values << json_any_to_value(item)
+        end
+        values
+      when Hash(String, ::JSON::Any)
+        object = Hash(String, Value).new
+        raw.each do |key, property_value|
+          object[key] = json_any_to_value(property_value)
+        end
+        object
+      else
+        raise ExpressionError.new("Error: JSON.parse produced unsupported value")
+      end
+    end
+
+    private def int64_to_js_number(value : Int64) : Number
+      if value <= Int32::MAX && value >= Int32::MIN
+        value.to_i32
+      else
+        value.to_f64
+      end
+    end
+
+    private def uint64_to_js_number(value : UInt64) : Number
+      if value <= Int32::MAX
+        value.to_i32
+      else
+        value.to_f64
+      end
+    end
+
+    private def json_stringify_into(io : IO, value : Value, visited : Set(UInt64), depth : Int32)
+      if depth > MAX_JSON_STRINGIFY_DEPTH
+        raise ExpressionError.new("Error: JSON.stringify nested structure exceeds maximum depth")
+      end
+
+      case value
+      when Nil
+        io << "null"
+      when UndefinedValue, BuiltinFunction
+        io << "null"
+      when Bool, Int32
+        io << value.to_s
+      when Float64
+        io << (value.finite? ? value.to_s : "null")
+      when String
+        io << value.to_json
+      when Array(Value)
+        cycle_checked_json_stringify(value.object_id, visited, "JSON.stringify cannot serialize circular arrays") do
+          io << '['
+          first = true
+          value.each do |item|
+            io << ',' unless first
+            first = false
+            json_stringify_into(io, item, visited, depth + 1)
+          end
+          io << ']'
+        end
+      when Hash(String, Value)
+        cycle_checked_json_stringify(value.object_id, visited, "JSON.stringify cannot serialize circular objects") do
+          io << '{'
+          first = true
+          value.each do |key, property_value|
+            next if property_value.is_a?(UndefinedValue) || property_value.is_a?(BuiltinFunction)
+
+            io << ',' unless first
+            first = false
+            io << key.to_json << ':'
+            json_stringify_into(io, property_value, visited, depth + 1)
+          end
+          io << '}'
+        end
+      else
+        raise ExpressionError.new("Error: JSON.stringify does not support this value")
+      end
+    end
+
+    private def cycle_checked_json_stringify(object_id : UInt64, visited : Set(UInt64), message : String, &)
+      if visited.includes?(object_id)
+        raise ExpressionError.new("Error: #{message}")
+      end
+
+      visited.add(object_id)
+      begin
+        yield
+      ensure
+        visited.delete(object_id)
+      end
     end
 
     private def incremented_value(value : Value, operator : String) : Value
