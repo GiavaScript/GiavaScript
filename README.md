@@ -5,6 +5,42 @@
 
 GiavaScript is an open-source, cross-platform, non-standard-compliant JavaScript runtime environment.
 
+## Install (optimized build)
+
+Build and install the `giavascript` executable globally:
+
+```bash
+./install.sh
+```
+
+This compiles with Crystal release optimizations and installs to `/usr/local/bin` by default.
+
+If you prefer a user-local location:
+
+```bash
+INSTALL_DIR="$HOME/.local/bin" ./install.sh
+```
+
+## Run a Source File
+
+```bash
+giavascript path/to/program.js
+```
+
+The interpreter reads the file and executes it through the same evaluation pipeline used for in-memory strings.
+
+## Run the REPL
+
+```bash
+giavascript
+```
+
+Exit with:
+
+```txt
+:quit
+```
+
 ## JavaScript Feature Reference
 
 Use the reference docs to track which standard JavaScript features are currently available:
@@ -30,52 +66,11 @@ or the short wrapper:
 ./scripts/reference.sh
 ```
 
-## Run the REPL
-
-```bash
-crystal run src/giavascript_cli.cr
-```
-
-Exit with:
-
-```txt
-:quit
-```
-
-## Run a Source File
-
-```bash
-crystal run src/giavascript_cli.cr -- path/to/program.ls
-```
-
-The interpreter reads the file and executes it through the same evaluation pipeline used for in-memory strings.
-
 ## Current Limitations
 
 - Partial JavaScript support; many standard globals and language features are still missing.
 
-## Development
-
-Run tests:
-
-```bash
-crystal spec
-```
-
 ## Benchmarks
-
-Example benchmark scripts are available in:
-
-- `examples/bubbleSort.js`
-- `examples/matrixMultiply.js`
-
-Run a benchmark locally with:
-
-```bash
-crystal run src/giavascript_cli.cr -- examples/bubbleSort.js
-crystal run src/giavascript_cli.cr -- examples/matrixMultiply.js
-crystal run --release scripts/benchmark_interpreter.cr
-```
 
 A monthly GitHub Actions report compares GiavaScript with Node.js runtimes using these scripts.
 See `.github/workflows/performance-comparison.yml`.
