@@ -5,60 +5,63 @@ function makeNode(value) {
 function insert(root, value) {
   var current = null;
 
-  if (root == null) {
+  if (root) {
+    current = root;
+  } else {
     return makeNode(value);
   }
 
-  current = root;
-  for (; true;) {
+  for (; current;) {
     if (value < current.value) {
-      if (current.left == null) {
+      if (current.left) {
+        current = current.left;
+      } else {
         current.left = makeNode(value);
         return root;
       }
-      current = current.left;
     } else {
-      if (current.right == null) {
+      if (current.right) {
+        current = current.right;
+      } else {
         current.right = makeNode(value);
         return root;
       }
-      current = current.right;
     }
   }
 }
 
 function inorder(node, out) {
-  if (node == null) {
+  if (node) {
+    inorder(node.left, out);
+    out.push(node.value);
+    inorder(node.right, out);
+  } else {
     return;
   }
-
-  inorder(node.left, out);
-  out.push(node.value);
-  inorder(node.right, out);
 }
 
 function height(node) {
   var leftHeight = 0;
   var rightHeight = 0;
 
-  if (node == null) {
+  if (node) {
+    leftHeight = height(node.left);
+    rightHeight = height(node.right);
+
+    if (leftHeight > rightHeight) {
+      return leftHeight + 1;
+    }
+
+    return rightHeight + 1;
+  } else {
     return 0;
   }
-
-  leftHeight = height(node.left);
-  rightHeight = height(node.right);
-
-  if (leftHeight > rightHeight) {
-    return leftHeight + 1;
-  }
-
-  return rightHeight + 1;
 }
 
 function contains(node, value) {
   var current = node;
 
-  for (; current != null;) {
+  for (; current;) {
     if (value == current.value) {
       return true;
     }

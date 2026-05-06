@@ -654,6 +654,12 @@ describe GiavaScript do
     output.to_s.should eq("0\n1\n")
   end
 
+  it "propagates runtime errors raised inside for-loop bodies" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("for (;;) { Math.sqrt(); }").should eq(["Error: Math.sqrt expects 1 arguments but got 0"])
+  end
+
   it "supports for (;;) with break" do
     interpreter = GiavaScript::Interpreter.new
 

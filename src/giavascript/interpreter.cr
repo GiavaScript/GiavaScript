@@ -399,7 +399,10 @@ module GiavaScript
           end
 
           begin
-            eval_statement_node(for_statement.body, env, inside_function, true)
+            body_message = eval_statement_node(for_statement.body, env, inside_function, true)
+            if body_message && body_message.starts_with?("Error:")
+              return body_message
+            end
           rescue ContinueSignal
           rescue BreakSignal
             break
