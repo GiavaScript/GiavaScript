@@ -65,7 +65,7 @@ module GiavaScript
     private def evaluate_function_call(expr : FunctionCallExpr) : Value
       callee_with_receiver = evaluate_callee_with_receiver(expr.callee)
 
-      args = [] of Value
+      args = Array(Value).new(expr.args.size)
       expr.args.each do |arg|
         args << evaluate(arg)
       end
@@ -165,20 +165,16 @@ module GiavaScript
     end
 
     private def lookup_object_property(target : Hash(String, Value), key : String) : Value
-      unless target.has_key?(key)
-        return UNDEFINED
-      end
-
-      target[key]
+      target.fetch(key, UNDEFINED)
     end
 
     private def lookup_instance_property(target : Value, property : String) : NamedTuple(found: Bool, value: Value)
       if target.is_a?(Hash(String, Value))
-        if target.has_key?(property)
-          return {found: true, value: target[property]}
+        value = target.fetch(property) do
+          return {found: false, value: UNDEFINED}
         end
 
-        return {found: false, value: UNDEFINED}
+        return {found: true, value: value}
       end
 
       {found: false, value: UNDEFINED}

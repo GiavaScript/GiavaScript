@@ -560,8 +560,43 @@ module GiavaScript
 
       math["sqrt"] = BuiltinFunction.new("Math.sqrt", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.sqrt")
-        assert_builtin_arity(args, 1, "Math.sqrt")
-        Math.sqrt(number_argument(args[0], "Math.sqrt", 0).to_f64).as(Value)
+        Math.sqrt(unary_number_arg_f64(args, "Math.sqrt")).as(Value)
+      end)
+
+      math["acos"] = BuiltinFunction.new("Math.acos", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.acos")
+        Math.acos(unary_number_arg_f64(args, "Math.acos")).as(Value)
+      end)
+
+      math["asin"] = BuiltinFunction.new("Math.asin", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.asin")
+        Math.asin(unary_number_arg_f64(args, "Math.asin")).as(Value)
+      end)
+
+      math["atan"] = BuiltinFunction.new("Math.atan", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.atan")
+        Math.atan(unary_number_arg_f64(args, "Math.atan")).as(Value)
+      end)
+
+      math["atan2"] = BuiltinFunction.new("Math.atan2", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.atan2")
+        y, x = binary_number_args_f64(args, "Math.atan2")
+        Math.atan2(y, x).as(Value)
+      end)
+
+      math["cos"] = BuiltinFunction.new("Math.cos", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.cos")
+        Math.cos(unary_number_arg_f64(args, "Math.cos")).as(Value)
+      end)
+
+      math["exp"] = BuiltinFunction.new("Math.exp", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.exp")
+        Math.exp(unary_number_arg_f64(args, "Math.exp")).as(Value)
+      end)
+
+      math["log"] = BuiltinFunction.new("Math.log", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.log")
+        Math.log(unary_number_arg_f64(args, "Math.log")).as(Value)
       end)
 
       math["abs"] = BuiltinFunction.new("Math.abs", ->(receiver : Value, args : Array(Value)) do
@@ -577,33 +612,29 @@ module GiavaScript
 
       math["ceil"] = BuiltinFunction.new("Math.ceil", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.ceil")
-        assert_builtin_arity(args, 1, "Math.ceil")
-        number_argument(args[0], "Math.ceil", 0).to_f64.ceil.to_i32.as(Value)
+        unary_number_arg_f64(args, "Math.ceil").ceil.to_i32.as(Value)
       end)
 
       math["floor"] = BuiltinFunction.new("Math.floor", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.floor")
-        assert_builtin_arity(args, 1, "Math.floor")
-        number_argument(args[0], "Math.floor", 0).to_f64.floor.to_i32.as(Value)
+        unary_number_arg_f64(args, "Math.floor").floor.to_i32.as(Value)
       end)
 
       math["round"] = BuiltinFunction.new("Math.round", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.round")
-        assert_builtin_arity(args, 1, "Math.round")
-        number_argument(args[0], "Math.round", 0).round.to_i32.as(Value)
+        unary_number_arg_f64(args, "Math.round").round.to_i32.as(Value)
       end)
 
       math["trunc"] = BuiltinFunction.new("Math.trunc", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.trunc")
-        assert_builtin_arity(args, 1, "Math.trunc")
-        number_argument(args[0], "Math.trunc", 0).trunc.to_i32.as(Value)
+        unary_number_arg_f64(args, "Math.trunc").trunc.to_i32.as(Value)
       end)
 
       math["sign"] = BuiltinFunction.new("Math.sign", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.sign")
         assert_builtin_arity(args, 1, "Math.sign")
 
-        value = number_argument(args[0], "Math.sign", 0).to_f64
+        value = unary_number_arg_f64(args, "Math.sign")
         if value < 0
           -1.as(Value)
         elsif value > 0
@@ -615,10 +646,18 @@ module GiavaScript
 
       math["pow"] = BuiltinFunction.new("Math.pow", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.pow")
-        assert_builtin_arity(args, 2, "Math.pow")
-        base = number_argument(args[0], "Math.pow", 0).to_f64
-        exponent = number_argument(args[1], "Math.pow", 1).to_f64
+        base, exponent = binary_number_args_f64(args, "Math.pow")
         (base ** exponent).as(Value)
+      end)
+
+      math["sin"] = BuiltinFunction.new("Math.sin", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.sin")
+        Math.sin(unary_number_arg_f64(args, "Math.sin")).as(Value)
+      end)
+
+      math["tan"] = BuiltinFunction.new("Math.tan", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.tan")
+        Math.tan(unary_number_arg_f64(args, "Math.tan")).as(Value)
       end)
 
       math["max"] = BuiltinFunction.new("Math.max", ->(receiver : Value, args : Array(Value)) do
@@ -673,6 +712,19 @@ module GiavaScript
       return value if value.is_a?(Float64)
 
       raise ExpressionError.new("Error: #{method_name} argument #{index + 1} must be a number")
+    end
+
+    private def unary_number_arg_f64(args : Array(Value), method_name : String) : Float64
+      assert_builtin_arity(args, 1, method_name)
+      number_argument(args[0], method_name, 0).to_f64
+    end
+
+    private def binary_number_args_f64(args : Array(Value), method_name : String) : Tuple(Float64, Float64)
+      assert_builtin_arity(args, 2, method_name)
+      {
+        number_argument(args[0], method_name, 0).to_f64,
+        number_argument(args[1], method_name, 1).to_f64,
+      }
     end
 
     private def incremented_value(value : Value, operator : String) : Value

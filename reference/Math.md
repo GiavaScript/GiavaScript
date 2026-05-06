@@ -21,26 +21,26 @@ Status of the JavaScript `Math` global object in GiavaScript.
 | --- | --- |
 | `abs()` | Available |
 | `sqrt()` | Available |
-| `acos()` | Not available |
+| `acos()` | Available |
 | `acosh()` | Not available |
-| `asin()` | Not available |
+| `asin()` | Available |
 | `asinh()` | Not available |
-| `atan()` | Not available |
-| `atan2()` | Not available |
+| `atan()` | Available |
+| `atan2()` | Available |
 | `atanh()` | Not available |
 | `cbrt()` | Not available |
 | `ceil()` | Available |
 | `clz32()` | Not available |
-| `cos()` | Not available |
+| `cos()` | Available |
 | `cosh()` | Not available |
-| `exp()` | Not available |
+| `exp()` | Available |
 | `expm1()` | Not available |
 | `f16round()` | Not available |
 | `floor()` | Available |
 | `fround()` | Not available |
 | `hypot()` | Not available |
 | `imul()` | Not available |
-| `log()` | Not available |
+| `log()` | Available |
 | `log10()` | Not available |
 | `log1p()` | Not available |
 | `log2()` | Not available |
@@ -50,9 +50,13 @@ Status of the JavaScript `Math` global object in GiavaScript.
 | `random()` | Not available |
 | `round()` | Available |
 | `sign()` | Available |
-| `sin()` | Not available |
+| `sin()` | Available |
 | `sinh()` | Not available |
 | `sumPrecise()` | Not available |
-| `tan()` | Not available |
+| `tan()` | Available |
 | `tanh()` | Not available |
 | `trunc()` | Available |
+
+## Notes
+
+- Recently added: `acos()`, `asin()`, `atan()`, `atan2()`, `cos()`, `exp()`, `log()`, `sin()`, and `tan()`.

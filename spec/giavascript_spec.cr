@@ -201,7 +201,7 @@ describe GiavaScript do
   it "supports escaping quote delimiters" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"a \\\"quote\\\"\";").should eq(["\"a \\\"quote\\\"\""])
-    interpreter.eval("'a \\\'quote\\\'';").should eq(["\"a 'quote'\""])
+    interpreter.eval("'a \\'quote\\'';").should eq(["\"a 'quote'\""])
   end
 
   it "defines functions and reads outer values" do
@@ -286,13 +286,22 @@ describe GiavaScript do
   it "provides basic Math rounding and utility methods" do
     interpreter = GiavaScript::Interpreter.new
 
+    interpreter.eval("Math.acos(1);").should eq(["0.0"])
+    interpreter.eval("Math.asin(0);").should eq(["0.0"])
+    interpreter.eval("Math.atan(0);").should eq(["0.0"])
+    interpreter.eval("Math.atan2(0, 1);").should eq(["0.0"])
     interpreter.eval("Math.ceil(1.2);").should eq(["2"])
+    interpreter.eval("Math.cos(0);").should eq(["1.0"])
+    interpreter.eval("Math.exp(1);").should eq(["2.718281828459045"])
     interpreter.eval("Math.floor(1.8);").should eq(["1"])
+    interpreter.eval("Math.log(1);").should eq(["0.0"])
     interpreter.eval("Math.round(1.5);").should eq(["2"])
-    interpreter.eval("Math.trunc(-1.8);").should eq(["-1"])
+    interpreter.eval("Math.pow(2, 3);").should eq(["8.0"])
     interpreter.eval("Math.sign(-10);").should eq(["-1"])
     interpreter.eval("Math.sign(0);").should eq(["0"])
-    interpreter.eval("Math.pow(2, 3);").should eq(["8.0"])
+    interpreter.eval("Math.sin(0);").should eq(["0.0"])
+    interpreter.eval("Math.tan(0);").should eq(["0.0"])
+    interpreter.eval("Math.trunc(-1.8);").should eq(["-1"])
     interpreter.eval("Math.max(1, 9, 3);").should eq(["9.0"])
     interpreter.eval("Math.min(1, 9, 3);").should eq(["1.0"])
   end
@@ -321,11 +330,13 @@ describe GiavaScript do
     interpreter = GiavaScript::Interpreter.new
 
     interpreter.eval("Math.sqrt();").should eq(["Error: Math.sqrt expects 1 arguments but got 0"])
+    interpreter.eval("Math.atan2(1);").should eq(["Error: Math.atan2 expects 2 arguments but got 1"])
     interpreter.eval("Math.abs(1, 2);").should eq(["Error: Math.abs expects 1 arguments but got 2"])
     interpreter.eval("Math.sqrt(\"nine\");").should eq(["Error: Math.sqrt argument 1 must be a number"])
     interpreter.eval("Math.pow(2);").should eq(["Error: Math.pow expects 2 arguments but got 1"])
     interpreter.eval("Math.ceil(\"up\");").should eq(["Error: Math.ceil argument 1 must be a number"])
     interpreter.eval("Math.max(1, \"two\");").should eq(["Error: Math.max argument 2 must be a number"])
+    interpreter.eval("Math.cos(\"angle\");").should eq(["Error: Math.cos argument 1 must be a number"])
   end
 
   it "raises runtime error when Math method is overwritten with non-callable" do
