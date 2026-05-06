@@ -622,6 +622,30 @@ describe GiavaScript do
     output.to_s.should eq("hello!\n")
   end
 
+  it "supports logical operators with short-circuit semantics" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("true && false;").should eq(["false"])
+    interpreter.eval("true || false;").should eq(["true"])
+    interpreter.eval("!0;").should eq(["true"])
+    interpreter.eval("!1;").should eq(["false"])
+    interpreter.eval("5 && 9;").should eq(["9"])
+    interpreter.eval("0 || 7;").should eq(["7"])
+    interpreter.eval("\"\" || \"fallback\";").should eq(["\"fallback\""])
+    interpreter.eval("false && missing;").should eq(["false"])
+    interpreter.eval("true || missing;").should eq(["true"])
+    interpreter.eval("false && (1 / 0);").should eq(["false"])
+    interpreter.eval("true || (1 / 0);").should eq(["true"])
+    interpreter.eval("missing && true;").should eq(["Error: variable 'missing' does not exist"])
+  end
+
+  it "applies logical operator precedence" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("true || false && false;").should eq(["true"])
+    interpreter.eval("(true || false) && false;").should eq(["false"])
+  end
+
   it "supports ECMAScript-style for loop with all components" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)

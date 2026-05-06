@@ -24,6 +24,9 @@ module GiavaScript
       GreaterEqual
       EqualEqual
       BangEqual
+      Bang
+      AndAnd
+      OrOr
       LParen
       RParen
       LBracket
@@ -97,6 +100,22 @@ module GiavaScript
         if current_char == '='
           advance
           Token.new(TokenKind::BangEqual, "!=")
+        else
+          Token.new(TokenKind::Bang, "!")
+        end
+      when '&'
+        advance
+        if current_char == '&'
+          advance
+          Token.new(TokenKind::AndAnd, "&&")
+        else
+          raise invalid_rhs_error
+        end
+      when '|'
+        advance
+        if current_char == '|'
+          advance
+          Token.new(TokenKind::OrOr, "||")
         else
           raise invalid_rhs_error
         end

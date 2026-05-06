@@ -44,7 +44,14 @@ Status of core JavaScript language features in GiavaScript.
 | Comparisons (`<`, `>`, `<=`, `>=`) | Available |
 | Equality (`==`, `!=`) | Available |
 | Strict equality (`===`, `!==`) | Not available |
-| Logical operators (`&&`, `\|\|`, `!`) | Not available |
+| Logical operators (`&&`, `\|\|`, `!`) | Available |
+
+#### Logical operator semantics
+
+- `a && b`: evaluates `a` first; if `a` is falsy, returns `a` and does not evaluate `b`; otherwise evaluates and returns `b`.
+- `a || b`: evaluates `a` first; if `a` is truthy, returns `a` and does not evaluate `b`; otherwise evaluates and returns `b`.
+- `!a`: evaluates `a` and returns a boolean negation (`true`/`false`).
+- Precedence: `!` binds tighter than `&&`, and `&&` binds tighter than `||`.
 
 ### Functions and control flow
 

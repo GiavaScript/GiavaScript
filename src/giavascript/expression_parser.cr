@@ -15,7 +15,35 @@ module GiavaScript
     end
 
     private def parse_expression : Expr
-      parse_equality
+      parse_logical_or
+    end
+
+    private def parse_logical_or : Expr
+      left = parse_logical_and
+
+      loop do
+        break unless @current.kind == Tokenizer::TokenKind::OrOr
+
+        advance_token
+        right = parse_logical_and
+        left = BinaryExpr.new(left, Tokenizer::TokenKind::OrOr, right)
+      end
+
+      left
+    end
+
+    private def parse_logical_and : Expr
+      left = parse_equality
+
+      loop do
+        break unless @current.kind == Tokenizer::TokenKind::AndAnd
+
+        advance_token
+        right = parse_equality
+        left = BinaryExpr.new(left, Tokenizer::TokenKind::AndAnd, right)
+      end
+
+      left
     end
 
     private def parse_equality : Expr
@@ -100,6 +128,12 @@ module GiavaScript
         advance_token
         value = parse_factor
         return UnaryExpr.new(Tokenizer::TokenKind::Minus, value)
+      end
+
+      if @current.kind == Tokenizer::TokenKind::Bang
+        advance_token
+        value = parse_factor
+        return UnaryExpr.new(Tokenizer::TokenKind::Bang, value)
       end
 
       parse_postfix

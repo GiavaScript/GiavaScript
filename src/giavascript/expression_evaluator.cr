@@ -23,13 +23,11 @@ module GiavaScript
       when UnaryExpr
         evaluate_unary(expr)
       when BinaryExpr
-        left = evaluate(expr.left)
-        right = evaluate(expr.right)
-        apply_binary_operator(left, right, expr.operator)
+        evaluate_binary(expr)
       when FunctionCallExpr
         evaluate_function_call(expr)
       when ArrayLiteral
-        values = [] of Value
+        values = Array(Value).new(expr.elements.size)
         expr.elements.each do |element|
           values << evaluate(element)
         end
@@ -57,9 +55,27 @@ module GiavaScript
       case expr.operator
       when Tokenizer::TokenKind::Minus
         negate(evaluate(expr.operand))
+      when Tokenizer::TokenKind::Bang
+        !truthy?(evaluate(expr.operand))
       else
         raise ExpressionError.new("Error: invalid expression")
       end
+    end
+
+    private def evaluate_binary(expr : BinaryExpr) : Value
+      left = evaluate(expr.left)
+
+      case expr.operator
+      when Tokenizer::TokenKind::AndAnd
+        return left unless truthy?(left)
+        return evaluate(expr.right)
+      when Tokenizer::TokenKind::OrOr
+        return left if truthy?(left)
+        return evaluate(expr.right)
+      end
+
+      right = evaluate(expr.right)
+      apply_binary_operator(left, right, expr.operator)
     end
 
     private def evaluate_function_call(expr : FunctionCallExpr) : Value
@@ -207,16 +223,14 @@ module GiavaScript
     end
 
     private def apply_binary_operator(left : Value, right : Value, operator : Tokenizer::TokenKind) : Value
-      operator_lexeme = operator_lexeme(operator)
-
       case operator
       when Tokenizer::TokenKind::Plus
         if left.is_a?(String) || right.is_a?(String)
           return value_to_string(left) + value_to_string(right)
         end
 
-        left_number = number_operand(left, operator_lexeme)
-        right_number = number_operand(right, operator_lexeme)
+        left_number = number_operand(left, "+")
+        right_number = number_operand(right, "+")
 
         if left_number.is_a?(Int32) && right_number.is_a?(Int32)
           left_number + right_number
@@ -224,8 +238,8 @@ module GiavaScript
           left_number.to_f64 + right_number.to_f64
         end
       when Tokenizer::TokenKind::Minus
-        left_number = number_operand(left, operator_lexeme)
-        right_number = number_operand(right, operator_lexeme)
+        left_number = number_operand(left, "-")
+        right_number = number_operand(right, "-")
 
         if left_number.is_a?(Int32) && right_number.is_a?(Int32)
           left_number - right_number
@@ -233,8 +247,8 @@ module GiavaScript
           left_number.to_f64 - right_number.to_f64
         end
       when Tokenizer::TokenKind::Star
-        left_number = number_operand(left, operator_lexeme)
-        right_number = number_operand(right, operator_lexeme)
+        left_number = number_operand(left, "*")
+        right_number = number_operand(right, "*")
 
         if left_number.is_a?(Int32) && right_number.is_a?(Int32)
           left_number * right_number
@@ -242,8 +256,8 @@ module GiavaScript
           left_number.to_f64 * right_number.to_f64
         end
       when Tokenizer::TokenKind::Slash
-        left_number = number_operand(left, operator_lexeme)
-        right_number = number_operand(right, operator_lexeme)
+        left_number = number_operand(left, "/")
+        right_number = number_operand(right, "/")
 
         if right_number.to_f64 == 0.0
           raise ExpressionError.new("Error: division by zero")
@@ -251,8 +265,8 @@ module GiavaScript
 
         left_number.to_f64 / right_number.to_f64
       when Tokenizer::TokenKind::Percent
-        left_number = number_operand(left, operator_lexeme)
-        right_number = number_operand(right, operator_lexeme)
+        left_number = number_operand(left, "%")
+        right_number = number_operand(right, "%")
 
         if right_number.to_f64 == 0.0
           raise ExpressionError.new("Error: modulo by zero")
@@ -264,8 +278,8 @@ module GiavaScript
           left_number.to_f64 % right_number.to_f64
         end
       when Tokenizer::TokenKind::Caret
-        left_number = number_operand(left, operator_lexeme)
-        right_number = number_operand(right, operator_lexeme)
+        left_number = number_operand(left, "^")
+        right_number = number_operand(right, "^")
 
         if left_number.is_a?(Int32) && right_number.is_a?(Int32) && right_number >= 0
           pow_int(left_number, right_number)
@@ -345,7 +359,33 @@ module GiavaScript
     end
 
     private def parse_numeric_string(value : String) : Float64?
+      parsed = value.to_f64?
+      return parsed if parsed
+
       value.strip.to_f64?
+    end
+
+    private def truthy?(value : Value) : Bool
+      return false if value.nil?
+      return false if value.is_a?(UndefinedValue)
+
+      if value.is_a?(Bool)
+        return value
+      end
+
+      if value.is_a?(String)
+        return !value.empty?
+      end
+
+      if value.is_a?(Int32)
+        return value != 0
+      end
+
+      if value.is_a?(Float64)
+        return value != 0.0
+      end
+
+      true
     end
 
     private def compare_numbers(left : Float64, right : Float64, operator : Tokenizer::TokenKind) : Bool
@@ -461,6 +501,10 @@ module GiavaScript
         "=="
       when Tokenizer::TokenKind::BangEqual
         "!="
+      when Tokenizer::TokenKind::AndAnd
+        "&&"
+      when Tokenizer::TokenKind::OrOr
+        "||"
       else
         "?"
       end
