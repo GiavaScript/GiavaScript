@@ -2,60 +2,53 @@
 
 Status of the JavaScript `Math` global object in GiavaScript.
 
-## Static properties
-
-| Property | Status |
-| --- | --- |
-| `E` | Available |
-| `LN10` | Available |
-| `LN2` | Available |
-| `LOG10E` | Available |
-| `LOG2E` | Available |
-| `PI` | Available |
-| `SQRT1_2` | Available |
-| `SQRT2` | Available |
-
-## Static methods
-
-| Method | Status |
-| --- | --- |
-| `abs()` | Available |
-| `sqrt()` | Available |
-| `acos()` | Available |
-| `acosh()` | Not available |
-| `asin()` | Available |
-| `asinh()` | Not available |
-| `atan()` | Available |
-| `atan2()` | Available |
-| `atanh()` | Not available |
-| `cbrt()` | Not available |
-| `ceil()` | Available |
-| `clz32()` | Not available |
-| `cos()` | Available |
-| `cosh()` | Not available |
-| `exp()` | Available |
-| `expm1()` | Not available |
-| `f16round()` | Not available |
-| `floor()` | Available |
-| `fround()` | Not available |
-| `hypot()` | Not available |
-| `imul()` | Not available |
-| `log()` | Available |
-| `log10()` | Not available |
-| `log1p()` | Not available |
-| `log2()` | Not available |
-| `max()` | Available |
-| `min()` | Available |
-| `pow()` | Available |
-| `random()` | Not available |
-| `round()` | Available |
-| `sign()` | Available |
-| `sin()` | Available |
-| `sinh()` | Not available |
-| `sumPrecise()` | Not available |
-| `tan()` | Available |
-| `tanh()` | Not available |
-| `trunc()` | Available |
+| Member | Kind | Status |
+| --- | --- | --- |
+| `E` | Static property | Available |
+| `LN10` | Static property | Available |
+| `LN2` | Static property | Available |
+| `LOG10E` | Static property | Available |
+| `LOG2E` | Static property | Available |
+| `PI` | Static property | Available |
+| `SQRT1_2` | Static property | Available |
+| `SQRT2` | Static property | Available |
+| `abs()` | Static method | Available |
+| `sqrt()` | Static method | Available |
+| `acos()` | Static method | Available |
+| `acosh()` | Static method | Not available |
+| `asin()` | Static method | Available |
+| `asinh()` | Static method | Not available |
+| `atan()` | Static method | Available |
+| `atan2()` | Static method | Available |
+| `atanh()` | Static method | Not available |
+| `cbrt()` | Static method | Not available |
+| `ceil()` | Static method | Available |
+| `clz32()` | Static method | Not available |
+| `cos()` | Static method | Available |
+| `cosh()` | Static method | Not available |
+| `exp()` | Static method | Available |
+| `expm1()` | Static method | Not available |
+| `f16round()` | Static method | Not available |
+| `floor()` | Static method | Available |
+| `fround()` | Static method | Not available |
+| `hypot()` | Static method | Not available |
+| `imul()` | Static method | Not available |
+| `log()` | Static method | Available |
+| `log10()` | Static method | Not available |
+| `log1p()` | Static method | Not available |
+| `log2()` | Static method | Not available |
+| `max()` | Static method | Available |
+| `min()` | Static method | Available |
+| `pow()` | Static method | Available |
+| `random()` | Static method | Not available |
+| `round()` | Static method | Available |
+| `sign()` | Static method | Available |
+| `sin()` | Static method | Available |
+| `sinh()` | Static method | Not available |
+| `sumPrecise()` | Static method | Not available |
+| `tan()` | Static method | Available |
+| `tanh()` | Static method | Not available |
+| `trunc()` | Static method | Available |
 
 ## Notes
 

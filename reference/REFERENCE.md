@@ -89,96 +89,120 @@ Status of built-in methods and properties available through GiavaScript runtime 
 
 | Member | Kind | Status |
 | --- | --- | --- |
-| `length` | Property | Available |
-| `startsWith()` | Method | Available |
-| `toLowerCase()` | Method | Available |
-| `toString()` | Method | Available |
-| `toUpperCase()` | Method | Available |
+| `length` | Instance property | Available |
+| `at()` | Instance method | Not available |
+| `charAt()` | Instance method | Not available |
+| `charCodeAt()` | Instance method | Not available |
+| `codePointAt()` | Instance method | Not available |
+| `concat()` | Instance method | Not available |
+| `endsWith()` | Instance method | Not available |
+| `fromCharCode()` | Static method | Not available |
+| `includes()` | Instance method | Not available |
+| `indexOf()` | Instance method | Not available |
+| `isWellFormed()` | Instance method | Not available |
+| `lastIndexOf()` | Instance method | Not available |
+| `localeCompare()` | Instance method | Not available |
+| `match()` | Instance method | Not available |
+| `matchAll()` | Instance method | Not available |
+| `padEnd()` | Instance method | Not available |
+| `padStart()` | Instance method | Not available |
+| `repeat()` | Instance method | Not available |
+| `replace()` | Instance method | Not available |
+| `replaceAll()` | Instance method | Not available |
+| `search()` | Instance method | Not available |
+| `slice()` | Instance method | Not available |
+| `split()` | Instance method | Not available |
+| `startsWith()` | Instance method | Available |
+| `substr()` | Instance method | Not available |
+| `substring()` | Instance method | Not available |
+| `toLocaleLowerCase()` | Instance method | Not available |
+| `toLocaleUpperCase()` | Instance method | Not available |
+| `toLowerCase()` | Instance method | Available |
+| `toString()` | Instance method | Available |
+| `toUpperCase()` | Instance method | Available |
+| `toWellFormed()` | Instance method | Not available |
+| `trim()` | Instance method | Not available |
+| `trimEnd()` | Instance method | Not available |
+| `trimStart()` | Instance method | Not available |
+| `valueOf()` | Instance method | Not available |
 
 ### Number
 
 | Member | Kind | Status |
 | --- | --- | --- |
-| `toString()` | Method | Available |
+| `toString()` | Instance method | Available |
 
 ### Array
 
 | Member | Kind | Status |
 | --- | --- | --- |
-| `length` | Property | Available |
-| `push()` | Method | Available |
-| `toString()` | Method | Available |
+| `length` | Instance property | Available |
+| `push()` | Instance method | Available |
+| `toString()` | Instance method | Available |
 
 ### Object
 
 | Member | Kind | Status |
 | --- | --- | --- |
-| `toString()` | Method | Available |
+| `toString()` | Instance method | Available |
 
 ### Boolean
 
 | Member | Kind | Status |
 | --- | --- | --- |
-| `toString()` | Method | Available |
+| `toString()` | Instance method | Available |
 
 ## Math
 
 Status of the JavaScript `Math` global object in GiavaScript.
 
-### Static properties
-
-| Property | Status |
-| --- | --- |
-| `E` | Available |
-| `LN10` | Available |
-| `LN2` | Available |
-| `LOG10E` | Available |
-| `LOG2E` | Available |
-| `PI` | Available |
-| `SQRT1_2` | Available |
-| `SQRT2` | Available |
-
-### Static methods
-
-| Method | Status |
-| --- | --- |
-| `abs()` | Available |
-| `sqrt()` | Available |
-| `acos()` | Available |
-| `acosh()` | Not available |
-| `asin()` | Available |
-| `asinh()` | Not available |
-| `atan()` | Available |
-| `atan2()` | Available |
-| `atanh()` | Not available |
-| `cbrt()` | Not available |
-| `ceil()` | Available |
-| `clz32()` | Not available |
-| `cos()` | Available |
-| `cosh()` | Not available |
-| `exp()` | Available |
-| `expm1()` | Not available |
-| `f16round()` | Not available |
-| `floor()` | Available |
-| `fround()` | Not available |
-| `hypot()` | Not available |
-| `imul()` | Not available |
-| `log()` | Available |
-| `log10()` | Not available |
-| `log1p()` | Not available |
-| `log2()` | Not available |
-| `max()` | Available |
-| `min()` | Available |
-| `pow()` | Available |
-| `random()` | Not available |
-| `round()` | Available |
-| `sign()` | Available |
-| `sin()` | Available |
-| `sinh()` | Not available |
-| `sumPrecise()` | Not available |
-| `tan()` | Available |
-| `tanh()` | Not available |
-| `trunc()` | Available |
+| Member | Kind | Status |
+| --- | --- | --- |
+| `E` | Static property | Available |
+| `LN10` | Static property | Available |
+| `LN2` | Static property | Available |
+| `LOG10E` | Static property | Available |
+| `LOG2E` | Static property | Available |
+| `PI` | Static property | Available |
+| `SQRT1_2` | Static property | Available |
+| `SQRT2` | Static property | Available |
+| `abs()` | Static method | Available |
+| `sqrt()` | Static method | Available |
+| `acos()` | Static method | Available |
+| `acosh()` | Static method | Not available |
+| `asin()` | Static method | Available |
+| `asinh()` | Static method | Not available |
+| `atan()` | Static method | Available |
+| `atan2()` | Static method | Available |
+| `atanh()` | Static method | Not available |
+| `cbrt()` | Static method | Not available |
+| `ceil()` | Static method | Available |
+| `clz32()` | Static method | Not available |
+| `cos()` | Static method | Available |
+| `cosh()` | Static method | Not available |
+| `exp()` | Static method | Available |
+| `expm1()` | Static method | Not available |
+| `f16round()` | Static method | Not available |
+| `floor()` | Static method | Available |
+| `fround()` | Static method | Not available |
+| `hypot()` | Static method | Not available |
+| `imul()` | Static method | Not available |
+| `log()` | Static method | Available |
+| `log10()` | Static method | Not available |
+| `log1p()` | Static method | Not available |
+| `log2()` | Static method | Not available |
+| `max()` | Static method | Available |
+| `min()` | Static method | Available |
+| `pow()` | Static method | Available |
+| `random()` | Static method | Not available |
+| `round()` | Static method | Available |
+| `sign()` | Static method | Available |
+| `sin()` | Static method | Available |
+| `sinh()` | Static method | Not available |
+| `sumPrecise()` | Static method | Not available |
+| `tan()` | Static method | Available |
+| `tanh()` | Static method | Not available |
+| `trunc()` | Static method | Available |
 
 ### Notes
 
@@ -190,10 +214,10 @@ Status of the JavaScript `JSON` global object in GiavaScript.
 
 ### Static methods
 
-| Method | Status |
-| --- | --- |
-| `parse()` | Available |
-| `stringify()` | Available |
+| Member | Kind | Status |
+| --- | --- | --- |
+| `parse()` | Static method | Available |
+| `stringify()` | Static method | Available |
 
 ### Notes
 

@@ -4,10 +4,10 @@ Status of the JavaScript `JSON` global object in GiavaScript.
 
 ## Static methods
 
-| Method | Status |
-| --- | --- |
-| `parse()` | Available |
-| `stringify()` | Available |
+| Member | Kind | Status |
+| --- | --- | --- |
+| `parse()` | Static method | Available |
+| `stringify()` | Static method | Available |
 
 ## Notes
 
