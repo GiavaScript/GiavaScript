@@ -44,7 +44,14 @@ jobs:
 
       - name: Build GiavaScript interpreter
         if: steps.last_day.outputs.run == 'true'
-        run: mkdir -p bin && crystal build src/giavascript_cli.cr -o bin/giavascript
+        run: |
+          mkdir -p bin
+          crystal build src/giavascript_cli.cr \
+            --release \
+            --no-debug \
+            --mcpu=native \
+            -o bin/giavascript
+          strip bin/giavascript || true
 
       - name: Install NVM and Node versions
         if: steps.last_day.outputs.run == 'true'

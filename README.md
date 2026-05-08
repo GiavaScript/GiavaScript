@@ -74,3 +74,5 @@ or the short wrapper:
 
 A monthly GitHub Actions report compares GiavaScript with Node.js runtimes using these scripts.
 See `.github/workflows/performance-comparison.yml`.
+
+Note: the workflow builds GiavaScript with `--release --no-debug --mcpu=native` and then strips the binary. This is intended to measure optimized runtime performance on the GitHub runner CPU; results may vary on different hardware.
