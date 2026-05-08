@@ -1,5 +1,8 @@
 name: Performance Comparison
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   schedule:
@@ -69,7 +72,7 @@ jobs:
           echo "node_lts_bin=$(nvm which lts/*)" >> "$GITHUB_OUTPUT"
           echo "node_012_bin=$(nvm which 0.12.18)" >> "$GITHUB_OUTPUT"
 
-      - name: Benchmark and generate markdown report
+      - name: Benchmark and generate CSV report
         if: steps.last_day.outputs.run == 'true'
         id: report
         shell: bash
@@ -99,32 +102,131 @@ jobs:
           read slicing_node_012_median slicing_node_012_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_012_BIN' examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
 
           report_date=$(date -u +'%d-%m-%Y')
-          report_file="reports/performance-comparison-${report_date}.md"
+          benchmark_dir="benchmarks"
+          report_file="${benchmark_dir}/performance-comparison-${report_date}.csv"
+          latest_report_file="${benchmark_dir}/performance-comparison-latest.csv"
 
-          mkdir -p reports
+          mkdir -p "$benchmark_dir"
           cat > "$report_file" <<EOF
-          # Performance comparison - ${report_date}
-
-          Median and p95 execution time in seconds (${BENCH_RUNS} timed runs, ${BENCH_WARMUP} warmups).
-
-          | Script | GiavaScript median (s) | GiavaScript p95 (s) | Node LTS ${LTS_VERSION} median (s) | Node LTS ${LTS_VERSION} p95 (s) | Node 0.12.18 median (s) | Node 0.12.18 p95 (s) |
-          | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-          | \`examples/bubbleSort.js\` (x25/run) | ${bubble_giavascript_median} | ${bubble_giavascript_p95} | ${bubble_node_lts_median} | ${bubble_node_lts_p95} | ${bubble_node_012_median} | ${bubble_node_012_p95} |
-          | \`examples/matrixMultiply.js\` | ${matrix_giavascript_median} | ${matrix_giavascript_p95} | ${matrix_node_lts_median} | ${matrix_node_lts_p95} | ${matrix_node_012_median} | ${matrix_node_012_p95} |
-          | \`examples/binarySearchTree.js\` (x25/run) | ${bst_giavascript_median} | ${bst_giavascript_p95} | ${bst_node_lts_median} | ${bst_node_lts_p95} | ${bst_node_012_median} | ${bst_node_012_p95} |
-          | \`examples/stringSlicing.js\` | ${slicing_giavascript_median} | ${slicing_giavascript_p95} | ${slicing_node_lts_median} | ${slicing_node_lts_p95} | ${slicing_node_012_median} | ${slicing_node_012_p95} |
+          date,script,giavascript_median_s,giavascript_p95_s,node_lts_version,node_lts_median_s,node_lts_p95_s,node_0_12_18_median_s,node_0_12_18_p95_s
+          ${report_date},examples/bubbleSort.js (x25/run),${bubble_giavascript_median},${bubble_giavascript_p95},${LTS_VERSION},${bubble_node_lts_median},${bubble_node_lts_p95},${bubble_node_012_median},${bubble_node_012_p95}
+          ${report_date},examples/matrixMultiply.js,${matrix_giavascript_median},${matrix_giavascript_p95},${LTS_VERSION},${matrix_node_lts_median},${matrix_node_lts_p95},${matrix_node_012_median},${matrix_node_012_p95}
+          ${report_date},examples/binarySearchTree.js (x25/run),${bst_giavascript_median},${bst_giavascript_p95},${LTS_VERSION},${bst_node_lts_median},${bst_node_lts_p95},${bst_node_012_median},${bst_node_012_p95}
+          ${report_date},examples/stringSlicing.js,${slicing_giavascript_median},${slicing_giavascript_p95},${LTS_VERSION},${slicing_node_lts_median},${slicing_node_lts_p95},${slicing_node_012_median},${slicing_node_012_p95}
           EOF
 
-          echo "report_file=$report_file" >> "$GITHUB_OUTPUT"
+          cp "$report_file" "$latest_report_file"
 
-      - name: Upload report artifact
+          echo "report_file=$report_file" >> "$GITHUB_OUTPUT"
+          echo "latest_report_file=$latest_report_file" >> "$GITHUB_OUTPUT"
+
+      - name: Update README benchmark section
         if: steps.last_day.outputs.run == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-comparison-report
-          path: ${{ steps.report.outputs.report_file }}
+        shell: bash
+        env:
+          LTS_VERSION: ${{ steps.node.outputs.lts_version }}
+          REPORT_FILE: ${{ steps.report.outputs.report_file }}
+        run: |
+          python3 - <<'PY'
+          import csv
+          import os
+          import textwrap
+          from pathlib import Path
+
+          readme_path = Path("README.md")
+          content = readme_path.read_text(encoding="utf-8")
+
+          with open(os.environ["REPORT_FILE"], newline="", encoding="utf-8") as csvfile:
+              rows = list(csv.DictReader(csvfile))
+
+          giavascript = [float(row["giavascript_median_s"]) for row in rows]
+          node_lts = [float(row["node_lts_median_s"]) for row in rows]
+          node_012 = [float(row["node_0_12_18_median_s"]) for row in rows]
+
+          max_value = max(giavascript + node_lts + node_012)
+          y_max = max_value * 1.1
+          y_max_display = f"{y_max:.6f}".rstrip("0").rstrip(".")
+
+          def values(values):
+              return ", ".join(f"{v:.6f}".rstrip("0").rstrip(".") for v in values)
+
+          section = textwrap.dedent(
+              f"""\
+              ## Benchmarks
+
+              Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. The chart below uses median execution time in seconds from the latest run (lower is better).
+
+              ```mermaid
+              xychart-beta
+                  title \"Median Runtime by Benchmark\"
+                  x-axis [\"bubbleSort x25\", \"matrixMultiply\", \"binarySearchTree x25\", \"stringSlicing\"]
+                  y-axis \"Seconds\" 0 --> {y_max_display}
+                  line \"GiavaScript\" [{values(giavascript)}]
+                  line \"Node LTS {os.environ['LTS_VERSION']}\" [{values(node_lts)}]
+                  line \"Node 0.12.18\" [{values(node_012)}]
+              ```
+              """
+          ).strip()
+
+          start = content.find("## Benchmarks")
+          if start == -1:
+              updated = content.rstrip() + "\n\n" + section + "\n"
+          else:
+              next_heading = content.find("\n## ", start + 1)
+              if next_heading == -1:
+                  updated = content[:start].rstrip() + "\n\n" + section + "\n"
+              else:
+                  updated = content[:start].rstrip() + "\n\n" + section + "\n\n" + content[next_heading + 1 :].lstrip()
+
+          readme_path.write_text(updated, encoding="utf-8")
+          PY
+
+      - name: Commit benchmark CSV to repository
+        if: steps.last_day.outputs.run == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add benchmarks/*.csv README.md
+
+          if git diff --cached --quiet; then
+            echo "No benchmark changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update benchmark results"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Add report to workflow summary
         if: steps.last_day.outputs.run == 'true'
         shell: bash
-        run: cat "${{ steps.report.outputs.report_file }}" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          LTS_VERSION: ${{ steps.node.outputs.lts_version }}
+          REPORT_FILE: ${{ steps.report.outputs.report_file }}
+        run: |
+          python3 - <<'PY'
+          import csv
+          import os
+
+          summary_path = os.environ["GITHUB_STEP_SUMMARY"]
+          report_file = os.environ["REPORT_FILE"]
+          latest_report_file = "${{ steps.report.outputs.latest_report_file }}"
+          lts_version = os.environ["LTS_VERSION"]
+
+          with open(report_file, newline="", encoding="utf-8") as csvfile:
+              rows = list(csv.DictReader(csvfile))
+
+          with open(summary_path, "a", encoding="utf-8") as summary:
+              summary.write("## Performance comparison\n\n")
+              summary.write(f"CSV report committed to `{latest_report_file}`.\n\n")
+              summary.write(
+                  f"| Script | GiavaScript median (s) | GiavaScript p95 (s) | Node LTS {lts_version} median (s) | Node LTS {lts_version} p95 (s) | Node 0.12.18 median (s) | Node 0.12.18 p95 (s) |\n"
+              )
+              summary.write("| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n")
+
+              for row in rows:
+                  summary.write(
+                      f"| `{row['script']}` | {row['giavascript_median_s']} | {row['giavascript_p95_s']} | {row['node_lts_median_s']} | {row['node_lts_p95_s']} | {row['node_0_12_18_median_s']} | {row['node_0_12_18_p95_s']} |\n"
+                  )
+          PY

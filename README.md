@@ -72,7 +72,14 @@ or the short wrapper:
 
 ## Benchmarks
 
-A monthly GitHub Actions report compares GiavaScript with Node.js runtimes using these scripts.
-See `.github/workflows/performance-comparison.yml`.
+Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. The chart below uses median execution time in seconds from the latest run (lower is better).
 
-Note: the workflow builds GiavaScript with `--release --no-debug --mcpu=native` and then strips the binary. This is intended to measure optimized runtime performance on the GitHub runner CPU; results may vary on different hardware.
+```mermaid
+xychart-beta
+    title "Median Runtime by Benchmark"
+    x-axis ["bubbleSort x25", "matrixMultiply", "binarySearchTree x25", "stringSlicing"]
+    y-axis "Seconds" 0 --> 1
+    line "GiavaScript" [0, 0, 0, 0]
+    line "Node LTS" [0, 0, 0, 0]
+    line "Node 0.12.18" [0, 0, 0, 0]
+```
