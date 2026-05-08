@@ -505,13 +505,44 @@ describe GiavaScript do
   it "resolves string and array builtins through type objects" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello\".length;").should eq(["5"])
+    interpreter.eval("\"hello\".at(1);").should eq(["\"e\""])
+    interpreter.eval("\"hello\".charAt(4);").should eq(["\"o\""])
+    interpreter.eval("\"hello\".concat(\" world\");").should eq(["\"hello world\""])
+    interpreter.eval("\"abc\".endsWith(\"bc\");").should eq(["true"])
+    interpreter.eval("\"abc\".includes(\"b\");").should eq(["true"])
+    interpreter.eval("\"abc\".indexOf(\"b\");").should eq(["1"])
+    interpreter.eval("\"abca\".lastIndexOf(\"a\");").should eq(["3"])
     interpreter.eval("\"abc\".startsWith(\"a\");").should eq(["true"])
     interpreter.eval("\"MiXeD\".toLowerCase();").should eq(["\"mixed\""])
     interpreter.eval("\"MiXeD\".toUpperCase();").should eq(["\"MIXED\""])
+    interpreter.eval("\"  spaced  \".trim();").should eq(["\"spaced\""])
+    interpreter.eval("\"  spaced\".trimStart();").should eq(["\"spaced\""])
+    interpreter.eval("\"spaced  \".trimEnd();").should eq(["\"spaced\""])
+    interpreter.eval("\"abc\".valueOf();").should eq(["\"abc\""])
     interpreter.eval("[1, 2, 3].length;").should eq(["3"])
     interpreter.eval("var items = [1, 2, 3];").should eq([] of String)
     interpreter.eval("items.push(4);").should eq(["4"])
     interpreter.eval("items;").should eq(["[1, 2, 3, 4]"])
+  end
+
+  it "handles String.at and String.charAt out-of-range indexes" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"abc\".at(5);").should eq(["undefined"])
+    interpreter.eval("\"abc\".at(-1);").should eq(["\"c\""])
+    interpreter.eval("\"abc\".charAt(5);").should eq(["\"\""])
+  end
+
+  it "validates String argument types for simple string methods" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"abc\".includes(1);").should eq(["Error: String.includes expects a string argument"])
+    interpreter.eval("\"abc\".indexOf(true);").should eq(["Error: String.indexOf expects a string argument"])
+    interpreter.eval("\"abc\".concat(1);").should eq(["Error: String.concat expects a string argument"])
+  end
+
+  it "validates String index argument type" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"abc\".at(1.5);").should eq(["Error: String.at expects an integer argument"])
+    interpreter.eval("\"abc\".charAt(1.5);").should eq(["Error: String.charAt expects an integer argument"])
   end
 
   it "validates String case conversion method arity" do

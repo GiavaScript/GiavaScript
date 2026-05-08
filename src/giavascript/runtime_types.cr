@@ -26,10 +26,21 @@ module GiavaScript
     STRING_TYPE = TypeObject.new(
       "String",
       {
+        "at" => BuiltinMethodDefinition.new("String.at", ->(receiver : Value, args : Array(Value)) { string_at(receiver, args).as(Value) }),
+        "charAt" => BuiltinMethodDefinition.new("String.charAt", ->(receiver : Value, args : Array(Value)) { string_char_at(receiver, args).as(Value) }),
+        "concat" => BuiltinMethodDefinition.new("String.concat", ->(receiver : Value, args : Array(Value)) { string_concat(receiver, args).as(Value) }),
+        "endsWith" => BuiltinMethodDefinition.new("String.endsWith", ->(receiver : Value, args : Array(Value)) { string_ends_with(receiver, args).as(Value) }),
+        "includes" => BuiltinMethodDefinition.new("String.includes", ->(receiver : Value, args : Array(Value)) { string_includes(receiver, args).as(Value) }),
+        "indexOf" => BuiltinMethodDefinition.new("String.indexOf", ->(receiver : Value, args : Array(Value)) { string_index_of(receiver, args).as(Value) }),
+        "lastIndexOf" => BuiltinMethodDefinition.new("String.lastIndexOf", ->(receiver : Value, args : Array(Value)) { string_last_index_of(receiver, args).as(Value) }),
         "startsWith" => BuiltinMethodDefinition.new("String.startsWith", ->(receiver : Value, args : Array(Value)) { string_starts_with(receiver, args).as(Value) }),
+        "trim" => BuiltinMethodDefinition.new("String.trim", ->(receiver : Value, args : Array(Value)) { string_trim(receiver, args).as(Value) }),
+        "trimEnd" => BuiltinMethodDefinition.new("String.trimEnd", ->(receiver : Value, args : Array(Value)) { string_trim_end(receiver, args).as(Value) }),
+        "trimStart" => BuiltinMethodDefinition.new("String.trimStart", ->(receiver : Value, args : Array(Value)) { string_trim_start(receiver, args).as(Value) }),
         "toLowerCase" => BuiltinMethodDefinition.new("String.toLowerCase", ->(receiver : Value, args : Array(Value)) { string_to_lower_case(receiver, args).as(Value) }),
         "toString"   => BuiltinMethodDefinition.new("String.toString", ->(receiver : Value, args : Array(Value)) { string_to_string(receiver, args).as(Value) }),
         "toUpperCase" => BuiltinMethodDefinition.new("String.toUpperCase", ->(receiver : Value, args : Array(Value)) { string_to_upper_case(receiver, args).as(Value) }),
+        "valueOf" => BuiltinMethodDefinition.new("String.valueOf", ->(receiver : Value, args : Array(Value)) { string_value_of(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
       {
         "length" => ->(receiver : Value) { string_length(receiver).as(Value) },
@@ -112,12 +123,85 @@ module GiavaScript
 
     private def string_starts_with(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 1, "String.startsWith")
-      prefix = args[0]
-      unless prefix.is_a?(String)
-        raise ExpressionError.new("Error: String.startsWith expects a string argument")
-      end
+      prefix = string_argument(args[0], "String.startsWith")
 
       receiver_string(receiver, "String.startsWith").starts_with?(prefix)
+    end
+
+    private def string_ends_with(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.endsWith")
+      suffix = string_argument(args[0], "String.endsWith")
+
+      receiver_string(receiver, "String.endsWith").ends_with?(suffix)
+    end
+
+    private def string_includes(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.includes")
+      needle = string_argument(args[0], "String.includes")
+
+      receiver_string(receiver, "String.includes").includes?(needle)
+    end
+
+    private def string_concat(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.concat")
+      suffix = string_argument(args[0], "String.concat")
+
+      "#{receiver_string(receiver, "String.concat")}#{suffix}"
+    end
+
+    private def string_char_at(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.charAt")
+      index = integer_argument(args[0], "String.charAt")
+
+      string = receiver_string(receiver, "String.charAt")
+      return "" if index < 0
+
+      char = string[index]?
+      return "" unless char
+
+      char.to_s
+    end
+
+    private def string_at(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.at")
+      index = integer_argument(args[0], "String.at")
+
+      string = receiver_string(receiver, "String.at")
+      char = string[index]?
+      return UNDEFINED unless char
+
+      char.to_s
+    end
+
+    private def string_index_of(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.indexOf")
+      needle = string_argument(args[0], "String.indexOf")
+      haystack = receiver_string(receiver, "String.indexOf")
+      index = haystack.index(needle)
+      index ? index : -1
+    end
+
+    private def string_last_index_of(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.lastIndexOf")
+      needle = string_argument(args[0], "String.lastIndexOf")
+      haystack = receiver_string(receiver, "String.lastIndexOf")
+      index = haystack.rindex(needle)
+      index ? index : -1
+    end
+
+    private def string_trim(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.trim")
+      receiver_string(receiver, "String.trim").strip
+    end
+
+    private def string_trim_start(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.trimStart")
+      receiver_string(receiver, "String.trimStart").lstrip
+    end
+
+    private def string_trim_end(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.trimEnd")
+      receiver_string(receiver, "String.trimEnd").rstrip
     end
 
     private def string_to_string(receiver : Value, args : Array(Value)) : Value
@@ -133,6 +217,11 @@ module GiavaScript
     private def string_to_upper_case(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "String.toUpperCase")
       receiver_string(receiver, "String.toUpperCase").upcase
+    end
+
+    private def string_value_of(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.valueOf")
+      receiver_string(receiver, "String.valueOf")
     end
 
     private def number_to_string(receiver : Value, args : Array(Value)) : Value
@@ -223,6 +312,16 @@ module GiavaScript
     private def receiver_bool(value : Value, method_name : String) : Bool
       return value if value.is_a?(Bool)
       raise ExpressionError.new("Error: #{method_name} receiver must be a boolean")
+    end
+
+    private def string_argument(value : Value, method_name : String) : String
+      return value if value.is_a?(String)
+      raise ExpressionError.new("Error: #{method_name} expects a string argument")
+    end
+
+    private def integer_argument(value : Value, method_name : String) : Int32
+      return value if value.is_a?(Int32)
+      raise ExpressionError.new("Error: #{method_name} expects an integer argument")
     end
 
     private def assert_arity(args : Array(Value), expected : Int32, method_name : String)

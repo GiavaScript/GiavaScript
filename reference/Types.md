@@ -7,17 +7,17 @@ Status of built-in methods and properties available through GiavaScript runtime 
 | Member | Kind | Status |
 | --- | --- | --- |
 | `length` | Instance property | Available |
-| `at()` | Instance method | Not available |
-| `charAt()` | Instance method | Not available |
+| `at()` | Instance method | Available |
+| `charAt()` | Instance method | Available |
 | `charCodeAt()` | Instance method | Not available |
 | `codePointAt()` | Instance method | Not available |
-| `concat()` | Instance method | Not available |
-| `endsWith()` | Instance method | Not available |
+| `concat()` | Instance method | Available |
+| `endsWith()` | Instance method | Available |
 | `fromCharCode()` | Static method | Not available |
-| `includes()` | Instance method | Not available |
-| `indexOf()` | Instance method | Not available |
+| `includes()` | Instance method | Available |
+| `indexOf()` | Instance method | Available |
 | `isWellFormed()` | Instance method | Not available |
-| `lastIndexOf()` | Instance method | Not available |
+| `lastIndexOf()` | Instance method | Available |
 | `localeCompare()` | Instance method | Not available |
 | `match()` | Instance method | Not available |
 | `matchAll()` | Instance method | Not available |
@@ -38,10 +38,10 @@ Status of built-in methods and properties available through GiavaScript runtime 
 | `toString()` | Instance method | Available |
 | `toUpperCase()` | Instance method | Available |
 | `toWellFormed()` | Instance method | Not available |
-| `trim()` | Instance method | Not available |
-| `trimEnd()` | Instance method | Not available |
-| `trimStart()` | Instance method | Not available |
-| `valueOf()` | Instance method | Not available |
+| `trim()` | Instance method | Available |
+| `trimEnd()` | Instance method | Available |
+| `trimStart()` | Instance method | Available |
+| `valueOf()` | Instance method | Available |
 
 ## Number
 
