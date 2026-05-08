@@ -84,10 +84,10 @@ config:
 xychart-beta
     title "Median Runtime by Benchmark"
     x-axis ["Bubble sort", "Matrix multiplication", "Binary search tree", "String slicing"]
-    y-axis "Seconds" 0 --> 1.7215
-    bar [0.715, 1.565, 0.099, 0.256]
-    bar [0.674, 0.042, 0.695, 0.032]
-    bar [1.369, 0.063, 1.45, 0.061]
+    y-axis "Seconds" 0 --> 1.7281
+    bar [0.715, 1.571, 0.098, 0.258]
+    bar [0.644, 0.039, 0.667, 0.03]
+    bar [1.321, 0.062, 1.411, 0.06]
 ```
 
 - 🟦 GiavaScript
