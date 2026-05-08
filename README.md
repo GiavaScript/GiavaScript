@@ -78,8 +78,8 @@ Monthly benchmark results are committed to `benchmarks/performance-comparison-la
 xychart-beta
     title "Median Runtime by Benchmark"
     x-axis ["bubbleSort x25", "matrixMultiply", "binarySearchTree x25", "stringSlicing"]
-    y-axis "Seconds" 0 --> 1
-    line "GiavaScript" [0, 0, 0, 0]
-    line "Node LTS" [0, 0, 0, 0]
-    line "Node 0.12.18" [0, 0, 0, 0]
+    y-axis "Seconds" 0 --> 1.7215
+    line "GiavaScript" [0.715, 1.565, 0.099, 0.256]
+    line "Node LTS v24.15.0" [0.674, 0.042, 0.695, 0.032]
+    line "Node 0.12.18" [1.369, 0.063, 1.45, 0.061]
 ```
