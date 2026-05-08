@@ -109,10 +109,10 @@ jobs:
           mkdir -p "$benchmark_dir"
           cat > "$report_file" <<EOF
           date,script,giavascript_median_s,giavascript_p95_s,node_lts_version,node_lts_median_s,node_lts_p95_s,node_0_12_18_median_s,node_0_12_18_p95_s
-          ${report_date},examples/bubbleSort.js (x25/run),${bubble_giavascript_median},${bubble_giavascript_p95},${LTS_VERSION},${bubble_node_lts_median},${bubble_node_lts_p95},${bubble_node_012_median},${bubble_node_012_p95}
-          ${report_date},examples/matrixMultiply.js,${matrix_giavascript_median},${matrix_giavascript_p95},${LTS_VERSION},${matrix_node_lts_median},${matrix_node_lts_p95},${matrix_node_012_median},${matrix_node_012_p95}
-          ${report_date},examples/binarySearchTree.js (x25/run),${bst_giavascript_median},${bst_giavascript_p95},${LTS_VERSION},${bst_node_lts_median},${bst_node_lts_p95},${bst_node_012_median},${bst_node_012_p95}
-          ${report_date},examples/stringSlicing.js,${slicing_giavascript_median},${slicing_giavascript_p95},${LTS_VERSION},${slicing_node_lts_median},${slicing_node_lts_p95},${slicing_node_012_median},${slicing_node_012_p95}
+          ${report_date},Bubble sort,${bubble_giavascript_median},${bubble_giavascript_p95},${LTS_VERSION},${bubble_node_lts_median},${bubble_node_lts_p95},${bubble_node_012_median},${bubble_node_012_p95}
+          ${report_date},Matrix multiplication,${matrix_giavascript_median},${matrix_giavascript_p95},${LTS_VERSION},${matrix_node_lts_median},${matrix_node_lts_p95},${matrix_node_012_median},${matrix_node_012_p95}
+          ${report_date},Binary search tree,${bst_giavascript_median},${bst_giavascript_p95},${LTS_VERSION},${bst_node_lts_median},${bst_node_lts_p95},${bst_node_012_median},${bst_node_012_p95}
+          ${report_date},String slicing,${slicing_giavascript_median},${slicing_giavascript_p95},${LTS_VERSION},${slicing_node_lts_median},${slicing_node_lts_p95},${slicing_node_012_median},${slicing_node_012_p95}
           EOF
 
           cp "$report_file" "$latest_report_file"
@@ -157,14 +157,24 @@ jobs:
               Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. The chart below uses median execution time in seconds from the latest run (lower is better).
 
               ```mermaid
+              ---
+              config:
+                themeVariables:
+                  xyChart:
+                    plotColorPalette: "#1f77b4, #ff7f0e, #2ca02c"
+              ---
               xychart-beta
                   title \"Median Runtime by Benchmark\"
-                  x-axis [\"bubbleSort x25\", \"matrixMultiply\", \"binarySearchTree x25\", \"stringSlicing\"]
+                  x-axis [\"Bubble sort\", \"Matrix multiplication\", \"Binary search tree\", \"String slicing\"]
                   y-axis \"Seconds\" 0 --> {y_max_display}
-                  line \"GiavaScript\" [{values(giavascript)}]
-                  line \"Node LTS {os.environ['LTS_VERSION']}\" [{values(node_lts)}]
-                  line \"Node 0.12.18\" [{values(node_012)}]
+                  bar [{values(giavascript)}]
+                  bar [{values(node_lts)}]
+                  bar [{values(node_012)}]
               ```
+
+              - `#1f77b4` = GiavaScript
+              - `#ff7f0e` = Node LTS {os.environ['LTS_VERSION']}
+              - `#2ca02c` = Node 0.12.18
               """
           ).strip()
 

@@ -75,11 +75,21 @@ or the short wrapper:
 Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. The chart below uses median execution time in seconds from the latest run (lower is better).
 
 ```mermaid
+---
+config:
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f77b4, #ff7f0e, #2ca02c"
+---
 xychart-beta
     title "Median Runtime by Benchmark"
-    x-axis ["bubbleSort x25", "matrixMultiply", "binarySearchTree x25", "stringSlicing"]
+    x-axis ["Bubble sort", "Matrix multiplication", "Binary search tree", "String slicing"]
     y-axis "Seconds" 0 --> 1.7215
-    line "GiavaScript" [0.715, 1.565, 0.099, 0.256]
-    line "Node LTS v24.15.0" [0.674, 0.042, 0.695, 0.032]
-    line "Node 0.12.18" [1.369, 0.063, 1.45, 0.061]
+    bar [0.715, 1.565, 0.099, 0.256]
+    bar [0.674, 0.042, 0.695, 0.032]
+    bar [1.369, 0.063, 1.45, 0.061]
 ```
+
+- `#1f77b4` = GiavaScript
+- `#ff7f0e` = Node LTS v24.15.0
+- `#2ca02c` = Node 0.12.18
