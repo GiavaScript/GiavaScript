@@ -56,6 +56,16 @@ jobs:
             -o bin/giavascript
           strip bin/giavascript || true
 
+          if ! ./bin/giavascript examples/stringSlicing.js >/dev/null 2>&1; then
+            echo "Native build failed on runner CPU. Rebuilding without --mcpu=native."
+            crystal build src/giavascript_cli.cr \
+              --release \
+              --no-debug \
+              -o bin/giavascript
+            strip bin/giavascript || true
+            ./bin/giavascript examples/stringSlicing.js >/dev/null
+          fi
+
       - name: Install NVM and Node versions
         if: steps.last_day.outputs.run == 'true'
         id: node
