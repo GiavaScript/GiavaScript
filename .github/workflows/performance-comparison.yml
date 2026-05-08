@@ -172,9 +172,9 @@ jobs:
                   bar [{values(node_012)}]
               ```
 
-              - `#1f77b4` = GiavaScript
-              - `#ff7f0e` = Node LTS {os.environ['LTS_VERSION']}
-              - `#2ca02c` = Node 0.12.18
+              - 🟦 GiavaScript
+              - 🟧 Node LTS {os.environ['LTS_VERSION']}
+              - 🟩 Node 0.12.18
               """
           ).strip()
 

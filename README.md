@@ -90,6 +90,6 @@ xychart-beta
     bar [1.369, 0.063, 1.45, 0.061]
 ```
 
-- `#1f77b4` = GiavaScript
-- `#ff7f0e` = Node LTS v24.15.0
-- `#2ca02c` = Node 0.12.18
+- 🟦 GiavaScript
+- 🟧 Node LTS v24.15.0
+- 🟩 Node 0.12.18
