@@ -8,7 +8,9 @@ Status of built-in methods and properties available through GiavaScript runtime 
 | --- | --- | --- |
 | `length` | Property | Available |
 | `startsWith()` | Method | Available |
+| `toLowerCase()` | Method | Available |
 | `toString()` | Method | Available |
+| `toUpperCase()` | Method | Available |
 
 ## Number
 

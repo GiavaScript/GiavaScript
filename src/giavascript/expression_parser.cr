@@ -121,7 +121,8 @@ module GiavaScript
     private def parse_factor : Expr
       if @current.kind == Tokenizer::TokenKind::Plus
         advance_token
-        return parse_factor
+        value = parse_factor
+        return UnaryExpr.new(Tokenizer::TokenKind::Plus, value)
       end
 
       if @current.kind == Tokenizer::TokenKind::Minus

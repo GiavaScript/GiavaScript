@@ -53,6 +53,8 @@ module GiavaScript
 
     private def evaluate_unary(expr : UnaryExpr) : Value
       case expr.operator
+      when Tokenizer::TokenKind::Plus
+        coerce_to_number(evaluate(expr.operand))
       when Tokenizer::TokenKind::Minus
         negate(evaluate(expr.operand))
       when Tokenizer::TokenKind::Bang
@@ -473,6 +475,26 @@ module GiavaScript
       else
         -number.to_f64
       end
+    end
+
+    private def coerce_to_number(value : Value) : Number
+      return value if value.is_a?(Int32)
+      return value if value.is_a?(Float64)
+      return value ? 1 : 0 if value.is_a?(Bool)
+      return 0 if value.nil?
+      return Float64::NAN if value.is_a?(UndefinedValue)
+
+      if value.is_a?(String)
+        trimmed = value.strip
+        return 0 if trimmed.empty?
+
+        parsed = trimmed.to_f64?
+        return parsed if parsed
+
+        return Float64::NAN
+      end
+
+      Float64::NAN
     end
 
     private def operator_lexeme(kind : Tokenizer::TokenKind) : String

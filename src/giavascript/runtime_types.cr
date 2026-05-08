@@ -27,7 +27,9 @@ module GiavaScript
       "String",
       {
         "startsWith" => BuiltinMethodDefinition.new("String.startsWith", ->(receiver : Value, args : Array(Value)) { string_starts_with(receiver, args).as(Value) }),
+        "toLowerCase" => BuiltinMethodDefinition.new("String.toLowerCase", ->(receiver : Value, args : Array(Value)) { string_to_lower_case(receiver, args).as(Value) }),
         "toString"   => BuiltinMethodDefinition.new("String.toString", ->(receiver : Value, args : Array(Value)) { string_to_string(receiver, args).as(Value) }),
+        "toUpperCase" => BuiltinMethodDefinition.new("String.toUpperCase", ->(receiver : Value, args : Array(Value)) { string_to_upper_case(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
       {
         "length" => ->(receiver : Value) { string_length(receiver).as(Value) },
@@ -121,6 +123,16 @@ module GiavaScript
     private def string_to_string(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "String.toString")
       receiver_string(receiver, "String.toString")
+    end
+
+    private def string_to_lower_case(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.toLowerCase")
+      receiver_string(receiver, "String.toLowerCase").downcase
+    end
+
+    private def string_to_upper_case(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.toUpperCase")
+      receiver_string(receiver, "String.toUpperCase").upcase
     end
 
     private def number_to_string(receiver : Value, args : Array(Value)) : Value

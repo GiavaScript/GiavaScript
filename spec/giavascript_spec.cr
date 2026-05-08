@@ -125,6 +125,21 @@ describe GiavaScript do
     interpreter.eval("ratio;").should eq(["3.5"])
   end
 
+  it "supports unary plus numeric coercion" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("+\"42\";").should eq(["42.0"])
+    interpreter.eval("+\"  3.5  \";").should eq(["3.5"])
+    interpreter.eval("+true;").should eq(["1"])
+    interpreter.eval("+false;").should eq(["0"])
+    interpreter.eval("+null;").should eq(["0"])
+    interpreter.eval("+undefined;").should eq(["NaN"])
+  end
+
+  it "supports banana unary plus expression" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("('b' + 'a' + + 'a' + 'a').toLowerCase();").should eq(["\"banana\""])
+  end
+
   it "evaluates relational operators" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("1 < 2;").should eq(["true"])
@@ -491,10 +506,18 @@ describe GiavaScript do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello\".length;").should eq(["5"])
     interpreter.eval("\"abc\".startsWith(\"a\");").should eq(["true"])
+    interpreter.eval("\"MiXeD\".toLowerCase();").should eq(["\"mixed\""])
+    interpreter.eval("\"MiXeD\".toUpperCase();").should eq(["\"MIXED\""])
     interpreter.eval("[1, 2, 3].length;").should eq(["3"])
     interpreter.eval("var items = [1, 2, 3];").should eq([] of String)
     interpreter.eval("items.push(4);").should eq(["4"])
     interpreter.eval("items;").should eq(["[1, 2, 3, 4]"])
+  end
+
+  it "validates String case conversion method arity" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"text\".toLowerCase(1);").should eq(["Error: String.toLowerCase expects 0 arguments but got 1"])
+    interpreter.eval("\"text\".toUpperCase(1);").should eq(["Error: String.toUpperCase expects 0 arguments but got 1"])
   end
 
   it "falls back from object properties to type methods" do
