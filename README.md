@@ -79,10 +79,10 @@ Monthly benchmark results are committed to `benchmarks/performance-comparison-la
 xychart-beta
     title "Median Runtime by Benchmark"
     x-axis ["Bubble sort", "Matrix multiplication", "Binary search tree", "String slicing"]
-    y-axis "Seconds" 0 --> 1.7281
-    bar [0.715, 1.571, 0.098, 0.258]
-    bar [0.644, 0.039, 0.667, 0.03]
-    bar [1.321, 0.062, 1.411, 0.06]
+    y-axis "Seconds" 0 --> 1.7149
+    bar [0.713, 1.559, 0.097, 0.256]
+    bar [0.655, 0.039, 0.642, 0.03]
+    bar [1.328, 0.062, 1.432, 0.061]
 ```
 
 - 🟦 GiavaScript
