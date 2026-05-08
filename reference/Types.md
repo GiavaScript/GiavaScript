@@ -23,15 +23,15 @@ Status of built-in methods and properties available through GiavaScript runtime 
 | `matchAll()` | Instance method | Not available |
 | `padEnd()` | Instance method | Not available |
 | `padStart()` | Instance method | Not available |
-| `repeat()` | Instance method | Not available |
+| `repeat()` | Instance method | Available |
 | `replace()` | Instance method | Not available |
 | `replaceAll()` | Instance method | Not available |
 | `search()` | Instance method | Not available |
-| `slice()` | Instance method | Not available |
+| `slice()` | Instance method | Available |
 | `split()` | Instance method | Not available |
 | `startsWith()` | Instance method | Available |
 | `substr()` | Instance method | Not available |
-| `substring()` | Instance method | Not available |
+| `substring()` | Instance method | Available |
 | `toLocaleLowerCase()` | Instance method | Not available |
 | `toLocaleUpperCase()` | Instance method | Not available |
 | `toLowerCase()` | Instance method | Available |

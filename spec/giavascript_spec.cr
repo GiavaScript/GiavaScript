@@ -512,7 +512,10 @@ describe GiavaScript do
     interpreter.eval("\"abc\".includes(\"b\");").should eq(["true"])
     interpreter.eval("\"abc\".indexOf(\"b\");").should eq(["1"])
     interpreter.eval("\"abca\".lastIndexOf(\"a\");").should eq(["3"])
+    interpreter.eval("\"ab\".repeat(3);").should eq(["\"ababab\""])
+    interpreter.eval("\"abcdef\".slice(1, 4);").should eq(["\"bcd\""])
     interpreter.eval("\"abc\".startsWith(\"a\");").should eq(["true"])
+    interpreter.eval("\"abcdef\".substring(1, 4);").should eq(["\"bcd\""])
     interpreter.eval("\"MiXeD\".toLowerCase();").should eq(["\"mixed\""])
     interpreter.eval("\"MiXeD\".toUpperCase();").should eq(["\"MIXED\""])
     interpreter.eval("\"  spaced  \".trim();").should eq(["\"spaced\""])
@@ -532,6 +535,25 @@ describe GiavaScript do
     interpreter.eval("\"abc\".charAt(5);").should eq(["\"\""])
   end
 
+  it "supports String.slice with negative and optional end indexes" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"abcdef\".slice(-3);").should eq(["\"def\""])
+    interpreter.eval("\"abcdef\".slice(-4, -1);").should eq(["\"cde\""])
+    interpreter.eval("\"abcdef\".slice(4, 2);").should eq(["\"\""])
+  end
+
+  it "supports String.substring index normalization" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"abcdef\".substring(4, 1);").should eq(["\"bcd\""])
+    interpreter.eval("\"abcdef\".substring(-3, 2);").should eq(["\"ab\""])
+    interpreter.eval("\"abcdef\".substring(2);").should eq(["\"cdef\""])
+  end
+
+  it "rejects negative counts for String.repeat" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"ab\".repeat(-1);").should eq(["Error: String.repeat expects a non-negative integer argument"])
+  end
+
   it "validates String argument types for simple string methods" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"abc\".includes(1);").should eq(["Error: String.includes expects a string argument"])
@@ -543,6 +565,17 @@ describe GiavaScript do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"abc\".at(1.5);").should eq(["Error: String.at expects an integer argument"])
     interpreter.eval("\"abc\".charAt(1.5);").should eq(["Error: String.charAt expects an integer argument"])
+    interpreter.eval("\"abc\".slice(1.5);").should eq(["Error: String.slice expects an integer argument"])
+    interpreter.eval("\"abc\".substring(1.5);").should eq(["Error: String.substring expects an integer argument"])
+    interpreter.eval("\"abc\".repeat(1.5);").should eq(["Error: String.repeat expects an integer argument"])
+  end
+
+  it "validates String slice and substring arity" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"abc\".slice();").should eq(["Error: String.slice expects between 1 and 2 arguments but got 0"])
+    interpreter.eval("\"abc\".slice(0, 1, 2);").should eq(["Error: String.slice expects between 1 and 2 arguments but got 3"])
+    interpreter.eval("\"abc\".substring();").should eq(["Error: String.substring expects between 1 and 2 arguments but got 0"])
+    interpreter.eval("\"abc\".substring(0, 1, 2);").should eq(["Error: String.substring expects between 1 and 2 arguments but got 3"])
   end
 
   it "validates String case conversion method arity" do

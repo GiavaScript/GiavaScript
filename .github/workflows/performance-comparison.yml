@@ -87,6 +87,10 @@ jobs:
           read bst_node_lts_median bst_node_lts_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_LTS_BIN' examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
           read bst_node_012_median bst_node_012_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_012_BIN' examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
 
+          read slicing_giavascript_median slicing_giavascript_p95 < <(python3 scripts/benchmark_avg.py "./bin/giavascript examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read slicing_node_lts_median slicing_node_lts_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_LTS_BIN' examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read slicing_node_012_median slicing_node_012_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_012_BIN' examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+
           report_date=$(date -u +'%d-%m-%Y')
           report_file="reports/performance-comparison-${report_date}.md"
 
@@ -101,6 +105,7 @@ jobs:
           | \`examples/bubbleSort.js\` (x25/run) | ${bubble_giavascript_median} | ${bubble_giavascript_p95} | ${bubble_node_lts_median} | ${bubble_node_lts_p95} | ${bubble_node_012_median} | ${bubble_node_012_p95} |
           | \`examples/matrixMultiply.js\` | ${matrix_giavascript_median} | ${matrix_giavascript_p95} | ${matrix_node_lts_median} | ${matrix_node_lts_p95} | ${matrix_node_012_median} | ${matrix_node_012_p95} |
           | \`examples/binarySearchTree.js\` (x25/run) | ${bst_giavascript_median} | ${bst_giavascript_p95} | ${bst_node_lts_median} | ${bst_node_lts_p95} | ${bst_node_012_median} | ${bst_node_012_p95} |
+          | \`examples/stringSlicing.js\` | ${slicing_giavascript_median} | ${slicing_giavascript_p95} | ${slicing_node_lts_median} | ${slicing_node_lts_p95} | ${slicing_node_012_median} | ${slicing_node_012_p95} |
           EOF
 
           echo "report_file=$report_file" >> "$GITHUB_OUTPUT"

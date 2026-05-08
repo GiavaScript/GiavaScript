@@ -33,7 +33,10 @@ module GiavaScript
         "includes" => BuiltinMethodDefinition.new("String.includes", ->(receiver : Value, args : Array(Value)) { string_includes(receiver, args).as(Value) }),
         "indexOf" => BuiltinMethodDefinition.new("String.indexOf", ->(receiver : Value, args : Array(Value)) { string_index_of(receiver, args).as(Value) }),
         "lastIndexOf" => BuiltinMethodDefinition.new("String.lastIndexOf", ->(receiver : Value, args : Array(Value)) { string_last_index_of(receiver, args).as(Value) }),
+        "repeat" => BuiltinMethodDefinition.new("String.repeat", ->(receiver : Value, args : Array(Value)) { string_repeat(receiver, args).as(Value) }),
+        "slice" => BuiltinMethodDefinition.new("String.slice", ->(receiver : Value, args : Array(Value)) { string_slice(receiver, args).as(Value) }),
         "startsWith" => BuiltinMethodDefinition.new("String.startsWith", ->(receiver : Value, args : Array(Value)) { string_starts_with(receiver, args).as(Value) }),
+        "substring" => BuiltinMethodDefinition.new("String.substring", ->(receiver : Value, args : Array(Value)) { string_substring(receiver, args).as(Value) }),
         "trim" => BuiltinMethodDefinition.new("String.trim", ->(receiver : Value, args : Array(Value)) { string_trim(receiver, args).as(Value) }),
         "trimEnd" => BuiltinMethodDefinition.new("String.trimEnd", ->(receiver : Value, args : Array(Value)) { string_trim_end(receiver, args).as(Value) }),
         "trimStart" => BuiltinMethodDefinition.new("String.trimStart", ->(receiver : Value, args : Array(Value)) { string_trim_start(receiver, args).as(Value) }),
@@ -204,6 +207,41 @@ module GiavaScript
       receiver_string(receiver, "String.trimEnd").rstrip
     end
 
+    private def string_repeat(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.repeat")
+      count = integer_argument(args[0], "String.repeat")
+      if count < 0
+        raise ExpressionError.new("Error: String.repeat expects a non-negative integer argument")
+      end
+
+      receiver_string(receiver, "String.repeat") * count
+    end
+
+    private def string_slice(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "String.slice")
+      string = receiver_string(receiver, "String.slice")
+      size = string.size
+      start_index = normalize_slice_index(integer_argument(args[0], "String.slice"), size)
+      end_index = args.size == 2 ? normalize_slice_index(integer_argument(args[1], "String.slice"), size) : size
+      return "" if end_index <= start_index
+
+      string_range_by_char_index(string, start_index, end_index)
+    end
+
+    private def string_substring(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "String.substring")
+      string = receiver_string(receiver, "String.substring")
+      size = string.size
+      start_index = clamp_substring_index(integer_argument(args[0], "String.substring"), size)
+      end_index = args.size == 2 ? clamp_substring_index(integer_argument(args[1], "String.substring"), size) : size
+
+      if start_index > end_index
+        start_index, end_index = end_index, start_index
+      end
+
+      string_range_by_char_index(string, start_index, end_index)
+    end
+
     private def string_to_string(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "String.toString")
       receiver_string(receiver, "String.toString")
@@ -324,10 +362,50 @@ module GiavaScript
       raise ExpressionError.new("Error: #{method_name} expects an integer argument")
     end
 
+    private def normalize_slice_index(index : Int32, size : Int32) : Int32
+      if index < 0
+        normalized = size + index
+        return 0 if normalized < 0
+        return normalized
+      end
+
+      return size if index > size
+      index
+    end
+
+    private def clamp_substring_index(index : Int32, size : Int32) : Int32
+      return 0 if index < 0
+      return size if index > size
+      index
+    end
+
+    private def string_range_by_char_index(string : String, start_index : Int32, end_index : Int32) : String
+      return "" if end_index <= start_index
+
+      String.build do |builder|
+        char_index = 0
+        string.each_char do |char|
+          break if char_index >= end_index
+
+          if char_index >= start_index
+            builder << char
+          end
+
+          char_index += 1
+        end
+      end
+    end
+
     private def assert_arity(args : Array(Value), expected : Int32, method_name : String)
       return if args.size == expected
 
       raise ExpressionError.new("Error: #{method_name} expects #{expected} arguments but got #{args.size}")
+    end
+
+    private def assert_arity_between(args : Array(Value), min : Int32, max : Int32, method_name : String)
+      return if args.size >= min && args.size <= max
+
+      raise ExpressionError.new("Error: #{method_name} expects between #{min} and #{max} arguments but got #{args.size}")
     end
   end
 end
