@@ -72,17 +72,19 @@ or the short wrapper:
 
 ## Benchmarks
 
-Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. This chart uses interleaved bars so each benchmark keeps three separate runtime values (lower is better).
+Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. This merged chart uses interleaved bars so each benchmark keeps separate runtime values (lower is better).
 
 ```mermaid
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#1f77b4, #ff7f0e, #2ca02c"}}}}%%
 xychart-beta
     title "Median Runtime by Benchmark and Runtime"
-    x-axis ["Bubble-Gia", "Bubble-LTS", "Bubble-0.12", "Matrix-Gia", "Matrix-LTS", "Matrix-0.12", "BST-Gia", "BST-LTS", "BST-0.12", "Slicing-Gia", "Slicing-LTS", "Slicing-0.12"]
-    y-axis "Seconds" 0 --> 1.7149
-    bar [0.713, 0.655, 1.328, 1.559, 0.039, 0.062, 0.097, 0.642, 1.432, 0.256, 0.03, 0.061]
+    x-axis ["Bub-GS", "Bub-LTS", "Bub-0.12", "Mat-GS", "Mat-LTS", "Mat-0.12", "BST-GS", "BST-LTS", "BST-0.12", "Sli-GS", "Sli-LTS", "Sli-0.12"]
+    y-axis "Seconds" 0.024 --> 1.7149
+    bar [0.713, -1, -1, 1.559, -1, -1, 0.097, -1, -1, 0.256, -1, -1]
+    bar [-1, 0.655, -1, -1, 0.039, -1, -1, 0.642, -1, -1, 0.03, -1]
+    bar [-1, -1, 1.328, -1, -1, 0.062, -1, -1, 1.432, -1, -1, 0.061]
 ```
 
-- 🟦 `*-Gia` = GiavaScript
+- 🟦 `*-GS` = GiavaScript
 - 🟧 `*-LTS` = Node LTS v24.15.0
 - 🟩 `*-0.12` = Node 0.12.18
