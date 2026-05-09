@@ -164,22 +164,34 @@ jobs:
               f"""\
               ## Benchmarks
 
-              Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. The chart below uses median execution time in seconds from the latest run (lower is better).
+              Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. The charts below use median execution time in seconds from the latest run (lower is better).
 
               ```mermaid
-              %%{{init: {{"themeVariables": {{"xyChart": {{"plotColorPalette": "#1f77b4, #ff7f0e, #2ca02c"}}}}}}}}%%
+              %%{{init: {{"themeVariables": {{"xyChart": {{"plotColorPalette": "#1f77b4"}}}}}}}}%%
               xychart-beta
-                  title \"Median Runtime by Benchmark\"
+                  title \"GiavaScript Median Runtime\"
                   x-axis [\"Bubble sort\", \"Matrix multiplication\", \"Binary search tree\", \"String slicing\"]
                   y-axis \"Seconds\" 0 --> {y_max_display}
                   bar [{values(giavascript)}]
-                  bar [{values(node_lts)}]
-                  bar [{values(node_012)}]
               ```
 
-              - 🟦 GiavaScript
-              - 🟧 Node LTS {os.environ['LTS_VERSION']}
-              - 🟩 Node 0.12.18
+              ```mermaid
+              %%{{init: {{"themeVariables": {{"xyChart": {{"plotColorPalette": "#ff7f0e"}}}}}}}}%%
+              xychart-beta
+                  title \"Node LTS {os.environ['LTS_VERSION']} Median Runtime\"
+                  x-axis [\"Bubble sort\", \"Matrix multiplication\", \"Binary search tree\", \"String slicing\"]
+                  y-axis \"Seconds\" 0 --> {y_max_display}
+                  bar [{values(node_lts)}]
+              ```
+
+              ```mermaid
+              %%{{init: {{"themeVariables": {{"xyChart": {{"plotColorPalette": "#2ca02c"}}}}}}}}%%
+              xychart-beta
+                  title \"Node 0.12.18 Median Runtime\"
+                  x-axis [\"Bubble sort\", \"Matrix multiplication\", \"Binary search tree\", \"String slicing\"]
+                  y-axis \"Seconds\" 0 --> {y_max_display}
+                  bar [{values(node_012)}]
+              ```
               """
           ).strip()
 
