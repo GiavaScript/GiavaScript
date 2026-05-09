@@ -72,31 +72,17 @@ or the short wrapper:
 
 ## Benchmarks
 
-Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. The charts below use median execution time in seconds from the latest run (lower is better).
+Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. This chart uses interleaved bars so each benchmark keeps three separate runtime values (lower is better).
 
 ```mermaid
-%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#1f77b4"}}}}%%
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#1f77b4, #ff7f0e, #2ca02c"}}}}%%
 xychart-beta
-    title "GiavaScript Median Runtime"
-    x-axis ["Bubble sort", "Matrix multiplication", "Binary search tree", "String slicing"]
+    title "Median Runtime by Benchmark and Runtime"
+    x-axis ["Bubble-Gia", "Bubble-LTS", "Bubble-0.12", "Matrix-Gia", "Matrix-LTS", "Matrix-0.12", "BST-Gia", "BST-LTS", "BST-0.12", "Slicing-Gia", "Slicing-LTS", "Slicing-0.12"]
     y-axis "Seconds" 0 --> 1.7149
-    bar [0.713, 1.559, 0.097, 0.256]
+    bar [0.713, 0.655, 1.328, 1.559, 0.039, 0.062, 0.097, 0.642, 1.432, 0.256, 0.03, 0.061]
 ```
 
-```mermaid
-%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#ff7f0e"}}}}%%
-xychart-beta
-    title "Node LTS v24.15.0 Median Runtime"
-    x-axis ["Bubble sort", "Matrix multiplication", "Binary search tree", "String slicing"]
-    y-axis "Seconds" 0 --> 1.7149
-    bar [0.655, 0.039, 0.642, 0.03]
-```
-
-```mermaid
-%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#2ca02c"}}}}%%
-xychart-beta
-    title "Node 0.12.18 Median Runtime"
-    x-axis ["Bubble sort", "Matrix multiplication", "Binary search tree", "String slicing"]
-    y-axis "Seconds" 0 --> 1.7149
-    bar [1.328, 0.062, 1.432, 0.061]
-```
+- 🟦 `*-Gia` = GiavaScript
+- 🟧 `*-LTS` = Node LTS v24.15.0
+- 🟩 `*-0.12` = Node 0.12.18
