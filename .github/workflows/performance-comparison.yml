@@ -93,23 +93,27 @@ jobs:
         run: |
           BENCH_RUNS=30
           BENCH_WARMUP=5
-          BENCH_STATS=median,p95
+          BENCH_STAT=mean
 
-          read bubble_giavascript_median bubble_giavascript_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do ./bin/giavascript examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
-          read bubble_node_lts_median bubble_node_lts_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_LTS_BIN' examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
-          read bubble_node_012_median bubble_node_012_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_012_BIN' examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read bubble_giavascript_avg < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do ./bin/giavascript examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read bubble_node_lts_avg < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_LTS_BIN' examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read bubble_node_012_avg < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_012_BIN' examples/bubbleSort.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
 
-          read matrix_giavascript_median matrix_giavascript_p95 < <(python3 scripts/benchmark_avg.py "./bin/giavascript examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
-          read matrix_node_lts_median matrix_node_lts_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_LTS_BIN' examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
-          read matrix_node_012_median matrix_node_012_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_012_BIN' examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read matrix_giavascript_avg < <(python3 scripts/benchmark_avg.py "./bin/giavascript examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read matrix_node_lts_avg < <(python3 scripts/benchmark_avg.py "'$NODE_LTS_BIN' examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read matrix_node_012_avg < <(python3 scripts/benchmark_avg.py "'$NODE_012_BIN' examples/matrixMultiply.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
 
-          read bst_giavascript_median bst_giavascript_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do ./bin/giavascript examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
-          read bst_node_lts_median bst_node_lts_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_LTS_BIN' examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
-          read bst_node_012_median bst_node_012_p95 < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_012_BIN' examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read bst_giavascript_avg < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do ./bin/giavascript examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read bst_node_lts_avg < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_LTS_BIN' examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read bst_node_012_avg < <(python3 scripts/benchmark_avg.py "for _ in \$(seq 1 25); do '$NODE_012_BIN' examples/binarySearchTree.js; done" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
 
-          read slicing_giavascript_median slicing_giavascript_p95 < <(python3 scripts/benchmark_avg.py "./bin/giavascript examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
-          read slicing_node_lts_median slicing_node_lts_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_LTS_BIN' examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
-          read slicing_node_012_median slicing_node_012_p95 < <(python3 scripts/benchmark_avg.py "'$NODE_012_BIN' examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stats "$BENCH_STATS")
+          read slicing_giavascript_avg < <(python3 scripts/benchmark_avg.py "./bin/giavascript examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read slicing_node_lts_avg < <(python3 scripts/benchmark_avg.py "'$NODE_LTS_BIN' examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read slicing_node_012_avg < <(python3 scripts/benchmark_avg.py "'$NODE_012_BIN' examples/stringSlicing.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+
+          read sieve_giavascript_avg < <(python3 scripts/benchmark_avg.py "./bin/giavascript examples/sievePrimes.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read sieve_node_lts_avg < <(python3 scripts/benchmark_avg.py "'$NODE_LTS_BIN' examples/sievePrimes.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
+          read sieve_node_012_avg < <(python3 scripts/benchmark_avg.py "'$NODE_012_BIN' examples/sievePrimes.js" --runs "$BENCH_RUNS" --warmup "$BENCH_WARMUP" --stat "$BENCH_STAT")
 
           report_date=$(date -u +'%d-%m-%Y')
           benchmark_dir="benchmarks"
@@ -118,11 +122,12 @@ jobs:
 
           mkdir -p "$benchmark_dir"
           cat > "$report_file" <<EOF
-          date,script,giavascript_median_s,giavascript_p95_s,node_lts_version,node_lts_median_s,node_lts_p95_s,node_0_12_18_median_s,node_0_12_18_p95_s
-          ${report_date},Bubble sort,${bubble_giavascript_median},${bubble_giavascript_p95},${LTS_VERSION},${bubble_node_lts_median},${bubble_node_lts_p95},${bubble_node_012_median},${bubble_node_012_p95}
-          ${report_date},Matrix multiplication,${matrix_giavascript_median},${matrix_giavascript_p95},${LTS_VERSION},${matrix_node_lts_median},${matrix_node_lts_p95},${matrix_node_012_median},${matrix_node_012_p95}
-          ${report_date},Binary search tree,${bst_giavascript_median},${bst_giavascript_p95},${LTS_VERSION},${bst_node_lts_median},${bst_node_lts_p95},${bst_node_012_median},${bst_node_012_p95}
-          ${report_date},String slicing,${slicing_giavascript_median},${slicing_giavascript_p95},${LTS_VERSION},${slicing_node_lts_median},${slicing_node_lts_p95},${slicing_node_012_median},${slicing_node_012_p95}
+          date,script,giavascript_avg_s,node_lts_version,node_lts_avg_s,node_0_12_18_avg_s
+          ${report_date},Bubble sort,${bubble_giavascript_avg},${LTS_VERSION},${bubble_node_lts_avg},${bubble_node_012_avg}
+          ${report_date},Matrix multiplication,${matrix_giavascript_avg},${LTS_VERSION},${matrix_node_lts_avg},${matrix_node_012_avg}
+          ${report_date},Binary search tree,${bst_giavascript_avg},${LTS_VERSION},${bst_node_lts_avg},${bst_node_012_avg}
+          ${report_date},String slicing,${slicing_giavascript_avg},${LTS_VERSION},${slicing_node_lts_avg},${slicing_node_012_avg}
+          ${report_date},Sieve primes,${sieve_giavascript_avg},${LTS_VERSION},${sieve_node_lts_avg},${sieve_node_012_avg}
           EOF
 
           cp "$report_file" "$latest_report_file"
@@ -149,48 +154,49 @@ jobs:
           with open(os.environ["REPORT_FILE"], newline="", encoding="utf-8") as csvfile:
               rows = list(csv.DictReader(csvfile))
 
-          giavascript = [float(row["giavascript_median_s"]) for row in rows]
-          node_lts = [float(row["node_lts_median_s"]) for row in rows]
-          node_012 = [float(row["node_0_12_18_median_s"]) for row in rows]
+          def fmt(value):
+              return f"{value:.6f}".rstrip("0").rstrip(".")
 
-          max_value = max(giavascript + node_lts + node_012)
-          min_positive = min(v for v in (giavascript + node_lts + node_012) if v > 0)
-          y_min = min_positive * 0.8
-          y_max = max_value * 1.1
-          y_min_display = f"{y_min:.6f}".rstrip("0").rstrip(".")
-          y_max_display = f"{y_max:.6f}".rstrip("0").rstrip(".")
+          charts = []
+          for row in rows:
+              script_name = row["script"]
+              giavascript_avg = float(row["giavascript_avg_s"])
+              node_lts_avg = float(row["node_lts_avg_s"])
+              node_012_avg = float(row["node_0_12_18_avg_s"])
+              chart_values = [giavascript_avg, node_lts_avg, node_012_avg]
 
-          def values(values):
-              return ", ".join(f"{v:.6f}".rstrip("0").rstrip(".") for v in values)
+              max_value = max(chart_values)
+              min_positive = min(v for v in chart_values if v > 0)
+              y_min = min_positive * 0.8
+              y_max = max_value * 1.1
 
-          gia_spaced = []
-          lts_spaced = []
-          node012_spaced = []
-          for i in range(len(giavascript)):
-              gia_spaced.extend([giavascript[i], -1.0, -1.0])
-              lts_spaced.extend([-1.0, node_lts[i], -1.0])
-              node012_spaced.extend([-1.0, -1.0, node_012[i]])
+              charts.append(
+                  textwrap.dedent(
+                      f"""\
+                      ### {script_name}
+
+                      ```mermaid
+                      xychart-beta
+                          title \"{script_name} Average Runtime\"
+                          x-axis [\"GiavaScript\", \"Node LTS\", \"Node 0.12.18\"]
+                          y-axis \"Seconds\" {fmt(y_min)} --> {fmt(y_max)}
+                          bar [{fmt(giavascript_avg)}, {fmt(node_lts_avg)}, {fmt(node_012_avg)}]
+                      ```
+                      """
+                  ).strip()
+              )
 
           section = textwrap.dedent(
               f"""\
               ## Benchmarks
 
-              Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. This merged chart uses interleaved bars so each benchmark keeps separate runtime values (lower is better).
+              Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. Each chart compares average runtime for a single algorithm (lower is better).
 
-              ```mermaid
-              %%{{init: {{"themeVariables": {{"xyChart": {{"plotColorPalette": "#1f77b4, #ff7f0e, #2ca02c"}}}}}}}}%%
-              xychart-beta
-                  title \"Median Runtime by Benchmark and Runtime\"
-                  x-axis [\"Bub-GS\", \"Bub-LTS\", \"Bub-0.12\", \"Mat-GS\", \"Mat-LTS\", \"Mat-0.12\", \"BST-GS\", \"BST-LTS\", \"BST-0.12\", \"Sli-GS\", \"Sli-LTS\", \"Sli-0.12\"]
-                  y-axis \"Seconds\" {y_min_display} --> {y_max_display}
-                  bar [{values(gia_spaced)}]
-                  bar [{values(lts_spaced)}]
-                  bar [{values(node012_spaced)}]
-              ```
+              {chr(10).join(charts)}
 
-              - 🟦 `*-GS` = GiavaScript
-              - 🟧 `*-LTS` = Node LTS {os.environ['LTS_VERSION']}
-              - 🟩 `*-0.12` = Node 0.12.18
+              - 🟦 `GiavaScript` = GiavaScript runtime
+              - 🟧 `Node LTS` = Node LTS {os.environ['LTS_VERSION']}
+              - 🟩 `Node 0.12.18` = Node 0.12.18
               """
           ).strip()
 
@@ -247,12 +253,12 @@ jobs:
               summary.write("## Performance comparison\n\n")
               summary.write(f"CSV report committed to `{latest_report_file}`.\n\n")
               summary.write(
-                  f"| Script | GiavaScript median (s) | GiavaScript p95 (s) | Node LTS {lts_version} median (s) | Node LTS {lts_version} p95 (s) | Node 0.12.18 median (s) | Node 0.12.18 p95 (s) |\n"
+                  f"| Script | GiavaScript average (s) | Node LTS {lts_version} average (s) | Node 0.12.18 average (s) |\n"
               )
-              summary.write("| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n")
+              summary.write("| --- | ---: | ---: | ---: |\n")
 
               for row in rows:
                   summary.write(
-                      f"| `{row['script']}` | {row['giavascript_median_s']} | {row['giavascript_p95_s']} | {row['node_lts_median_s']} | {row['node_lts_p95_s']} | {row['node_0_12_18_median_s']} | {row['node_0_12_18_p95_s']} |\n"
+                      f"| `{row['script']}` | {row['giavascript_avg_s']} | {row['node_lts_avg_s']} | {row['node_0_12_18_avg_s']} |\n"
                   )
           PY

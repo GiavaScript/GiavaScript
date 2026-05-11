@@ -1,5 +1,5 @@
-date,script,giavascript_median_s,giavascript_p95_s,node_lts_version,node_lts_median_s,node_lts_p95_s,node_0_12_18_median_s,node_0_12_18_p95_s
-08-05-2026,Bubble sort,0.713,0.774,v24.15.0,0.655,0.684,1.328,1.349
-08-05-2026,Matrix multiplication,1.559,1.606,v24.15.0,0.039,0.042,0.062,0.063
-08-05-2026,Binary search tree,0.097,0.099,v24.15.0,0.642,0.669,1.432,1.471
-08-05-2026,String slicing,0.256,0.259,v24.15.0,0.030,0.033,0.061,0.061
+date,script,giavascript_avg_s,node_lts_version,node_lts_avg_s,node_0_12_18_avg_s
+08-05-2026,Bubble sort,0.713,v24.15.0,0.655,1.328
+08-05-2026,Matrix multiplication,1.559,v24.15.0,0.039,0.062
+08-05-2026,Binary search tree,0.097,v24.15.0,0.642,1.432
+08-05-2026,String slicing,0.256,v24.15.0,0.030,0.061
