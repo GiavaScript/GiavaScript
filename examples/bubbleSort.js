@@ -1,6 +1,6 @@
 var items = [];
 
-for (var i = 100; i > 0; i -= 1) {
+for (var i = 1000; i > 0; i -= 1) {
   items.push(i);
 }
 
