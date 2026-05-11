@@ -80,11 +80,11 @@ or the short wrapper:
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Bubble sort Average Runtime"
-    x-axis ["GiavaScript (0.689s)", "Node LTS (0.668s)", "Node 0.12.18 (1.354s)"]
-    y-axis "Seconds" 0 --> 1.4894
-    bar [0.689, -1, -1]
-    bar [-1, 0.668, -1]
-    bar [-1, -1, 1.354]
+    x-axis ["GiavaScript (68.212s)", "Node LTS (0.804s)", "Node 0.12.18 (1.51s)"]
+    y-axis "Seconds" 0 --> 75.0332
+    bar [68.212, -1, -1]
+    bar [-1, 0.804, -1]
+    bar [-1, -1, 1.51]
 ```
 ### Matrix multiplication
 
@@ -92,11 +92,11 @@ xychart-beta
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Matrix multiplication Average Runtime"
-    x-axis ["GiavaScript (1.526s)", "Node LTS (0.04s)", "Node 0.12.18 (0.063s)"]
-    y-axis "Seconds" 0 --> 1.6786
-    bar [1.526, -1, -1]
-    bar [-1, 0.04, -1]
-    bar [-1, -1, 0.063]
+    x-axis ["GiavaScript (1.702s)", "Node LTS (0.045s)", "Node 0.12.18 (0.068s)"]
+    y-axis "Seconds" 0 --> 1.8722
+    bar [1.702, -1, -1]
+    bar [-1, 0.045, -1]
+    bar [-1, -1, 0.068]
 ```
 ### Binary search tree
 
@@ -104,11 +104,11 @@ xychart-beta
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Binary search tree Average Runtime"
-    x-axis ["GiavaScript (0.102s)", "Node LTS (0.685s)", "Node 0.12.18 (1.421s)"]
-    y-axis "Seconds" 0 --> 1.5631
-    bar [0.102, -1, -1]
-    bar [-1, 0.685, -1]
-    bar [-1, -1, 1.421]
+    x-axis ["GiavaScript (0.106s)", "Node LTS (0.761s)", "Node 0.12.18 (1.564s)"]
+    y-axis "Seconds" 0 --> 1.7204
+    bar [0.106, -1, -1]
+    bar [-1, 0.761, -1]
+    bar [-1, -1, 1.564]
 ```
 ### String slicing
 
@@ -116,11 +116,11 @@ xychart-beta
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "String slicing Average Runtime"
-    x-axis ["GiavaScript (0.247s)", "Node LTS (0.033s)", "Node 0.12.18 (0.061s)"]
-    y-axis "Seconds" 0 --> 0.2717
-    bar [0.247, -1, -1]
-    bar [-1, 0.033, -1]
-    bar [-1, -1, 0.061]
+    x-axis ["GiavaScript (0.276s)", "Node LTS (0.036s)", "Node 0.12.18 (0.067s)"]
+    y-axis "Seconds" 0 --> 0.3036
+    bar [0.276, -1, -1]
+    bar [-1, 0.036, -1]
+    bar [-1, -1, 0.067]
 ```
 ### Sieve primes
 
@@ -128,9 +128,9 @@ xychart-beta
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Sieve primes Average Runtime"
-    x-axis ["GiavaScript (1.414s)", "Node LTS (0.042s)", "Node 0.12.18 (0.076s)"]
-    y-axis "Seconds" 0 --> 1.5554
-    bar [1.414, -1, -1]
-    bar [-1, 0.042, -1]
-    bar [-1, -1, 0.076]
+    x-axis ["GiavaScript (1.623s)", "Node LTS (0.046s)", "Node 0.12.18 (0.083s)"]
+    y-axis "Seconds" 0 --> 1.7853
+    bar [1.623, -1, -1]
+    bar [-1, 0.046, -1]
+    bar [-1, -1, 0.083]
 ```
