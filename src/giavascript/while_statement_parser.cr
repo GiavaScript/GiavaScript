@@ -1,61 +1,89 @@
 module GiavaScript
-  class IfStatementParser
-    INVALID_IF_ERROR = "Error: invalid if statement"
+  class WhileStatementParser
+    INVALID_WHILE_ERROR = "Error: invalid while statement"
+    INVALID_DO_WHILE_ERROR = "Error: invalid do...while statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"
 
-    record ParsedIf, statement : IfStatement, end_index : Int32
+    record ParsedLoop, statement : Statement, end_index : Int32
     record ParsedStatement, statement : Statement, end_index : Int32
 
     def initialize(@source : String)
     end
 
-    def parse_from(start_index : Int32 = 0) : ParsedIf
-      parse_if_statement(skip_whitespace(start_index))
+    def parse_from(start_index : Int32 = 0) : ParsedLoop
+      parse_loop_statement(skip_whitespace(start_index))
     end
 
-    private def parse_if_statement(index : Int32) : ParsedIf
+    private def parse_loop_statement(index : Int32) : ParsedLoop
       current = skip_whitespace(index)
-      raise invalid_if_error unless starts_with_keyword?(current, "if")
+      if starts_with_keyword?(current, "while")
+        return parse_while_statement(current)
+      end
 
-      current += "if".size
+      if starts_with_keyword?(current, "do")
+        return parse_do_while_statement(current)
+      end
+
+      raise invalid_while_error
+    end
+
+    private def parse_while_statement(index : Int32) : ParsedLoop
+      current = index + "while".size
       current = skip_whitespace(current)
-      raise invalid_if_error unless @source[current]? == '('
+      raise invalid_while_error unless @source[current]? == '('
 
       condition_start = current + 1
-      condition_end = find_matching_paren_end_index(current)
+      condition_end = find_matching_paren_end_index(current, INVALID_WHILE_ERROR)
       condition_source = @source[condition_start...condition_end].strip
-      raise invalid_if_error if condition_source.empty?
+      raise invalid_while_error if condition_source.empty?
 
       condition = begin
         ExpressionParser.new(condition_source).parse
       rescue ExpressionError
-        raise invalid_if_error
+        raise invalid_while_error
       end
 
       current = skip_whitespace(condition_end + 1)
+      body = parse_statement(current)
 
-      consequent = parse_statement(current, true)
-      current = skip_whitespace(advance_past_statement_delimiter(consequent.end_index))
-
-      alternate = nil.as(Statement?)
-      if starts_with_keyword?(current, "else")
-        current += "else".size
-        current = skip_whitespace(current)
-
-        alternate_result = parse_statement(current, false)
-        alternate = alternate_result.statement
-        current = alternate_result.end_index
-      end
-
-      ParsedIf.new(IfStatement.new(condition, consequent.statement, alternate), current)
+      ParsedLoop.new(WhileStatement.new(condition, body.statement), body.end_index)
     end
 
-    private def parse_statement(index : Int32, stop_before_else : Bool) : ParsedStatement
+    private def parse_do_while_statement(index : Int32) : ParsedLoop
+      current = skip_whitespace(index + "do".size)
+      body = begin
+        parse_statement(current)
+      rescue ex : ExpressionError
+        raise invalid_do_while_error
+      end
+
+      current = skip_whitespace(advance_past_statement_delimiter(body.end_index))
+      raise invalid_do_while_error unless starts_with_keyword?(current, "while")
+
+      current += "while".size
+      current = skip_whitespace(current)
+      raise invalid_do_while_error unless @source[current]? == '('
+
+      condition_start = current + 1
+      condition_end = find_matching_paren_end_index(current, INVALID_DO_WHILE_ERROR)
+      condition_source = @source[condition_start...condition_end].strip
+      raise invalid_do_while_error if condition_source.empty?
+
+      condition = begin
+        ExpressionParser.new(condition_source).parse
+      rescue ExpressionError
+        raise invalid_do_while_error
+      end
+
+      ParsedLoop.new(DoWhileStatement.new(body.statement, condition), condition_end + 1)
+    end
+
+    private def parse_statement(index : Int32) : ParsedStatement
       current = skip_whitespace(index)
-      raise invalid_if_error if current >= @source.size
+      raise invalid_while_error if current >= @source.size
 
       if starts_with_keyword?(current, "if")
-        parsed_if = parse_if_statement(current)
+        parsed_if = IfStatementParser.new(@source).parse_from(current)
         return ParsedStatement.new(parsed_if.statement, parsed_if.end_index)
       end
 
@@ -65,31 +93,31 @@ module GiavaScript
       end
 
       if starts_with_keyword?(current, "while") || starts_with_keyword?(current, "do")
-        parsed_loop = WhileStatementParser.new(@source).parse_from(current)
+        parsed_loop = parse_loop_statement(current)
         return ParsedStatement.new(parsed_loop.statement, parsed_loop.end_index)
       end
 
       if starts_with_keyword?(current, "function")
         function_end_index = find_function_end_index(current)
         source = @source[current...function_end_index].strip
-        raise invalid_if_error if source.empty?
+        raise invalid_while_error if source.empty?
 
         return ParsedStatement.new(RawStatement.new(source), function_end_index)
       end
 
       if @source[current]? == '{'
-        block_end_index = find_matching_brace_end_index(current) + 1
+        block_end_index = find_matching_brace_end_index(current, INVALID_WHILE_ERROR) + 1
         block_body = @source[current + 1...block_end_index - 1]
         statements = parse_block_statements(block_body)
 
         return ParsedStatement.new(BlockStatement.new(statements), block_end_index)
       end
 
-      simple_end_index = find_simple_statement_end_index(current, stop_before_else)
+      simple_end_index = find_simple_statement_end_index(current)
       source = @source[current...simple_end_index].strip
-      raise invalid_if_error if source.empty?
+      raise invalid_while_error if source.empty?
 
-      ParsedStatement.new(RawStatement.new(source), simple_end_index)
+      ParsedStatement.new(parse_statement_source(source), simple_end_index)
     end
 
     private def parse_block_statements(block_body : String) : Array(Statement)
@@ -132,7 +160,7 @@ module GiavaScript
       next_char.nil? || !identifier_continue?(next_char)
     end
 
-    private def find_simple_statement_end_index(index : Int32, stop_before_else : Bool) : Int32
+    private def find_simple_statement_end_index(index : Int32) : Int32
       current = index
       string_delimiter = nil.as(Char?)
       escaping = false
@@ -152,10 +180,6 @@ module GiavaScript
 
           current += 1
           next
-        end
-
-        if stop_before_else && paren_depth == 0 && starts_with_keyword?(current, "else")
-          return current
         end
 
         case char
@@ -241,7 +265,7 @@ module GiavaScript
       raise ExpressionError.new(INVALID_FUNCTION_ERROR)
     end
 
-    private def find_matching_paren_end_index(index : Int32) : Int32
+    private def find_matching_paren_end_index(index : Int32, error_message : String) : Int32
       current = index
       paren_depth = 0
       string_delimiter = nil.as(Char?)
@@ -276,10 +300,10 @@ module GiavaScript
         current += 1
       end
 
-      raise invalid_if_error
+      raise ExpressionError.new(error_message)
     end
 
-    private def find_matching_brace_end_index(index : Int32, error_message : String = INVALID_IF_ERROR) : Int32
+    private def find_matching_brace_end_index(index : Int32, error_message : String) : Int32
       current = index
       brace_depth = 0
       string_delimiter = nil.as(Char?)
@@ -366,8 +390,12 @@ module GiavaScript
       char.ascii_letter? || char.ascii_number? || char == '_'
     end
 
-    private def invalid_if_error : ExpressionError
-      ExpressionError.new(INVALID_IF_ERROR)
+    private def invalid_while_error : ExpressionError
+      ExpressionError.new(INVALID_WHILE_ERROR)
+    end
+
+    private def invalid_do_while_error : ExpressionError
+      ExpressionError.new(INVALID_DO_WHILE_ERROR)
     end
   end
 end

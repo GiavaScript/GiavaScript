@@ -109,6 +109,22 @@ module GiavaScript
     end
   end
 
+  class WhileStatement < Statement
+    getter condition : Expr
+    getter body : Statement
+
+    def initialize(@condition : Expr, @body : Statement)
+    end
+  end
+
+  class DoWhileStatement < Statement
+    getter body : Statement
+    getter condition : Expr
+
+    def initialize(@body : Statement, @condition : Expr)
+    end
+  end
+
   class BreakStatement < Statement
   end
 

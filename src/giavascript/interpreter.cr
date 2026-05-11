@@ -133,6 +133,10 @@ module GiavaScript
         return eval_for_statement(stmt, env, inside_function, inside_loop)
       end
 
+      if starts_with_keyword?(stmt, "while") || starts_with_keyword?(stmt, "do")
+        return eval_while_statement(stmt, env, inside_function, inside_loop)
+      end
+
       if stmt == "break"
         return "Error: break can only be used inside loops" unless inside_loop
         raise BreakSignal.new
@@ -506,6 +510,72 @@ module GiavaScript
       end
     end
 
+    private def eval_while_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+      parsed_loop = begin
+        WhileStatementParser.new(stmt).parse_from
+      rescue ex : ExpressionError
+        message = ex.message || ""
+        return ex.message || "Error: invalid while statement" if message.starts_with?("Error: invalid while statement")
+        return ex.message || "Error: invalid do...while statement" if message.starts_with?("Error: invalid do...while statement")
+        return ex.message || "Error: invalid while statement"
+      end
+
+      case statement = parsed_loop.statement
+      when WhileStatement
+        eval_while_ast(statement, env, inside_function, inside_loop)
+      when DoWhileStatement
+        eval_do_while_ast(statement, env, inside_function, inside_loop)
+      else
+        "Error: invalid while statement"
+      end
+    end
+
+    private def eval_while_ast(while_statement : WhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool) : String?
+      begin
+        loop do
+          condition_value = evaluate_expression(while_statement.condition, env)
+          break unless truthy?(condition_value)
+
+          begin
+            body_message = eval_statement_node(while_statement.body, env, inside_function, true)
+            if body_message && body_message.starts_with?("Error:")
+              return body_message
+            end
+          rescue ContinueSignal
+          rescue BreakSignal
+            break
+          end
+        end
+
+        nil
+      rescue ex : ExpressionError
+        ex.message || "Error: invalid while statement"
+      end
+    end
+
+    private def eval_do_while_ast(do_while_statement : DoWhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool) : String?
+      begin
+        loop do
+          begin
+            body_message = eval_statement_node(do_while_statement.body, env, inside_function, true)
+            if body_message && body_message.starts_with?("Error:")
+              return body_message
+            end
+          rescue ContinueSignal
+          rescue BreakSignal
+            break
+          end
+
+          condition_value = evaluate_expression(do_while_statement.condition, env)
+          break unless truthy?(condition_value)
+        end
+
+        nil
+      rescue ex : ExpressionError
+        ex.message || "Error: invalid do...while statement"
+      end
+    end
+
     private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
       case statement
       when RawStatement
@@ -514,6 +584,9 @@ module GiavaScript
         block_message = nil.as(String?)
         statement.statements.each do |inner_statement|
           message = eval_statement_node(inner_statement, env, inside_function, inside_loop)
+          if message && message.starts_with?("Error:")
+            return message
+          end
           block_message = message if message
         end
         block_message
@@ -521,6 +594,10 @@ module GiavaScript
         eval_if_ast(statement, env, inside_function, inside_loop)
       when ForStatement
         eval_for_ast(statement, env, inside_function, inside_loop)
+      when WhileStatement
+        eval_while_ast(statement, env, inside_function, inside_loop)
+      when DoWhileStatement
+        eval_do_while_ast(statement, env, inside_function, inside_loop)
       when BreakStatement
         return "Error: break can only be used inside loops" unless inside_loop
         raise BreakSignal.new
@@ -595,6 +672,7 @@ module GiavaScript
       return cached if cached
 
       compiled = if key.starts_with?("function ") || starts_with_keyword?(key, "if") || starts_with_keyword?(key, "for") ||
+                    starts_with_keyword?(key, "while") || starts_with_keyword?(key, "do") ||
                     key == "break" || key == "continue" || key.starts_with?("return")
                    FallbackRawStatement.new(source)
                  elsif match = key.match(/^(.+?)\s*(\+\+|--)$/)
@@ -669,7 +747,7 @@ module GiavaScript
       return false unless source.starts_with?(keyword)
 
       next_char = source[keyword.size]?
-      next_char.nil? || next_char == ' ' || next_char == '\t' || next_char == '\n' || next_char == '\r' || next_char == '('
+      next_char.nil? || !(next_char.ascii_letter? || next_char.ascii_number? || next_char == '_')
     end
 
     private def call_function(name : String, args : Array(Value), env : Environment) : Value

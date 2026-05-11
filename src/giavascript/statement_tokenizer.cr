@@ -33,6 +33,14 @@ module GiavaScript
           return statement
         end
 
+        if starts_with_keyword?(@index, "while") || starts_with_keyword?(@index, "do")
+          loop_end_index = WhileStatementParser.new(@source).parse_from(@index).end_index
+          statement = @source[@index...loop_end_index].strip
+          @index = loop_end_index
+          @index = consume_statement_delimiter(@index)
+          return statement
+        end
+
         statement_end_index = find_statement_end_index(@index)
         statement = @source[@index...statement_end_index].strip
         @index = statement_end_index

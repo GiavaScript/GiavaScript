@@ -794,6 +794,53 @@ describe GiavaScript do
     interpreter.eval("seen;").should eq(["2"])
   end
 
+  it "supports while loops" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var i = 0; while (i < 3) { console.log(i); i = i + 1; }").should eq([] of String)
+    output.to_s.should eq("0\n1\n2\n")
+  end
+
+  it "supports continue in while loops" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var i = 0; while (i < 4) { i = i + 1; if (i == 3) continue; console.log(i); }").should eq([] of String)
+    output.to_s.should eq("1\n2\n4\n")
+  end
+
+  it "supports do...while loops" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var i = 0; do { console.log(i); i = i + 1; } while (i < 3);").should eq([] of String)
+    output.to_s.should eq("0\n1\n2\n")
+  end
+
+  it "supports do...while loops without whitespace before block" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var i = 0; do{ console.log(i); i = i + 1; } while (i < 2);").should eq([] of String)
+    output.to_s.should eq("0\n1\n")
+  end
+
+  it "runs do...while body at least once" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var i = 0; do { i = i + 1; } while (0);").should eq([] of String)
+    interpreter.eval("i;").should eq(["1"])
+  end
+
+  it "stops block execution after first runtime error" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var i = 0; while (i < 1) { missing; console.log(\"after\"); i = i + 1; }").should eq(["Error: variable 'missing' does not exist"])
+    output.to_s.should eq("")
+  end
+
   it "returns runtime error for break outside loops" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("break;").should eq(["Error: break can only be used inside loops"])
@@ -812,6 +859,16 @@ describe GiavaScript do
   it "returns error for invalid for syntax" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("for (var i = 0 i < 3; i = i + 1) console.log(i);").should eq(["Error: invalid for statement"])
+  end
+
+  it "returns error for invalid while syntax" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("while value) value = 1;").should eq(["Error: invalid while statement"])
+  end
+
+  it "returns error for invalid do...while syntax" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("do value = 1; while value);").should eq(["Error: invalid do...while statement"])
   end
 
   it "prints error for missing variables" do
