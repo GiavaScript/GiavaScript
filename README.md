@@ -72,48 +72,69 @@ or the short wrapper:
 
 ## Benchmarks
 
-Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. Each chart compares average runtime for a single algorithm (lower is better).
+    Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. Each chart compares average runtime for a single algorithm (lower is better).
+
+    ### Bubble sort
 
 ```mermaid
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Bubble sort Average Runtime"
-    x-axis ["GiavaScript (0.713s)", "Node LTS (0.655s)", "Node 0.12.18 (1.328s)"]
-    y-axis "Seconds" 0 --> 1.4608
-    bar [0.713, -1, -1]
-    bar [-1, 0.655, -1]
-    bar [-1, -1, 1.328]
+    x-axis ["GiavaScript (0.689s)", "Node LTS (0.668s)", "Node 0.12.18 (1.354s)"]
+    y-axis "Seconds" 0 --> 1.4894
+    bar [0.689, -1, -1]
+    bar [-1, 0.668, -1]
+    bar [-1, -1, 1.354]
 ```
+### Matrix multiplication
 
 ```mermaid
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Matrix multiplication Average Runtime"
-    x-axis ["GiavaScript (1.559s)", "Node LTS (0.039s)", "Node 0.12.18 (0.062s)"]
-    y-axis "Seconds" 0 --> 1.7149
-    bar [1.559, -1, -1]
-    bar [-1, 0.039, -1]
-    bar [-1, -1, 0.062]
+    x-axis ["GiavaScript (1.526s)", "Node LTS (0.04s)", "Node 0.12.18 (0.063s)"]
+    y-axis "Seconds" 0 --> 1.6786
+    bar [1.526, -1, -1]
+    bar [-1, 0.04, -1]
+    bar [-1, -1, 0.063]
 ```
+### Binary search tree
 
 ```mermaid
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Binary search tree Average Runtime"
-    x-axis ["GiavaScript (0.097s)", "Node LTS (0.642s)", "Node 0.12.18 (1.432s)"]
-    y-axis "Seconds" 0 --> 1.5752
-    bar [0.097, -1, -1]
-    bar [-1, 0.642, -1]
-    bar [-1, -1, 1.432]
+    x-axis ["GiavaScript (0.102s)", "Node LTS (0.685s)", "Node 0.12.18 (1.421s)"]
+    y-axis "Seconds" 0 --> 1.5631
+    bar [0.102, -1, -1]
+    bar [-1, 0.685, -1]
+    bar [-1, -1, 1.421]
 ```
+### String slicing
 
 ```mermaid
 %%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "String slicing Average Runtime"
-    x-axis ["GiavaScript (0.256s)", "Node LTS (0.03s)", "Node 0.12.18 (0.061s)"]
-    y-axis "Seconds" 0 --> 0.2816
-    bar [0.256, -1, -1]
-    bar [-1, 0.03, -1]
+    x-axis ["GiavaScript (0.247s)", "Node LTS (0.033s)", "Node 0.12.18 (0.061s)"]
+    y-axis "Seconds" 0 --> 0.2717
+    bar [0.247, -1, -1]
+    bar [-1, 0.033, -1]
     bar [-1, -1, 0.061]
 ```
+### Sieve primes
+
+```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
+xychart-beta
+    title "Sieve primes Average Runtime"
+    x-axis ["GiavaScript (1.414s)", "Node LTS (0.042s)", "Node 0.12.18 (0.076s)"]
+    y-axis "Seconds" 0 --> 1.5554
+    bar [1.414, -1, -1]
+    bar [-1, 0.042, -1]
+    bar [-1, -1, 0.076]
+```
+
+    - `GiavaScript` bars use dark gray (`#4a4a4a`)
+    - `Node LTS` bars use green (`#2e7d32`) for v24.15.0
+    - `Node 0.12.18` bars use yellow (`#d4b000`)
