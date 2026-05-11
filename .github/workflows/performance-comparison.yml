@@ -197,10 +197,6 @@ jobs:
               Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. Each chart compares average runtime for a single algorithm (lower is better).
 
               {chr(10).join(charts)}
-
-              - `GiavaScript` bars use dark gray (`#4a4a4a`)
-              - `Node LTS` bars use green (`#2e7d32`) for {os.environ['LTS_VERSION']}
-              - `Node 0.12.18` bars use yellow (`#d4b000`)
               """
           ).strip()
 
