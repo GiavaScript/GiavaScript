@@ -2,6 +2,9 @@ module GiavaScript
   class Interpreter
     IDENTIFIER_REGEX         = /^[A-Za-z_][A-Za-z0-9_]*$/
     MAX_JSON_STRINGIFY_DEPTH = 1000
+    MAX_EXPRESSION_CACHE_SIZE = 8_192
+    MAX_RAW_STATEMENT_CACHE_SIZE = 8_192
+    MAX_EVALUATOR_CACHE_SIZE = 1_024
 
     class BreakSignal < Exception
       def initialize
@@ -17,10 +20,67 @@ module GiavaScript
 
     @env : Environment
     @function_runtime : FunctionRuntime
+    @expression_cache : Hash(String, Expr)
+    @raw_statement_cache : Hash(String, CompiledRawStatement)
+    @expression_evaluator_cache : Hash(UInt64, ExpressionEvaluator)
+
+    abstract class CompiledRawStatement
+    end
+
+    class FallbackRawStatement < CompiledRawStatement
+      getter source : String
+
+      def initialize(@source : String)
+      end
+    end
+
+    class IncrementRawStatement < CompiledRawStatement
+      getter target : Expr
+      getter operator : String
+
+      def initialize(@target : Expr, @operator : String)
+      end
+    end
+
+    class VarRawStatement < CompiledRawStatement
+      getter name : String
+      getter initializer : Expr?
+      getter initializer_source : String?
+
+      def initialize(@name : String, @initializer : Expr?, @initializer_source : String?)
+      end
+    end
+
+    class AssignmentRawStatement < CompiledRawStatement
+      getter target : Expr
+      getter rhs : Expr
+      getter operator : String
+
+      def initialize(@target : Expr, @rhs : Expr, @operator : String)
+      end
+    end
+
+    class IdentifierRawStatement < CompiledRawStatement
+      getter name : String
+
+      def initialize(@name : String)
+      end
+    end
+
+    class ExpressionRawStatement < CompiledRawStatement
+      getter expr : Expr
+      getter source : String
+
+      def initialize(@expr : Expr, @source : String)
+      end
+    end
 
     def initialize(@console_output : IO = STDOUT)
       @env = build_global_env
       @function_runtime = FunctionRuntime.new
+      @expression_cache = Hash(String, Expr).new
+      @raw_statement_cache = Hash(String, CompiledRawStatement).new
+      @expression_evaluator_cache = Hash(UInt64, ExpressionEvaluator).new
     end
 
     def repl(input : IO = STDIN, output : IO = STDOUT)
@@ -173,16 +233,28 @@ module GiavaScript
     end
 
     private def eval_rhs(rhs : String, env : Environment) : Value
-      ast = ExpressionParser.new(rhs).parse
+      ast = parsed_expression(rhs)
       evaluate_expression(ast, env)
     end
 
     private def evaluate_expression(expr : Expr, env : Environment) : Value
-      ExpressionEvaluator.new(
+      evaluator_for(env).evaluate(expr)
+    end
+
+    private def evaluator_for(env : Environment) : ExpressionEvaluator
+      key = env.object_id
+      evaluator = @expression_evaluator_cache[key]?
+      return evaluator if evaluator
+
+      @expression_evaluator_cache.clear if @expression_evaluator_cache.size >= MAX_EVALUATOR_CACHE_SIZE
+
+      created = ExpressionEvaluator.new(
         env,
         ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) },
         ->(name : String) { resolve_function_reference(name, env) }
-      ).evaluate(expr)
+      )
+      @expression_evaluator_cache[key] = created
+      created
     end
 
     private def resolve_function_reference(name : String, env : Environment) : BuiltinFunction?
@@ -192,9 +264,21 @@ module GiavaScript
     end
 
     private def parse_assignment_target(lhs : String) : Expr
-      ExpressionParser.new(lhs).parse
+      parsed_expression(lhs)
     rescue ex : ExpressionError
       raise ExpressionError.new("Error: invalid assignment target '#{lhs}'")
+    end
+
+    private def parsed_expression(source : String) : Expr
+      key = source.strip
+      cached = @expression_cache[key]?
+      return cached if cached
+
+      @expression_cache.clear if @expression_cache.size >= MAX_EXPRESSION_CACHE_SIZE
+
+      parsed = ExpressionParser.new(key).parse
+      @expression_cache[key] = parsed
+      parsed
     end
 
     private def assign_to_target(target_expr : Expr, value : Value, env : Environment)
@@ -386,7 +470,7 @@ module GiavaScript
     private def eval_for_ast(for_statement : ForStatement, env : Environment, inside_function : Bool, _inside_loop : Bool) : String?
       begin
         if init = for_statement.init
-          init_message = eval_statement(init.source, env, inside_function, true)
+          init_message = eval_precompiled_raw_statement(init.source, env, inside_function, true)
           if init_message && init_message.starts_with?("Error:")
             return init_message
           end
@@ -409,7 +493,7 @@ module GiavaScript
           end
 
           if update = for_statement.update
-            update_message = eval_statement(update.source, env, inside_function, true)
+            update_message = eval_precompiled_raw_statement(update.source, env, inside_function, true)
             if update_message && update_message.starts_with?("Error:")
               return update_message
             end
@@ -425,7 +509,7 @@ module GiavaScript
     private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
       case statement
       when RawStatement
-        eval_statement(statement.source, env, inside_function, inside_loop)
+        eval_precompiled_raw_statement(statement.source, env, inside_function, inside_loop)
       when BlockStatement
         block_message = nil.as(String?)
         statement.statements.each do |inner_statement|
@@ -446,6 +530,116 @@ module GiavaScript
       else
         raise ExpressionError.new("Error: invalid statement")
       end
+    end
+
+    private def eval_precompiled_raw_statement(source : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+      compiled = compiled_raw_statement(source)
+
+      case compiled
+      when FallbackRawStatement
+        eval_statement(compiled.source, env, inside_function, inside_loop)
+      when IncrementRawStatement
+        begin
+          current_value = evaluate_expression(compiled.target, env)
+          next_value = incremented_value(current_value, compiled.operator)
+          assign_to_target(compiled.target, next_value, env)
+          nil
+        rescue ex : ExpressionError
+          ex.message || "Error: invalid increment expression"
+        end
+      when VarRawStatement
+        if env.has_key?(compiled.name)
+          return "Error: variable '#{compiled.name}' already exists"
+        end
+
+        begin
+          value = compiled.initializer ? evaluate_expression(compiled.initializer.not_nil!, env) : UNDEFINED
+          env[compiled.name] = value
+          nil
+        rescue ex : ExpressionError
+          rhs = compiled.initializer_source || ""
+          ex.message || "Error: invalid right-hand side '#{rhs}'"
+        end
+      when AssignmentRawStatement
+        begin
+          value = if compiled.operator == "="
+                    evaluate_expression(compiled.rhs, env)
+                  else
+                    current_value = evaluate_expression(compiled.target, env)
+                    rhs_value = evaluate_expression(compiled.rhs, env)
+                    apply_compound_assignment_operator(current_value, rhs_value, compiled.operator)
+                  end
+          assign_to_target(compiled.target, value, env)
+          nil
+        rescue ex : ExpressionError
+          ex.message || "Error: invalid assignment"
+        end
+      when IdentifierRawStatement
+        if env.has_key?(compiled.name)
+          return value_to_s(env[compiled.name])
+        end
+        "Error: variable '#{compiled.name}' does not exist"
+      when ExpressionRawStatement
+        begin
+          value = evaluate_expression(compiled.expr, env)
+          value_to_s(value)
+        rescue ex : ExpressionError
+          ex.message || "Error: invalid right-hand side '#{compiled.source}'"
+        end
+      end
+    end
+
+    private def compiled_raw_statement(source : String) : CompiledRawStatement
+      key = source.strip
+      cached = @raw_statement_cache[key]?
+      return cached if cached
+
+      compiled = if key.starts_with?("function ") || starts_with_keyword?(key, "if") || starts_with_keyword?(key, "for") ||
+                    key == "break" || key == "continue" || key.starts_with?("return")
+                   FallbackRawStatement.new(source)
+                 elsif match = key.match(/^(.+?)\s*(\+\+|--)$/)
+                   target_source = match[1].strip
+                   begin
+                     target_expr = parse_assignment_target(target_source)
+                     IncrementRawStatement.new(target_expr, match[2])
+                   rescue
+                     FallbackRawStatement.new(source)
+                   end
+                 elsif match = key.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)$/)
+                   VarRawStatement.new(match[1], nil, nil)
+                 elsif match = key.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*(.+)$/)
+                   name = match[1]
+                   rhs_source = match[2].strip
+                   begin
+                     rhs = parsed_expression(rhs_source)
+                     VarRawStatement.new(name, rhs, rhs_source)
+                   rescue
+                     FallbackRawStatement.new(source)
+                   end
+                 elsif assignment = split_assignment_statement(key)
+                   begin
+                     target = parse_assignment_target(assignment[:lhs])
+                     rhs = parsed_expression(assignment[:rhs])
+                     AssignmentRawStatement.new(target, rhs, assignment[:operator])
+                   rescue
+                     FallbackRawStatement.new(source)
+                   end
+                 elsif key.matches?(IDENTIFIER_REGEX)
+                   IdentifierRawStatement.new(key)
+                 else
+                   begin
+                     ExpressionRawStatement.new(parsed_expression(key), key)
+                   rescue
+                     FallbackRawStatement.new(source)
+                   end
+                 end
+
+      unless compiled.is_a?(FallbackRawStatement)
+        @raw_statement_cache.clear if @raw_statement_cache.size >= MAX_RAW_STATEMENT_CACHE_SIZE
+        @raw_statement_cache[key] = compiled
+      end
+
+      compiled
     end
 
     private def truthy?(value : Value) : Bool

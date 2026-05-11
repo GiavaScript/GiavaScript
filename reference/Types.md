@@ -53,9 +53,49 @@ Status of built-in methods and properties available through GiavaScript runtime 
 
 | Member | Kind | Status |
 | --- | --- | --- |
+| `from()` | Static method | Not available |
+| `fromAsync()` | Static method | Not available |
+| `isArray()` | Static method | Not available |
+| `of()` | Static method | Not available |
 | `length` | Instance property | Available |
+| `at()` | Instance method | Not available |
+| `concat()` | Instance method | Not available |
+| `copyWithin()` | Instance method | Not available |
+| `entries()` | Instance method | Not available |
+| `every()` | Instance method | Not available |
+| `fill()` | Instance method | Not available |
+| `filter()` | Instance method | Not available |
+| `find()` | Instance method | Not available |
+| `findIndex()` | Instance method | Not available |
+| `findLast()` | Instance method | Not available |
+| `findLastIndex()` | Instance method | Not available |
+| `flat()` | Instance method | Not available |
+| `flatMap()` | Instance method | Not available |
+| `forEach()` | Instance method | Not available |
+| `includes()` | Instance method | Not available |
+| `indexOf()` | Instance method | Not available |
+| `join()` | Instance method | Not available |
+| `keys()` | Instance method | Not available |
+| `lastIndexOf()` | Instance method | Not available |
+| `map()` | Instance method | Not available |
+| `pop()` | Instance method | Not available |
 | `push()` | Instance method | Available |
+| `reduce()` | Instance method | Not available |
+| `reduceRight()` | Instance method | Not available |
+| `reverse()` | Instance method | Not available |
+| `shift()` | Instance method | Not available |
+| `slice()` | Instance method | Not available |
+| `some()` | Instance method | Not available |
+| `sort()` | Instance method | Not available |
+| `splice()` | Instance method | Not available |
+| `toLocaleString()` | Instance method | Not available |
+| `toReversed()` | Instance method | Not available |
+| `toSorted()` | Instance method | Not available |
+| `toSpliced()` | Instance method | Not available |
 | `toString()` | Instance method | Available |
+| `unshift()` | Instance method | Not available |
+| `values()` | Instance method | Not available |
+| `with()` | Instance method | Not available |
 
 ## Object
 

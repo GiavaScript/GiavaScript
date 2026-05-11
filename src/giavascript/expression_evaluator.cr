@@ -8,8 +8,9 @@ module GiavaScript
       when LiteralExpr
         expr.value
       when VariableExpr
-        if @env.has_key?(expr.name)
-          @env[expr.name]
+        lookup = @env.lookup(expr.name)
+        if lookup[:found]
+          lookup[:value]
         elsif resolve_function = @resolve_function
           function_value = resolve_function.call(expr.name)
           if function_value
@@ -109,6 +110,12 @@ module GiavaScript
 
     private def evaluate_property_access(expr : PropertyAccessExpr) : Value
       target = evaluate(expr.target)
+
+      if expr.property == "length"
+        return target.size if target.is_a?(Array(Value))
+        return target.size if target.is_a?(String)
+      end
+
       resolve_property_access_value(target, expr.property)
     end
 
@@ -120,8 +127,9 @@ module GiavaScript
       end
 
       if callee_expr.is_a?(VariableExpr)
-        if @env.has_key?(callee_expr.name)
-          return {callable: @env[callee_expr.name], receiver: nil}
+        lookup = @env.lookup(callee_expr.name)
+        if lookup[:found]
+          return {callable: lookup[:value], receiver: nil}
         end
 
         if resolve_function = @resolve_function
@@ -302,7 +310,10 @@ module GiavaScript
     end
 
     private def comparison_result(left : Value, right : Value, operator : Tokenizer::TokenKind) : Bool
-      operator_lexeme = operator_lexeme(operator)
+      if left.is_a?(Int32) && right.is_a?(Int32)
+        return compare_numbers(left, right, operator)
+      end
+
       if left.is_a?(String)
         if right.is_a?(String)
           return compare_strings(left, right, operator)
@@ -327,6 +338,7 @@ module GiavaScript
         end
       end
 
+      operator_lexeme = operator_lexeme(operator)
       raise ExpressionError.new("Error: operator '#{operator_lexeme}' requires numeric operands")
     end
 
@@ -391,6 +403,21 @@ module GiavaScript
     end
 
     private def compare_numbers(left : Float64, right : Float64, operator : Tokenizer::TokenKind) : Bool
+      case operator
+      when Tokenizer::TokenKind::Less
+        left < right
+      when Tokenizer::TokenKind::Greater
+        left > right
+      when Tokenizer::TokenKind::LessEqual
+        left <= right
+      when Tokenizer::TokenKind::GreaterEqual
+        left >= right
+      else
+        raise ExpressionError.new("Error: invalid expression")
+      end
+    end
+
+    private def compare_numbers(left : Int32, right : Int32, operator : Tokenizer::TokenKind) : Bool
       case operator
       when Tokenizer::TokenKind::Less
         left < right

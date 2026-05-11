@@ -8,20 +8,27 @@ module GiavaScript
     end
 
     def has_key?(name : String) : Bool
-      return true if @values.has_key?(name)
-      return @parent.not_nil!.has_key?(name) if @parent
+      lookup(name)[:found]
+    end
 
-      false
+    def lookup(name : String) : NamedTuple(found: Bool, value: Value)
+      current = self
+      loop do
+        values = current.values
+        if values.has_key?(name)
+          return {found: true, value: values[name]}
+        end
+
+        parent = current.parent
+        return {found: false, value: UNDEFINED} unless parent
+
+        current = parent
+      end
     end
 
     def [](name : String) : Value
-      if @values.has_key?(name)
-        return @values[name]
-      end
-
-      if parent = @parent
-        return parent[name]
-      end
+      lookup_result = lookup(name)
+      return lookup_result[:value] if lookup_result[:found]
 
       raise KeyError.new(name)
     end
@@ -29,5 +36,8 @@ module GiavaScript
     def []=(name : String, value : Value) : Value
       @values[name] = value
     end
+
+    protected getter values : Hash(String, Value)
+    protected getter parent : Environment?
   end
 end
