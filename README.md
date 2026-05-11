@@ -75,37 +75,49 @@ or the short wrapper:
 Monthly benchmark results are committed to `benchmarks/performance-comparison-latest.csv` by the GitHub Actions workflow. Each chart compares average runtime for a single algorithm (lower is better).
 
 ```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Bubble sort Average Runtime"
-    x-axis ["GiavaScript", "Node LTS", "Node 0.12.18"]
-    y-axis "Seconds" 0.524 --> 1.4608
-    bar [0.713, 0.655, 1.328]
+    x-axis ["GiavaScript (0.713s)", "Node LTS (0.655s)", "Node 0.12.18 (1.328s)"]
+    y-axis "Seconds" 0 --> 1.4608
+    bar [0.713, -1, -1]
+    bar [-1, 0.655, -1]
+    bar [-1, -1, 1.328]
 ```
 
 ```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Matrix multiplication Average Runtime"
-    x-axis ["GiavaScript", "Node LTS", "Node 0.12.18"]
-    y-axis "Seconds" 0.0312 --> 1.7149
-    bar [1.559, 0.039, 0.062]
+    x-axis ["GiavaScript (1.559s)", "Node LTS (0.039s)", "Node 0.12.18 (0.062s)"]
+    y-axis "Seconds" 0 --> 1.7149
+    bar [1.559, -1, -1]
+    bar [-1, 0.039, -1]
+    bar [-1, -1, 0.062]
 ```
 
 ```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "Binary search tree Average Runtime"
-    x-axis ["GiavaScript", "Node LTS", "Node 0.12.18"]
-    y-axis "Seconds" 0.0776 --> 1.5752
-    bar [0.097, 0.642, 1.432]
+    x-axis ["GiavaScript (0.097s)", "Node LTS (0.642s)", "Node 0.12.18 (1.432s)"]
+    y-axis "Seconds" 0 --> 1.5752
+    bar [0.097, -1, -1]
+    bar [-1, 0.642, -1]
+    bar [-1, -1, 1.432]
 ```
 
 ```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}%%
 xychart-beta
     title "String slicing Average Runtime"
-    x-axis ["GiavaScript", "Node LTS", "Node 0.12.18"]
-    y-axis "Seconds" 0.024 --> 0.2816
-    bar [0.256, 0.03, 0.061]
+    x-axis ["GiavaScript (0.256s)", "Node LTS (0.03s)", "Node 0.12.18 (0.061s)"]
+    y-axis "Seconds" 0 --> 0.2816
+    bar [0.256, -1, -1]
+    bar [-1, 0.03, -1]
+    bar [-1, -1, 0.061]
 ```
 
-- 🟦 `GiavaScript` = GiavaScript runtime
-- 🟧 `Node LTS` = Node LTS v24.15.0
-- 🟩 `Node 0.12.18` = Node 0.12.18
+- `GiavaScript` bars use dark gray (`#4a4a4a`)
+- `Node LTS` bars use green (`#2e7d32`) for v24.15.0
+- `Node 0.12.18` bars use yellow (`#d4b000`)

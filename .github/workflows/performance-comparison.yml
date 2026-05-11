@@ -166,9 +166,10 @@ jobs:
               chart_values = [giavascript_avg, node_lts_avg, node_012_avg]
 
               max_value = max(chart_values)
-              min_positive = min(v for v in chart_values if v > 0)
-              y_min = min_positive * 0.8
               y_max = max_value * 1.1
+              giavascript_label = f"GiavaScript ({fmt(giavascript_avg)}s)"
+              node_lts_label = f"Node LTS ({fmt(node_lts_avg)}s)"
+              node_012_label = f"Node 0.12.18 ({fmt(node_012_avg)}s)"
 
               charts.append(
                   textwrap.dedent(
@@ -176,11 +177,14 @@ jobs:
                       ### {script_name}
 
                       ```mermaid
+                      %%{{init: {{"themeVariables": {{"xyChart": {{"plotColorPalette": "#4a4a4a, #2e7d32, #d4b000"}}}}}}}}%%
                       xychart-beta
                           title \"{script_name} Average Runtime\"
-                          x-axis [\"GiavaScript\", \"Node LTS\", \"Node 0.12.18\"]
-                          y-axis \"Seconds\" {fmt(y_min)} --> {fmt(y_max)}
-                          bar [{fmt(giavascript_avg)}, {fmt(node_lts_avg)}, {fmt(node_012_avg)}]
+                          x-axis [\"{giavascript_label}\", \"{node_lts_label}\", \"{node_012_label}\"]
+                          y-axis \"Seconds\" 0 --> {fmt(y_max)}
+                          bar [{fmt(giavascript_avg)}, -1, -1]
+                          bar [-1, {fmt(node_lts_avg)}, -1]
+                          bar [-1, -1, {fmt(node_012_avg)}]
                       ```
                       """
                   ).strip()
@@ -194,9 +198,9 @@ jobs:
 
               {chr(10).join(charts)}
 
-              - 🟦 `GiavaScript` = GiavaScript runtime
-              - 🟧 `Node LTS` = Node LTS {os.environ['LTS_VERSION']}
-              - 🟩 `Node 0.12.18` = Node 0.12.18
+              - `GiavaScript` bars use dark gray (`#4a4a4a`)
+              - `Node LTS` bars use green (`#2e7d32`) for {os.environ['LTS_VERSION']}
+              - `Node 0.12.18` bars use yellow (`#d4b000`)
               """
           ).strip()
 
