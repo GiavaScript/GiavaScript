@@ -117,7 +117,3 @@ xychart-beta
     bar [-1, 0.03, -1]
     bar [-1, -1, 0.061]
 ```
-
-- `GiavaScript` bars use dark gray (`#4a4a4a`)
-- `Node LTS` bars use green (`#2e7d32`) for v24.15.0
-- `Node 0.12.18` bars use yellow (`#d4b000`)
