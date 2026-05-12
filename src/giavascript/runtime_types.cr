@@ -61,8 +61,20 @@ module GiavaScript
     ARRAY_TYPE = TypeObject.new(
       "Array",
       {
+        "at"       => BuiltinMethodDefinition.new("Array.at", ->(receiver : Value, args : Array(Value)) { array_at(receiver, args).as(Value) }),
+        "concat"   => BuiltinMethodDefinition.new("Array.concat", ->(receiver : Value, args : Array(Value)) { array_concat(receiver, args).as(Value) }),
+        "includes" => BuiltinMethodDefinition.new("Array.includes", ->(receiver : Value, args : Array(Value)) { array_includes(receiver, args).as(Value) }),
+        "indexOf"  => BuiltinMethodDefinition.new("Array.indexOf", ->(receiver : Value, args : Array(Value)) { array_index_of(receiver, args).as(Value) }),
+        "join"     => BuiltinMethodDefinition.new("Array.join", ->(receiver : Value, args : Array(Value)) { array_join(receiver, args).as(Value) }),
+        "lastIndexOf" => BuiltinMethodDefinition.new("Array.lastIndexOf", ->(receiver : Value, args : Array(Value)) { array_last_index_of(receiver, args).as(Value) }),
+        "pop"      => BuiltinMethodDefinition.new("Array.pop", ->(receiver : Value, args : Array(Value)) { array_pop(receiver, args).as(Value) }),
         "push"     => BuiltinMethodDefinition.new("Array.push", ->(receiver : Value, args : Array(Value)) { array_push(receiver, args).as(Value) }),
+        "reverse"  => BuiltinMethodDefinition.new("Array.reverse", ->(receiver : Value, args : Array(Value)) { array_reverse(receiver, args).as(Value) }),
+        "shift"    => BuiltinMethodDefinition.new("Array.shift", ->(receiver : Value, args : Array(Value)) { array_shift(receiver, args).as(Value) }),
+        "slice"    => BuiltinMethodDefinition.new("Array.slice", ->(receiver : Value, args : Array(Value)) { array_slice(receiver, args).as(Value) }),
+        "sort"     => BuiltinMethodDefinition.new("Array.sort", ->(receiver : Value, args : Array(Value)) { array_sort(receiver, args).as(Value) }),
         "toString" => BuiltinMethodDefinition.new("Array.toString", ->(receiver : Value, args : Array(Value)) { array_to_string(receiver, args).as(Value) }),
+        "unshift"  => BuiltinMethodDefinition.new("Array.unshift", ->(receiver : Value, args : Array(Value)) { array_unshift(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
       {
         "length" => ->(receiver : Value) { array_length(receiver).as(Value) },
@@ -271,6 +283,95 @@ module GiavaScript
       receiver_array(receiver, "Array.length").size
     end
 
+    private def array_at(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.at")
+      index = integer_argument(args[0], "Array.at")
+
+      array_receiver = receiver_array(receiver, "Array.at")
+      normalized_index = index < 0 ? array_receiver.size + index : index
+      return UNDEFINED if normalized_index < 0 || normalized_index >= array_receiver.size
+
+      array_receiver[normalized_index]
+    end
+
+    private def array_concat(receiver : Value, args : Array(Value)) : Value
+      array_receiver = receiver_array(receiver, "Array.concat")
+      result = array_receiver.dup
+
+      args.each do |arg|
+        if arg.is_a?(Array(Value))
+          arg.each { |value| result << value }
+        else
+          result << arg
+        end
+      end
+
+      result
+    end
+
+    private def array_includes(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "Array.includes")
+      needle = args[0]
+      array_receiver = receiver_array(receiver, "Array.includes")
+      start_index = args.size == 2 ? normalize_index_argument(args[1], "Array.includes", array_receiver.size) : 0
+
+      index = start_index
+      while index < array_receiver.size
+        return true if array_value_equals?(array_receiver[index], needle)
+        index += 1
+      end
+
+      false
+    end
+
+    private def array_index_of(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "Array.indexOf")
+      needle = args[0]
+      array_receiver = receiver_array(receiver, "Array.indexOf")
+      start_index = args.size == 2 ? normalize_index_argument(args[1], "Array.indexOf", array_receiver.size) : 0
+
+      index = start_index
+      while index < array_receiver.size
+        return index if array_value_equals?(array_receiver[index], needle)
+        index += 1
+      end
+
+      -1
+    end
+
+    private def array_join(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 0, 1, "Array.join")
+      separator = args.empty? ? "," : runtime_to_string(args[0])
+      array_receiver = receiver_array(receiver, "Array.join")
+      array_receiver.map { |item| runtime_to_string(item) }.join(separator)
+    end
+
+    private def array_last_index_of(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "Array.lastIndexOf")
+      needle = args[0]
+      array_receiver = receiver_array(receiver, "Array.lastIndexOf")
+      index = if args.size == 2
+                normalize_last_index_argument(args[1], "Array.lastIndexOf", array_receiver.size)
+              else
+                array_receiver.size - 1
+              end
+
+      while index >= 0
+        return index if array_value_equals?(array_receiver[index], needle)
+        index -= 1
+      end
+
+      -1
+    end
+
+    private def array_pop(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Array.pop")
+      array_receiver = receiver_array(receiver, "Array.pop")
+      return UNDEFINED if array_receiver.empty?
+
+      array_receiver.pop
+    end
+
     private def array_push(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 1, "Array.push")
       array_receiver = receiver_array(receiver, "Array.push")
@@ -278,10 +379,74 @@ module GiavaScript
       array_receiver.size
     end
 
+    private def array_reverse(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Array.reverse")
+      array_receiver = receiver_array(receiver, "Array.reverse")
+      left = 0
+      right = array_receiver.size - 1
+
+      while left < right
+        tmp = array_receiver[left]
+        array_receiver[left] = array_receiver[right]
+        array_receiver[right] = tmp
+        left += 1
+        right -= 1
+      end
+
+      array_receiver
+    end
+
+    private def array_shift(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Array.shift")
+      array_receiver = receiver_array(receiver, "Array.shift")
+      return UNDEFINED if array_receiver.empty?
+
+      array_receiver.shift
+    end
+
+    private def array_slice(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 0, 2, "Array.slice")
+      array_receiver = receiver_array(receiver, "Array.slice")
+      size = array_receiver.size
+      start_index = args.size >= 1 ? normalize_slice_index(integer_argument(args[0], "Array.slice"), size) : 0
+      end_index = args.size == 2 ? normalize_slice_index(integer_argument(args[1], "Array.slice"), size) : size
+      return [] of Value if end_index <= start_index
+
+      result = Array(Value).new(end_index - start_index)
+      index = start_index
+      while index < end_index
+        result << array_receiver[index]
+        index += 1
+      end
+
+      result
+    end
+
+    private def array_sort(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Array.sort")
+      array_receiver = receiver_array(receiver, "Array.sort")
+      array_receiver.sort! { |left, right| runtime_to_string(left) <=> runtime_to_string(right) }
+      array_receiver
+    end
+
     private def array_to_string(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "Array.toString")
       array_receiver = receiver_array(receiver, "Array.toString")
       array_receiver.map { |item| runtime_to_string(item) }.join(",")
+    end
+
+    private def array_unshift(receiver : Value, args : Array(Value)) : Value
+      array_receiver = receiver_array(receiver, "Array.unshift")
+      return array_receiver.size if args.empty?
+
+      result = Array(Value).new(array_receiver.size + args.size)
+      args.each { |arg| result << arg }
+      array_receiver.each { |value| result << value }
+
+      array_receiver.clear
+      result.each { |value| array_receiver << value }
+
+      array_receiver.size
     end
 
     private def object_to_string(receiver : Value, args : Array(Value)) : Value
@@ -371,6 +536,65 @@ module GiavaScript
 
       return size if index > size
       index
+    end
+
+    private def normalize_index_argument(value : Value, method_name : String, size : Int32) : Int32
+      index = integer_argument(value, method_name)
+      normalize_slice_index(index, size)
+    end
+
+    private def normalize_last_index_argument(value : Value, method_name : String, size : Int32) : Int32
+      index = integer_argument(value, method_name)
+
+      if index < 0
+        normalized = size + index
+        return -1 if normalized < 0
+        return normalized
+      end
+
+      return size - 1 if index >= size
+      index
+    end
+
+    private def array_value_equals?(left : Value, right : Value) : Bool
+      if left.is_a?(Int32) || left.is_a?(Float64)
+        return false unless right.is_a?(Int32) || right.is_a?(Float64)
+
+        left_number = left.to_f64
+        right_number = right.to_f64
+        return true if left_number.nan? && right_number.nan?
+        return left_number == right_number
+      end
+
+      if left.is_a?(String)
+        return right.is_a?(String) && left == right
+      end
+
+      if left.is_a?(Bool)
+        return right.is_a?(Bool) && left == right
+      end
+
+      if left.nil?
+        return right.nil?
+      end
+
+      if left.is_a?(UndefinedValue)
+        return right.is_a?(UndefinedValue)
+      end
+
+      if left.is_a?(Array(Value))
+        return right.is_a?(Array(Value)) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(Hash(String, Value))
+        return right.is_a?(Hash(String, Value)) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(BuiltinFunction)
+        return right.is_a?(BuiltinFunction) && left.object_id == right.object_id
+      end
+
+      false
     end
 
     private def clamp_substring_index(index : Int32, size : Int32) : Int32

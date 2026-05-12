@@ -528,6 +528,96 @@ describe GiavaScript do
     interpreter.eval("items;").should eq(["[1, 2, 3, 4]"])
   end
 
+  it "supports Array.at with positive and negative indexes" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[10, 20, 30].at(1);").should eq(["20"])
+    interpreter.eval("[10, 20, 30].at(-1);").should eq(["30"])
+    interpreter.eval("[10, 20, 30].at(9);").should eq(["undefined"])
+  end
+
+  it "supports Array.concat without mutating the receiver" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var a = [1, 2]; var b = a.concat([3, 4], 5);").should eq([] of String)
+    interpreter.eval("a;").should eq(["[1, 2]"])
+    interpreter.eval("b;").should eq(["[1, 2, 3, 4, 5]"])
+  end
+
+  it "supports Array.includes and Array.indexOf with optional fromIndex" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var n = +undefined;").should eq([] of String)
+    interpreter.eval("[1, 2, 3, 2].includes(2);").should eq(["true"])
+    interpreter.eval("[1, 2, 3, 2].includes(2, 2);").should eq(["true"])
+    interpreter.eval("[1, 2, 3, 2].includes(2, 4);").should eq(["false"])
+    interpreter.eval("[1, 2, 3].indexOf(2);").should eq(["1"])
+    interpreter.eval("[1, 2, 3, 2].indexOf(2, 2);").should eq(["3"])
+    interpreter.eval("[1, 2, 3].indexOf(9);").should eq(["-1"])
+    interpreter.eval("[n].includes(n);").should eq(["true"])
+  end
+
+  it "supports Array.lastIndexOf with optional fromIndex" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 2].lastIndexOf(2);").should eq(["3"])
+    interpreter.eval("[1, 2, 3, 2].lastIndexOf(2, 2);").should eq(["1"])
+    interpreter.eval("[1, 2, 3, 2].lastIndexOf(2, -2);").should eq(["1"])
+    interpreter.eval("[1, 2, 3].lastIndexOf(9);").should eq(["-1"])
+  end
+
+  it "supports Array.join with default and custom separator" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, true, \"x\"].join();").should eq(["\"1,true,x\""])
+    interpreter.eval("[1, 2, 3].join(\" - \");").should eq(["\"1 - 2 - 3\""])
+  end
+
+  it "supports Array.pop and empty-array pop behavior" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var items = [1, 2, 3];").should eq([] of String)
+    interpreter.eval("items.pop();").should eq(["3"])
+    interpreter.eval("items;").should eq(["[1, 2]"])
+    interpreter.eval("[].pop();").should eq(["undefined"])
+  end
+
+  it "supports Array.shift and Array.unshift with in-place mutation" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var items = [2, 3];").should eq([] of String)
+    interpreter.eval("items.unshift(0, 1);").should eq(["4"])
+    interpreter.eval("items;").should eq(["[0, 1, 2, 3]"])
+    interpreter.eval("items.shift();").should eq(["0"])
+    interpreter.eval("items;").should eq(["[1, 2, 3]"])
+    interpreter.eval("[].shift();").should eq(["undefined"])
+  end
+
+  it "supports Array.reverse and Array.sort as in-place operations" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var a = [1, 2, 3]; a.reverse();").should eq(["[3, 2, 1]"])
+    interpreter.eval("a;").should eq(["[3, 2, 1]"])
+    interpreter.eval("var b = [10, 2, 1]; b.sort();").should eq(["[1, 10, 2]"])
+    interpreter.eval("b;").should eq(["[1, 10, 2]"])
+  end
+
+  it "supports Array.slice with omitted and negative indexes" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var items = [1, 2, 3, 4];").should eq([] of String)
+    interpreter.eval("items.slice();").should eq(["[1, 2, 3, 4]"])
+    interpreter.eval("items.slice(1, 3);").should eq(["[2, 3]"])
+    interpreter.eval("items.slice(-2);").should eq(["[3, 4]"])
+    interpreter.eval("items.slice(3, 1);").should eq(["[]"])
+    interpreter.eval("items;").should eq(["[1, 2, 3, 4]"])
+  end
+
+  it "validates Array method argument counts and index types" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1].at();").should eq(["Error: Array.at expects 1 arguments but got 0"])
+    interpreter.eval("[1].join(\",\", \";\");").should eq(["Error: Array.join expects between 0 and 1 arguments but got 2"])
+    interpreter.eval("[1].slice(0, 1, 2);").should eq(["Error: Array.slice expects between 0 and 2 arguments but got 3"])
+    interpreter.eval("[1].includes(1, 1.5);").should eq(["Error: Array.includes expects an integer argument"])
+    interpreter.eval("[1].indexOf(1, 1.5);").should eq(["Error: Array.indexOf expects an integer argument"])
+    interpreter.eval("[1].lastIndexOf(1, 1.5);").should eq(["Error: Array.lastIndexOf expects an integer argument"])
+    interpreter.eval("[1].slice(1.5);").should eq(["Error: Array.slice expects an integer argument"])
+    interpreter.eval("[1].shift(1);").should eq(["Error: Array.shift expects 0 arguments but got 1"])
+    interpreter.eval("[1].reverse(1);").should eq(["Error: Array.reverse expects 0 arguments but got 1"])
+    interpreter.eval("[1].sort(1);").should eq(["Error: Array.sort expects 0 arguments but got 1"])
+  end
+
   it "handles String.at and String.charAt out-of-range indexes" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"abc\".at(5);").should eq(["undefined"])
