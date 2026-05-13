@@ -28,6 +28,11 @@ Status of core JavaScript language features in GiavaScript.
 | Strict equality (`===`, `!==`) | Available |
 | Logical operators (`&&`, `\|\|`, `!`) | Available |
 
+### Equality operator semantics
+
+- `==` and `!=` use coercive (loose) equality behavior.
+- `===` and `!==` use strict (non-coercive) equality behavior.
+
 ### Logical operator semantics
 
 - `a && b`: evaluates `a` first; if `a` is falsy, returns `a` and does not evaluate `b`; otherwise evaluates and returns `b`.

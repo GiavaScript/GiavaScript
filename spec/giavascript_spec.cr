@@ -204,9 +204,23 @@ describe GiavaScript do
     interpreter.eval("1 < true;").should eq(["Error: operator '<' requires numeric operands"])
   end
 
-  it "prints error for incompatible equality comparisons" do
+  it "coerces loose equality comparisons like vintage JavaScript" do
     interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("true == 1;").should eq(["Error: operator '==' requires both operands to be numbers or both operands to be booleans"])
+    interpreter.eval("true == 1;").should eq(["true"])
+    interpreter.eval("false == 0;").should eq(["true"])
+    interpreter.eval("\"42\" == 42;").should eq(["true"])
+    interpreter.eval("\"\" == 0;").should eq(["true"])
+    interpreter.eval("null == undefined;").should eq(["true"])
+    interpreter.eval("\"text\" == 0;").should eq(["false"])
+    interpreter.eval("\"1\" != 1;").should eq(["false"])
+  end
+
+  it "coerces array and object values for loose equality" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[] == 0;").should eq(["true"])
+    interpreter.eval("[1] == 1;").should eq(["true"])
+    interpreter.eval("[1,2] == \"1,2\";").should eq(["true"])
+    interpreter.eval("({}) == \"[object Object]\";").should eq(["true"])
   end
 
   it "supports mixed arithmetic with variables" do

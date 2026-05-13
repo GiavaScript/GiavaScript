@@ -350,21 +350,49 @@ module GiavaScript
         return operator == Tokenizer::TokenKind::EqualEqualEqual ? result : !result
       end
 
-      result = if left.is_a?(Int32) || left.is_a?(Float64)
-                 if right.is_a?(Int32) || right.is_a?(Float64)
-                   left.to_f64 == right.to_f64
-                 else
-                   operator_lexeme = operator_lexeme(operator)
-                   raise ExpressionError.new("Error: operator '#{operator_lexeme}' requires both operands to be numbers or both operands to be booleans")
-                 end
-               elsif left.is_a?(Bool) && right.is_a?(Bool)
-                 left == right
-               else
-                 operator_lexeme = operator_lexeme(operator)
-                 raise ExpressionError.new("Error: operator '#{operator_lexeme}' requires both operands to be numbers or both operands to be booleans")
-               end
+      result = loose_equality_result(left, right)
 
       operator == Tokenizer::TokenKind::EqualEqual ? result : !result
+    end
+
+    private def loose_equality_result(left : Value, right : Value) : Bool
+      return true if strict_equality_result(left, right)
+
+      if left.nil?
+        return right.is_a?(UndefinedValue)
+      end
+
+      if left.is_a?(UndefinedValue)
+        return right.nil?
+      end
+
+      if (left.is_a?(Int32) || left.is_a?(Float64)) && right.is_a?(String)
+        right_number = coerce_to_number(right)
+        return strict_equality_result(left, right_number)
+      end
+
+      if left.is_a?(String) && (right.is_a?(Int32) || right.is_a?(Float64))
+        left_number = coerce_to_number(left)
+        return strict_equality_result(left_number, right)
+      end
+
+      if left.is_a?(Bool)
+        return loose_equality_result(coerce_to_number(left), right)
+      end
+
+      if right.is_a?(Bool)
+        return loose_equality_result(left, coerce_to_number(right))
+      end
+
+      if primitive_value_for_loose_equality?(left) && object_value_for_loose_equality?(right)
+        return loose_equality_result(left, object_to_primitive_for_loose_equality(right))
+      end
+
+      if object_value_for_loose_equality?(left) && primitive_value_for_loose_equality?(right)
+        return loose_equality_result(object_to_primitive_for_loose_equality(left), right)
+      end
+
+      false
     end
 
     private def strict_equality_result(left : Value, right : Value) : Bool
@@ -406,6 +434,61 @@ module GiavaScript
       end
 
       false
+    end
+
+    private def primitive_value_for_loose_equality?(value : Value) : Bool
+      value.is_a?(Int32) ||
+        value.is_a?(Float64) ||
+        value.is_a?(String) ||
+        value.is_a?(Bool) ||
+        value.nil? ||
+        value.is_a?(UndefinedValue)
+    end
+
+    private def object_value_for_loose_equality?(value : Value) : Bool
+      value.is_a?(Array(Value)) || value.is_a?(Hash(String, Value)) || value.is_a?(BuiltinFunction)
+    end
+
+    private def object_to_primitive_for_loose_equality(value : Value) : Value
+      if value.is_a?(Array(Value))
+        return array_to_loose_string(value)
+      end
+
+      if value.is_a?(Hash(String, Value))
+        return "[object Object]"
+      end
+
+      if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      value
+    end
+
+    private def array_to_loose_string(values : Array(Value)) : String
+      values.map { |item| loose_string_element(item) }.join(",")
+    end
+
+    private def loose_string_element(value : Value) : String
+      return "" if value.nil? || value.is_a?(UndefinedValue)
+
+      if value.is_a?(Array(Value))
+        return array_to_loose_string(value)
+      end
+
+      if value.is_a?(Hash(String, Value))
+        return "[object Object]"
+      end
+
+      if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      if value.is_a?(Bool)
+        return value ? "true" : "false"
+      end
+
+      value.to_s
     end
 
     private def number_operand(value : Value, operator : String) : Number
