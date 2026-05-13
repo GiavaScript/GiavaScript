@@ -302,7 +302,9 @@ module GiavaScript
            Tokenizer::TokenKind::GreaterEqual
         comparison_result(left, right, operator)
       when Tokenizer::TokenKind::EqualEqual,
-           Tokenizer::TokenKind::BangEqual
+           Tokenizer::TokenKind::BangEqual,
+           Tokenizer::TokenKind::EqualEqualEqual,
+           Tokenizer::TokenKind::BangEqualEqual
         equality_result(left, right, operator)
       else
         raise ExpressionError.new("Error: invalid expression")
@@ -343,6 +345,11 @@ module GiavaScript
     end
 
     private def equality_result(left : Value, right : Value, operator : Tokenizer::TokenKind) : Bool
+      if operator == Tokenizer::TokenKind::EqualEqualEqual || operator == Tokenizer::TokenKind::BangEqualEqual
+        result = strict_equality_result(left, right)
+        return operator == Tokenizer::TokenKind::EqualEqualEqual ? result : !result
+      end
+
       result = if left.is_a?(Int32) || left.is_a?(Float64)
                  if right.is_a?(Int32) || right.is_a?(Float64)
                    left.to_f64 == right.to_f64
@@ -358,6 +365,47 @@ module GiavaScript
                end
 
       operator == Tokenizer::TokenKind::EqualEqual ? result : !result
+    end
+
+    private def strict_equality_result(left : Value, right : Value) : Bool
+      if left.is_a?(Int32) || left.is_a?(Float64)
+        return false unless right.is_a?(Int32) || right.is_a?(Float64)
+
+        left_number = left.to_f64
+        right_number = right.to_f64
+        return false if left_number.nan? || right_number.nan?
+        return left_number == right_number
+      end
+
+      if left.is_a?(String)
+        return right.is_a?(String) && left == right
+      end
+
+      if left.is_a?(Bool)
+        return right.is_a?(Bool) && left == right
+      end
+
+      if left.nil?
+        return right.nil?
+      end
+
+      if left.is_a?(UndefinedValue)
+        return right.is_a?(UndefinedValue)
+      end
+
+      if left.is_a?(Array(Value))
+        return right.is_a?(Array(Value)) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(Hash(String, Value))
+        return right.is_a?(Hash(String, Value)) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(BuiltinFunction)
+        return right.is_a?(BuiltinFunction) && left.object_id == right.object_id
+      end
+
+      false
     end
 
     private def number_operand(value : Value, operator : String) : Number

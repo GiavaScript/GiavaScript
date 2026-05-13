@@ -43,7 +43,7 @@ Status of core JavaScript language features in GiavaScript.
 | Parenthesized expressions | Available |
 | Comparisons (`<`, `>`, `<=`, `>=`) | Available |
 | Equality (`==`, `!=`) | Available |
-| Strict equality (`===`, `!==`) | Not available |
+| Strict equality (`===`, `!==`) | Available |
 | Logical operators (`&&`, `\|\|`, `!`) | Available |
 
 #### Logical operator semantics

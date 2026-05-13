@@ -24,6 +24,8 @@ module GiavaScript
       GreaterEqual
       EqualEqual
       BangEqual
+      EqualEqualEqual
+      BangEqualEqual
       Bang
       AndAnd
       OrOr
@@ -91,7 +93,12 @@ module GiavaScript
         advance
         if current_char == '='
           advance
-          Token.new(TokenKind::EqualEqual, "==")
+          if current_char == '='
+            advance
+            Token.new(TokenKind::EqualEqualEqual, "===")
+          else
+            Token.new(TokenKind::EqualEqual, "==")
+          end
         else
           raise invalid_rhs_error
         end
@@ -99,7 +106,12 @@ module GiavaScript
         advance
         if current_char == '='
           advance
-          Token.new(TokenKind::BangEqual, "!=")
+          if current_char == '='
+            advance
+            Token.new(TokenKind::BangEqualEqual, "!==")
+          else
+            Token.new(TokenKind::BangEqual, "!=")
+          end
         else
           Token.new(TokenKind::Bang, "!")
         end

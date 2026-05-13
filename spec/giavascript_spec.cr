@@ -166,9 +166,37 @@ describe GiavaScript do
     interpreter.eval("true == false;").should eq(["false"])
   end
 
+  it "evaluates strict equality and inequality operators" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("4 === 4;").should eq(["true"])
+    interpreter.eval("4 === \"4\";").should eq(["false"])
+    interpreter.eval("true !== 1;").should eq(["true"])
+    interpreter.eval("null === null;").should eq(["true"])
+    interpreter.eval("undefined === undefined;").should eq(["true"])
+    interpreter.eval("null === undefined;").should eq(["false"])
+  end
+
+  it "compares references with strict equality" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var arr = [1]; var same = arr; var other = [1];").should eq([] of String)
+    interpreter.eval("arr === same;").should eq(["true"])
+    interpreter.eval("arr === other;").should eq(["false"])
+  end
+
+  it "returns false for NaN strict equality" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var nan = +undefined;").should eq([] of String)
+    interpreter.eval("nan === nan;").should eq(["false"])
+  end
+
   it "uses comparison and equality precedence correctly" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("1 + 2 > 2 == true;").should eq(["true"])
+  end
+
+  it "uses comparison and strict equality precedence correctly" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("1 + 2 > 2 === true;").should eq(["true"])
   end
 
   it "prints error for incompatible relational comparisons" do

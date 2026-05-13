@@ -333,7 +333,10 @@ module GiavaScript
     end
 
     private def equality_operator?(kind : Tokenizer::TokenKind) : Bool
-      kind == Tokenizer::TokenKind::EqualEqual || kind == Tokenizer::TokenKind::BangEqual
+      kind == Tokenizer::TokenKind::EqualEqual ||
+        kind == Tokenizer::TokenKind::BangEqual ||
+        kind == Tokenizer::TokenKind::EqualEqualEqual ||
+        kind == Tokenizer::TokenKind::BangEqualEqual
     end
 
     private def advance_token
