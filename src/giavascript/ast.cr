@@ -125,6 +125,16 @@ module GiavaScript
     end
   end
 
+  record SwitchClause, test : Expr?, statements : Array(Statement)
+
+  class SwitchStatement < Statement
+    getter discriminant : Expr
+    getter clauses : Array(SwitchClause)
+
+    def initialize(@discriminant : Expr, @clauses : Array(SwitchClause))
+    end
+  end
+
   class BreakStatement < Statement
   end
 

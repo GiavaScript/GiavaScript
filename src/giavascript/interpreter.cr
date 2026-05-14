@@ -109,13 +109,13 @@ module GiavaScript
       end
 
       statements.each do |stmt|
-        message = eval_statement(stmt, @env, false, false)
+        message = eval_statement(stmt, @env, false, false, false)
         messages << message if message
       end
       messages
     end
 
-    private def eval_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       if stmt.starts_with?("function ")
         begin
           @function_runtime.define_function(stmt)
@@ -126,19 +126,23 @@ module GiavaScript
       end
 
       if starts_with_keyword?(stmt, "if")
-        return eval_if_statement(stmt, env, inside_function, inside_loop)
+        return eval_if_statement(stmt, env, inside_function, inside_loop, inside_switch)
       end
 
       if starts_with_keyword?(stmt, "for")
-        return eval_for_statement(stmt, env, inside_function, inside_loop)
+        return eval_for_statement(stmt, env, inside_function, inside_loop, inside_switch)
       end
 
       if starts_with_keyword?(stmt, "while") || starts_with_keyword?(stmt, "do")
-        return eval_while_statement(stmt, env, inside_function, inside_loop)
+        return eval_while_statement(stmt, env, inside_function, inside_loop, inside_switch)
+      end
+
+      if starts_with_keyword?(stmt, "switch")
+        return eval_switch_statement(stmt, env, inside_function, inside_loop, inside_switch)
       end
 
       if stmt == "break"
-        return "Error: break can only be used inside loops" unless inside_loop
+        return "Error: break can only be used inside loops or switch statements" unless inside_loop || inside_switch
         raise BreakSignal.new
       end
 
@@ -439,42 +443,42 @@ module GiavaScript
       nil
     end
 
-    private def eval_if_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_if_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       parsed_if = begin
         IfStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
         return ex.message || "Error: invalid if statement"
       end
 
-      eval_if_ast(parsed_if.statement, env, inside_function, inside_loop)
+      eval_if_ast(parsed_if.statement, env, inside_function, inside_loop, inside_switch)
     end
 
-    private def eval_if_ast(if_statement : IfStatement, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_if_ast(if_statement : IfStatement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       begin
         condition_value = evaluate_expression(if_statement.condition, env)
         branch = truthy?(condition_value) ? if_statement.then_branch : if_statement.else_branch
         return nil unless branch
 
-        eval_statement_node(branch, env, inside_function, inside_loop)
+        eval_statement_node(branch, env, inside_function, inside_loop, inside_switch)
       rescue ex : ExpressionError
         ex.message || "Error: invalid if statement"
       end
     end
 
-    private def eval_for_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_for_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       parsed_for = begin
         ForStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
         return ex.message || "Error: invalid for statement"
       end
 
-      eval_for_ast(parsed_for.statement, env, inside_function, inside_loop)
+      eval_for_ast(parsed_for.statement, env, inside_function, inside_loop, inside_switch)
     end
 
-    private def eval_for_ast(for_statement : ForStatement, env : Environment, inside_function : Bool, _inside_loop : Bool) : String?
+    private def eval_for_ast(for_statement : ForStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
       begin
         if init = for_statement.init
-          init_message = eval_precompiled_raw_statement(init.source, env, inside_function, true)
+          init_message = eval_precompiled_raw_statement(init.source, env, inside_function, true, inside_switch)
           if init_message && init_message.starts_with?("Error:")
             return init_message
           end
@@ -487,7 +491,7 @@ module GiavaScript
           end
 
           begin
-            body_message = eval_statement_node(for_statement.body, env, inside_function, true)
+            body_message = eval_statement_node(for_statement.body, env, inside_function, true, inside_switch)
             if body_message && body_message.starts_with?("Error:")
               return body_message
             end
@@ -497,7 +501,7 @@ module GiavaScript
           end
 
           if update = for_statement.update
-            update_message = eval_precompiled_raw_statement(update.source, env, inside_function, true)
+            update_message = eval_precompiled_raw_statement(update.source, env, inside_function, true, inside_switch)
             if update_message && update_message.starts_with?("Error:")
               return update_message
             end
@@ -510,7 +514,7 @@ module GiavaScript
       end
     end
 
-    private def eval_while_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_while_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       parsed_loop = begin
         WhileStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
@@ -522,22 +526,22 @@ module GiavaScript
 
       case statement = parsed_loop.statement
       when WhileStatement
-        eval_while_ast(statement, env, inside_function, inside_loop)
+        eval_while_ast(statement, env, inside_function, inside_loop, inside_switch)
       when DoWhileStatement
-        eval_do_while_ast(statement, env, inside_function, inside_loop)
+        eval_do_while_ast(statement, env, inside_function, inside_loop, inside_switch)
       else
         "Error: invalid while statement"
       end
     end
 
-    private def eval_while_ast(while_statement : WhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool) : String?
+    private def eval_while_ast(while_statement : WhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
       begin
         loop do
           condition_value = evaluate_expression(while_statement.condition, env)
           break unless truthy?(condition_value)
 
           begin
-            body_message = eval_statement_node(while_statement.body, env, inside_function, true)
+            body_message = eval_statement_node(while_statement.body, env, inside_function, true, inside_switch)
             if body_message && body_message.starts_with?("Error:")
               return body_message
             end
@@ -553,11 +557,11 @@ module GiavaScript
       end
     end
 
-    private def eval_do_while_ast(do_while_statement : DoWhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool) : String?
+    private def eval_do_while_ast(do_while_statement : DoWhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
       begin
         loop do
           begin
-            body_message = eval_statement_node(do_while_statement.body, env, inside_function, true)
+            body_message = eval_statement_node(do_while_statement.body, env, inside_function, true, inside_switch)
             if body_message && body_message.starts_with?("Error:")
               return body_message
             end
@@ -576,14 +580,71 @@ module GiavaScript
       end
     end
 
-    private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_switch_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+      parsed_switch = begin
+        SwitchStatementParser.new(stmt).parse_from
+      rescue ex : ExpressionError
+        return ex.message || "Error: invalid switch statement"
+      end
+
+      eval_switch_ast(parsed_switch.statement, env, inside_function, inside_loop, inside_switch)
+    end
+
+    private def eval_switch_ast(switch_statement : SwitchStatement, env : Environment, inside_function : Bool, inside_loop : Bool, _inside_switch : Bool = false) : String?
+      begin
+        discriminant_value = evaluate_expression(switch_statement.discriminant, env)
+        start_index = nil.as(Int32?)
+        default_index = nil.as(Int32?)
+
+        switch_statement.clauses.each_with_index do |clause, index|
+          if clause.test.nil?
+            default_index = index
+            next
+          end
+
+          next unless start_index.nil?
+
+          test_value = evaluate_expression(clause.test.not_nil!, env)
+          if strict_equals_values?(discriminant_value, test_value)
+            start_index = index
+          end
+        end
+
+        execute_from = start_index || default_index
+        return nil unless execute_from
+
+        index = execute_from
+        while index < switch_statement.clauses.size
+          clause = switch_statement.clauses[index]
+
+          clause.statements.each do |inner_statement|
+            begin
+              message = eval_statement_node(inner_statement, env, inside_function, inside_loop, true)
+              if message && message.starts_with?("Error:")
+                return message
+              end
+            rescue BreakSignal
+              return nil
+            end
+          end
+
+          index += 1
+        end
+
+        nil
+      rescue ex : ExpressionError
+        ex.message || "Error: invalid switch statement"
+      end
+    end
+
+    private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       case statement
       when RawStatement
-        eval_precompiled_raw_statement(statement.source, env, inside_function, inside_loop)
+        eval_precompiled_raw_statement(statement.source, env, inside_function, inside_loop, inside_switch)
       when BlockStatement
         block_message = nil.as(String?)
         statement.statements.each do |inner_statement|
-          message = eval_statement_node(inner_statement, env, inside_function, inside_loop)
+          message = eval_statement_node(inner_statement, env, inside_function, inside_loop, inside_switch)
           if message && message.starts_with?("Error:")
             return message
           end
@@ -591,15 +652,17 @@ module GiavaScript
         end
         block_message
       when IfStatement
-        eval_if_ast(statement, env, inside_function, inside_loop)
+        eval_if_ast(statement, env, inside_function, inside_loop, inside_switch)
       when ForStatement
-        eval_for_ast(statement, env, inside_function, inside_loop)
+        eval_for_ast(statement, env, inside_function, inside_loop, inside_switch)
       when WhileStatement
-        eval_while_ast(statement, env, inside_function, inside_loop)
+        eval_while_ast(statement, env, inside_function, inside_loop, inside_switch)
       when DoWhileStatement
-        eval_do_while_ast(statement, env, inside_function, inside_loop)
+        eval_do_while_ast(statement, env, inside_function, inside_loop, inside_switch)
+      when SwitchStatement
+        eval_switch_ast(statement, env, inside_function, inside_loop, inside_switch)
       when BreakStatement
-        return "Error: break can only be used inside loops" unless inside_loop
+        return "Error: break can only be used inside loops or switch statements" unless inside_loop || inside_switch
         raise BreakSignal.new
       when ContinueStatement
         return "Error: continue can only be used inside loops" unless inside_loop
@@ -609,12 +672,12 @@ module GiavaScript
       end
     end
 
-    private def eval_precompiled_raw_statement(source : String, env : Environment, inside_function : Bool, inside_loop : Bool) : String?
+    private def eval_precompiled_raw_statement(source : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       compiled = compiled_raw_statement(source)
 
       case compiled
       when FallbackRawStatement
-        eval_statement(compiled.source, env, inside_function, inside_loop)
+        eval_statement(compiled.source, env, inside_function, inside_loop, inside_switch)
       when IncrementRawStatement
         begin
           current_value = evaluate_expression(compiled.target, env)
@@ -741,6 +804,47 @@ module GiavaScript
       end
 
       true
+    end
+
+    private def strict_equals_values?(left : Value, right : Value) : Bool
+      if left.is_a?(Int32) || left.is_a?(Float64)
+        return false unless right.is_a?(Int32) || right.is_a?(Float64)
+
+        left_number = left.to_f64
+        right_number = right.to_f64
+        return false if left_number.nan? || right_number.nan?
+        return left_number == right_number
+      end
+
+      if left.is_a?(String)
+        return right.is_a?(String) && left == right
+      end
+
+      if left.is_a?(Bool)
+        return right.is_a?(Bool) && left == right
+      end
+
+      if left.nil?
+        return right.nil?
+      end
+
+      if left.is_a?(UndefinedValue)
+        return right.is_a?(UndefinedValue)
+      end
+
+      if left.is_a?(Array(Value))
+        return right.is_a?(Array(Value)) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(Hash(String, Value))
+        return right.is_a?(Hash(String, Value)) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(BuiltinFunction)
+        return right.is_a?(BuiltinFunction) && left.object_id == right.object_id
+      end
+
+      false
     end
 
     private def starts_with_keyword?(source : String, keyword : String) : Bool

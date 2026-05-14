@@ -97,6 +97,11 @@ module GiavaScript
         return ParsedStatement.new(parsed_loop.statement, parsed_loop.end_index)
       end
 
+      if starts_with_keyword?(current, "switch")
+        parsed_switch = SwitchStatementParser.new(@source).parse_from(current)
+        return ParsedStatement.new(parsed_switch.statement, parsed_switch.end_index)
+      end
+
       if starts_with_keyword?(current, "function")
         function_end_index = find_function_end_index(current)
         source = @source[current...function_end_index].strip
@@ -145,6 +150,10 @@ module GiavaScript
 
       if starts_with_keyword_in_source?(source, "while") || starts_with_keyword_in_source?(source, "do")
         return WhileStatementParser.new(source).parse_from.statement
+      end
+
+      if starts_with_keyword_in_source?(source, "switch")
+        return SwitchStatementParser.new(source).parse_from.statement
       end
 
       return BreakStatement.new if source == "break"

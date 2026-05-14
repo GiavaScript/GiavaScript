@@ -965,6 +965,46 @@ describe GiavaScript do
     interpreter.eval("i;").should eq(["1"])
   end
 
+  it "supports switch with matching case and break" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var value = 0; switch (2) { case 1: value = 1; break; case 2: value = 7; break; default: value = 9; }").should eq([] of String)
+    interpreter.eval("value;").should eq(["7"])
+  end
+
+  it "supports switch fallthrough behavior" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var value = 0; switch (1) { case 1: value = 1; case 2: value = value + 2; break; default: value = 99; }").should eq([] of String)
+    interpreter.eval("value;").should eq(["3"])
+  end
+
+  it "uses strict matching semantics in switch cases" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var value = 0; switch (1) { case \"1\": value = 1; break; default: value = 2; }").should eq([] of String)
+    interpreter.eval("value;").should eq(["2"])
+  end
+
+  it "supports default clauses and case labels after default" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var value = 0; switch (4) { case 1: value = 1; break; default: value = 2; case 3: value = value + 3; break; }").should eq([] of String)
+    interpreter.eval("value;").should eq(["5"])
+  end
+
+  it "allows continue inside switch when nested in loops" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var i = 0; var seen = 0; while (i < 3) { i = i + 1; switch (i) { case 2: continue; default: seen = seen + 1; } }").should eq([] of String)
+    interpreter.eval("seen;").should eq(["2"])
+  end
+
+  it "returns runtime error for continue in switch outside loops" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("switch (1) { case 1: continue; }").should eq(["Error: continue can only be used inside loops"])
+  end
+
   it "stops block execution after first runtime error" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)
@@ -975,7 +1015,7 @@ describe GiavaScript do
 
   it "returns runtime error for break outside loops" do
     interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("break;").should eq(["Error: break can only be used inside loops"])
+    interpreter.eval("break;").should eq(["Error: break can only be used inside loops or switch statements"])
   end
 
   it "returns runtime error for continue outside loops" do
@@ -1001,6 +1041,11 @@ describe GiavaScript do
   it "returns error for invalid do...while syntax" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("do value = 1; while value);").should eq(["Error: invalid do...while statement"])
+  end
+
+  it "returns error for invalid switch syntax" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("switch value) { case 1: value = 1; }").should eq(["Error: invalid switch statement"])
   end
 
   it "prints error for missing variables" do

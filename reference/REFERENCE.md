@@ -70,7 +70,7 @@ Status of core JavaScript language features in GiavaScript.
 | `for (...)` loops | Available |
 | `break` / `continue` inside loops | Available |
 | `while` / `do...while` loops | Available |
-| `switch` statements | Not available |
+| `switch` statements | Available |
 
 ### Values and collections
 
