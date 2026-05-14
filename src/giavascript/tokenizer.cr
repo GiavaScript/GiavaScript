@@ -5,6 +5,7 @@ module GiavaScript
       Identifier
       Number
       String
+      Template
       True
       False
       If
@@ -164,6 +165,8 @@ module GiavaScript
         end
       when '"', '\''
         parse_string_token
+      when '`'
+        parse_template_token
       else
         if identifier_start?(char)
           parse_identifier_token
@@ -183,6 +186,13 @@ module GiavaScript
       value = parser.parse
       @index = parser.index
       Token.new(TokenKind::String, value)
+    end
+
+    private def parse_template_token : Token
+      parser = TemplateLiteralParser.new(@source, @index)
+      value = parser.parse
+      @index = parser.index
+      Token.new(TokenKind::Template, value)
     end
 
     private def parse_identifier_token : Token

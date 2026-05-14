@@ -261,6 +261,23 @@ describe GiavaScript do
     interpreter.eval("'a \\'quote\\'';").should eq(["\"a 'quote'\""])
   end
 
+  it "evaluates template literals without interpolation" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("`hello world`;").should eq(["\"hello world\""])
+  end
+
+  it "interpolates template literal expressions" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var name = \"GiavaScript\"; var major = 1;").should eq([] of String)
+    interpreter.eval("`Hello ${name} v${major + 1}`;").should eq(["\"Hello GiavaScript v2\""])
+  end
+
+  it "supports multiline template literals and escaped interpolation markers" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("`line1\nline2`;").should eq(["\"line1\\nline2\""])
+    interpreter.eval("`Price: \\${5}`;").should eq(["\"Price: ${5}\""])
+  end
+
   it "defines functions and reads outer values" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var outsideValue = 0;\nfunction sumNumbers(a, b) {\n  return a + b + outsideValue;\n}\nvar result = sumNumbers(2, 3);").should eq([] of String)

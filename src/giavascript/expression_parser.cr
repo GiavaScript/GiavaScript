@@ -190,6 +190,10 @@ module GiavaScript
         string_value = @current.lexeme
         advance_token
         LiteralExpr.new(string_value)
+      when Tokenizer::TokenKind::Template
+        template_source = @current.lexeme
+        advance_token
+        parse_template_literal(template_source)
       when Tokenizer::TokenKind::True
         advance_token
         LiteralExpr.new(true)
@@ -291,6 +295,140 @@ module GiavaScript
       end
 
       VariableExpr.new(identifier)
+    end
+
+    private def parse_template_literal(template_source : String) : Expr
+      segments = [] of String
+      expressions = [] of Expr
+      segment_start = 0
+      current = 0
+
+      while current < template_source.size
+        char = template_source[current]
+
+        if char == '\\'
+          current += 1
+          raise invalid_rhs_error if current >= template_source.size
+          current += 1
+          next
+        end
+
+        if char == '$' && template_source[current + 1]? == '{'
+          segments << decode_template_segment(template_source[segment_start...current])
+          interpolation = parse_template_interpolation(template_source, current + 2)
+          expression_source = interpolation[:expression_source]
+          expression_end = interpolation[:expression_end]
+
+          begin
+            expressions << ExpressionParser.new(expression_source).parse
+          rescue ExpressionError
+            raise invalid_rhs_error
+          end
+
+          current = expression_end
+          segment_start = current
+          next
+        end
+
+        current += 1
+      end
+
+      segments << decode_template_segment(template_source[segment_start...template_source.size])
+      TemplateLiteralExpr.new(segments, expressions)
+    end
+
+    private def decode_template_segment(segment_source : String) : String
+      value = String::Builder.new
+      current = 0
+
+      while current < segment_source.size
+        char = segment_source[current]
+
+        if char != '\\'
+          value << char
+          current += 1
+          next
+        end
+
+        current += 1
+        escaped = segment_source[current]?
+        raise invalid_rhs_error unless escaped
+
+        case escaped
+        when '`', '\\'
+          value << escaped
+        when 'n'
+          value << '\n'
+        when 't'
+          value << '\t'
+        when '$'
+          if segment_source[current + 1]? == '{'
+            value << '$'
+            value << '{'
+            current += 1
+          else
+            value << '$'
+          end
+        else
+          raise invalid_rhs_error
+        end
+
+        current += 1
+      end
+
+      value.to_s
+    end
+
+    private def parse_template_interpolation(template_source : String, start_index : Int32) : NamedTuple(expression_source: String, expression_end: Int32)
+      current = start_index
+      brace_depth = 1
+      string_delimiter = nil.as(Char?)
+      escaping = false
+
+      while current < template_source.size
+        char = template_source[current]
+
+        if delimiter = string_delimiter
+          if escaping
+            escaping = false
+          elsif char == '\\'
+            escaping = true
+          elsif char == delimiter
+            string_delimiter = nil
+          end
+
+          current += 1
+          next
+        end
+
+        if char == '"' || char == '\'' || char == '`'
+          string_delimiter = char
+          current += 1
+          next
+        end
+
+        if char == '{'
+          brace_depth += 1
+          current += 1
+          next
+        end
+
+        if char == '}'
+          brace_depth -= 1
+          if brace_depth == 0
+            expression_source = template_source[start_index...current].strip
+            raise invalid_rhs_error if expression_source.empty?
+            return {expression_source: expression_source, expression_end: current + 1}
+          end
+
+          current += 1
+          next
+        end
+
+        current += 1
+      end
+
+      raise invalid_rhs_error
     end
 
     private def parse_call_arguments : Array(Expr)

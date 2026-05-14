@@ -9,6 +9,14 @@ module GiavaScript
     end
   end
 
+  class TemplateLiteralExpr < Expr
+    getter segments : Array(String)
+    getter expressions : Array(Expr)
+
+    def initialize(@segments : Array(String), @expressions : Array(Expr))
+    end
+  end
+
   class VariableExpr < Expr
     getter name : String
 

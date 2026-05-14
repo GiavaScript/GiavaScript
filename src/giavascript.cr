@@ -24,6 +24,7 @@ module GiavaScript
 end
 
 require "./giavascript/string_literal_parser"
+require "./giavascript/template_literal_parser"
 require "./giavascript/tokenizer"
 require "./giavascript/ast"
 require "./giavascript/expression_parser"

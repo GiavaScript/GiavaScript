@@ -81,7 +81,7 @@ Status of core JavaScript language features in GiavaScript.
 | Array literals and indexing | Available |
 | Object literals | Available |
 | Dot and bracket property access | Available |
-| Template literals | Not available |
+| Template literals | Available |
 
 ### Classic global functions
 

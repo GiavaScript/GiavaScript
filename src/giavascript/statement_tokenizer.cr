@@ -110,7 +110,7 @@ module GiavaScript
         end
 
         case char
-        when '"', '\''
+        when '"', '\'', '`'
           string_delimiter = char
         when '('
           paren_depth += 1
@@ -180,7 +180,7 @@ module GiavaScript
         end
 
         case char
-        when '"', '\''
+        when '"', '\'', '`'
           string_delimiter = char
         when '('
           paren_depth += 1
@@ -221,7 +221,7 @@ module GiavaScript
         end
 
         case char
-        when '"', '\''
+        when '"', '\'', '`'
           string_delimiter = char
         when '{'
           brace_depth += 1

@@ -7,6 +7,8 @@ module GiavaScript
       case expr
       when LiteralExpr
         expr.value
+      when TemplateLiteralExpr
+        evaluate_template_literal(expr)
       when VariableExpr
         lookup = @env.lookup(expr.name)
         if lookup[:found]
@@ -50,6 +52,21 @@ module GiavaScript
         object[property.key] = evaluate(property.value)
       end
       object
+    end
+
+    private def evaluate_template_literal(expr : TemplateLiteralExpr) : Value
+      value = String::Builder.new
+
+      expr.segments.each_with_index do |segment, index|
+        value << segment
+
+        interpolation = expr.expressions[index]?
+        if interpolation
+          value << value_to_string(evaluate(interpolation))
+        end
+      end
+
+      value.to_s
     end
 
     private def evaluate_unary(expr : UnaryExpr) : Value
