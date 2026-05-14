@@ -890,7 +890,115 @@ module GiavaScript
       env["console"] = build_console_object
       env["JSON"] = build_json_object
       env["Math"] = build_math_object
+      env["parseInt"] = build_parse_int_function
+      env["parseFloat"] = build_parse_float_function
+      env["isNaN"] = build_is_nan_function
       env
+    end
+
+    private def build_parse_int_function : Value
+      BuiltinFunction.new("parseInt", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity_between(args, 1, 2, "parseInt")
+
+        source = to_primitive_string_for_globals(args[0]).lstrip
+        nan = Float64::NAN.as(Value)
+
+        result = if source.empty?
+          nan
+        else
+          sign = 1
+          if source.starts_with?('+')
+            source = source[1...source.size]
+          elsif source.starts_with?('-')
+            sign = -1
+            source = source[1...source.size]
+          end
+
+          if source.empty?
+            nan
+          else
+            radix = 0
+            if args.size == 2
+              radix_number = number_argument(args[1], "parseInt", 1)
+              radix = radix_number.to_i32
+            end
+
+            if radix != 0 && (radix < 2 || radix > 36)
+              nan
+            else
+              if radix == 0
+                if source.starts_with?("0x") || source.starts_with?("0X")
+                  radix = 16
+                  source = source[2...source.size]
+                else
+                  radix = 10
+                end
+              elsif radix == 16 && (source.starts_with?("0x") || source.starts_with?("0X"))
+                source = source[2...source.size]
+              end
+
+              value = 0.0
+              parsed_any_digit = false
+
+              source.each_char do |char|
+                digit = parse_int_digit_value(char)
+                break unless digit
+                break if digit >= radix
+
+                parsed_any_digit = true
+                value = value * radix + digit
+              end
+
+              if parsed_any_digit
+                value *= sign
+
+                if value.finite? && value >= Int32::MIN && value <= Int32::MAX
+                  value.to_i32.as(Value)
+                else
+                  value.as(Value)
+                end
+              else
+                nan
+              end
+            end
+          end
+        end
+
+        result.as(Value)
+      end)
+    end
+
+    private def build_parse_float_function : Value
+      BuiltinFunction.new("parseFloat", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 1, "parseFloat")
+        source = to_primitive_string_for_globals(args[0]).lstrip
+        nan = Float64::NAN.as(Value)
+
+        result = if match = source.match(/\A[+-]?(?:Infinity|(?:(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?))/)
+          token = match[0]
+
+          if token == "Infinity" || token == "+Infinity"
+            Float64::INFINITY.as(Value)
+          elsif token == "-Infinity"
+            (-Float64::INFINITY).as(Value)
+          else
+            parsed = token.to_f64?
+            parsed ? parsed.as(Value) : nan
+          end
+        else
+          nan
+        end
+
+        result.as(Value)
+      end)
+    end
+
+    private def build_is_nan_function : Value
+      BuiltinFunction.new("isNaN", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 1, "isNaN")
+        number = coerce_to_number_for_globals(args[0])
+        (number.is_a?(Float64) && number.nan?).as(Value)
+      end)
     end
 
     private def build_console_object : Hash(String, Value)
@@ -1124,6 +1232,12 @@ module GiavaScript
       raise ExpressionError.new("Error: #{method_name} expects #{expected} arguments but got #{args.size}")
     end
 
+    private def assert_builtin_arity_between(args : Array(Value), min : Int32, max : Int32, method_name : String)
+      return if args.size >= min && args.size <= max
+
+      raise ExpressionError.new("Error: #{method_name} expects between #{min} and #{max} arguments but got #{args.size}")
+    end
+
     private def number_argument(value : Value, method_name : String, index : Int32) : Number
       return value if value.is_a?(Int32)
       return value if value.is_a?(Float64)
@@ -1142,6 +1256,90 @@ module GiavaScript
         number_argument(args[0], method_name, 0).to_f64,
         number_argument(args[1], method_name, 1).to_f64,
       }
+    end
+
+    private def parse_int_digit_value(char : Char) : Int32?
+      if char.ascii_number?
+        return char.ord - '0'.ord
+      end
+
+      lower = char.downcase
+      return nil unless lower >= 'a' && lower <= 'z'
+
+      lower.ord - 'a'.ord + 10
+    end
+
+    private def coerce_to_number_for_globals(value : Value) : Number
+      return value if value.is_a?(Int32)
+      return value if value.is_a?(Float64)
+      return value ? 1 : 0 if value.is_a?(Bool)
+      return 0 if value.nil?
+      return Float64::NAN if value.is_a?(UndefinedValue)
+
+      if value.is_a?(String)
+        trimmed = value.strip
+        return 0 if trimmed.empty?
+
+        parsed = trimmed.to_f64?
+        return parsed if parsed
+
+        return Float64::NAN
+      end
+
+      if value.is_a?(Array(Value))
+        return coerce_to_number_for_globals(array_to_global_number_string(value))
+      end
+
+      Float64::NAN
+    end
+
+    private def to_primitive_string_for_globals(value : Value) : String
+      return "null" if value.nil?
+      return "undefined" if value.is_a?(UndefinedValue)
+
+      if value.is_a?(Bool)
+        return value ? "true" : "false"
+      end
+
+      if value.is_a?(Array(Value))
+        return array_to_global_number_string(value)
+      end
+
+      if value.is_a?(Hash(String, Value))
+        return "[object Object]"
+      end
+
+      if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      value.to_s
+    end
+
+    private def array_to_global_number_string(values : Array(Value)) : String
+      values.map { |item| global_array_element_to_string(item) }.join(",")
+    end
+
+    private def global_array_element_to_string(value : Value) : String
+      return "" if value.nil? || value.is_a?(UndefinedValue)
+
+      if value.is_a?(Array(Value))
+        return array_to_global_number_string(value)
+      end
+
+      if value.is_a?(Hash(String, Value))
+        return "[object Object]"
+      end
+
+      if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      if value.is_a?(Bool)
+        return value ? "true" : "false"
+      end
+
+      value.to_s
     end
 
     private def json_any_to_value(value : ::JSON::Any) : Value

@@ -83,6 +83,14 @@ Status of core JavaScript language features in GiavaScript.
 | Dot and bracket property access | Available |
 | Template literals | Not available |
 
+### Classic global functions
+
+| Feature | Status |
+| --- | --- |
+| `parseInt()` | Available |
+| `parseFloat()` | Available |
+| `isNaN()` | Available |
+
 Notes:
 - This reflects current behavior in the interpreter and specs.
 

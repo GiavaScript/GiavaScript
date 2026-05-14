@@ -445,6 +445,40 @@ describe GiavaScript do
     interpreter.eval("JSON.parse(\"{}\");").should eq(["Error: value is not callable"])
   end
 
+  it "provides parseInt, parseFloat, and isNaN as global functions" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("parseInt(\"42\");").should eq(["42"])
+    interpreter.eval("parseInt(\"  -15px\");").should eq(["-15"])
+    interpreter.eval("parseInt(\"11\", 2);").should eq(["3"])
+    interpreter.eval("parseInt(\"0x10\");").should eq(["16"])
+    interpreter.eval("parseInt(\"foo\");").should eq(["NaN"])
+    interpreter.eval("parseFloat(\"3.14abc\");").should eq(["3.14"])
+    interpreter.eval("parseFloat(\"-2.5e2x\");").should eq(["-250.0"])
+    interpreter.eval("parseFloat(\"foo\");").should eq(["NaN"])
+    interpreter.eval("isNaN(\"foo\");").should eq(["true"])
+    interpreter.eval("isNaN(\"123\");").should eq(["false"])
+    interpreter.eval("isNaN(undefined);").should eq(["true"])
+    interpreter.eval("isNaN(null);").should eq(["false"])
+  end
+
+  it "validates parseInt, parseFloat, and isNaN arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("parseInt();").should eq(["Error: parseInt expects between 1 and 2 arguments but got 0"])
+    interpreter.eval("parseInt(\"10\", \"2\");").should eq(["Error: parseInt argument 2 must be a number"])
+    interpreter.eval("parseInt(\"10\", 1);").should eq(["NaN"])
+    interpreter.eval("parseFloat();").should eq(["Error: parseFloat expects 1 arguments but got 0"])
+    interpreter.eval("isNaN();").should eq(["Error: isNaN expects 1 arguments but got 0"])
+  end
+
+  it "raises runtime error when parseInt is overwritten with non-callable" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("parseInt = 5;").should eq([] of String)
+    interpreter.eval("parseInt(\"10\");").should eq(["Error: value is not callable"])
+  end
+
   it "prints error when len is not defined" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
