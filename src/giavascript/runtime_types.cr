@@ -33,8 +33,10 @@ module GiavaScript
         "includes" => BuiltinMethodDefinition.new("String.includes", ->(receiver : Value, args : Array(Value)) { string_includes(receiver, args).as(Value) }),
         "indexOf" => BuiltinMethodDefinition.new("String.indexOf", ->(receiver : Value, args : Array(Value)) { string_index_of(receiver, args).as(Value) }),
         "lastIndexOf" => BuiltinMethodDefinition.new("String.lastIndexOf", ->(receiver : Value, args : Array(Value)) { string_last_index_of(receiver, args).as(Value) }),
+        "replace" => BuiltinMethodDefinition.new("String.replace", ->(receiver : Value, args : Array(Value)) { string_replace(receiver, args).as(Value) }),
         "repeat" => BuiltinMethodDefinition.new("String.repeat", ->(receiver : Value, args : Array(Value)) { string_repeat(receiver, args).as(Value) }),
         "slice" => BuiltinMethodDefinition.new("String.slice", ->(receiver : Value, args : Array(Value)) { string_slice(receiver, args).as(Value) }),
+        "split" => BuiltinMethodDefinition.new("String.split", ->(receiver : Value, args : Array(Value)) { string_split(receiver, args).as(Value) }),
         "startsWith" => BuiltinMethodDefinition.new("String.startsWith", ->(receiver : Value, args : Array(Value)) { string_starts_with(receiver, args).as(Value) }),
         "substring" => BuiltinMethodDefinition.new("String.substring", ->(receiver : Value, args : Array(Value)) { string_substring(receiver, args).as(Value) }),
         "trim" => BuiltinMethodDefinition.new("String.trim", ->(receiver : Value, args : Array(Value)) { string_trim(receiver, args).as(Value) }),
@@ -227,6 +229,65 @@ module GiavaScript
       end
 
       receiver_string(receiver, "String.repeat") * count
+    end
+
+    private def string_split(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "String.split")
+      separator = string_argument(args[0], "String.split")
+      string = receiver_string(receiver, "String.split")
+
+      limit = Int32::MAX
+      if args.size == 2
+        limit = integer_argument(args[1], "String.split")
+        if limit < 0
+          raise ExpressionError.new("Error: String.split expects a non-negative integer argument")
+        end
+      end
+
+      return [] of Value if limit == 0
+
+      if separator.empty?
+        result = [] of Value
+        string.each_char do |char|
+          break if result.size >= limit
+          result << char.to_s
+        end
+        return result
+      end
+
+      result = [] of Value
+      start_index = 0
+
+      while result.size < limit
+        match_index = string.index(separator, start_index)
+        break unless match_index
+
+        result << string[start_index...match_index]
+        start_index = match_index + separator.size
+      end
+
+      if result.size < limit
+        result << string[start_index...string.size]
+      end
+
+      result
+    end
+
+    private def string_replace(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 2, "String.replace")
+      search = string_argument(args[0], "String.replace")
+      replacement = string_argument(args[1], "String.replace")
+      string = receiver_string(receiver, "String.replace")
+
+      return "#{replacement}#{string}" if search.empty?
+
+      match_index = string.index(search)
+      return string unless match_index
+
+      prefix = string[0...match_index]
+      suffix_start = match_index + search.size
+      suffix = string[suffix_start...string.size]
+      "#{prefix}#{replacement}#{suffix}"
     end
 
     private def string_slice(receiver : Value, args : Array(Value)) : Value

@@ -555,6 +555,8 @@ describe GiavaScript do
     interpreter.eval("\"abc\".indexOf(\"b\");").should eq(["1"])
     interpreter.eval("\"abca\".lastIndexOf(\"a\");").should eq(["3"])
     interpreter.eval("\"ab\".repeat(3);").should eq(["\"ababab\""])
+    interpreter.eval("\"a,b,c\".split(\",\");").should eq(["[\"a\", \"b\", \"c\"]"])
+    interpreter.eval("\"hello world\".replace(\"world\", \"Giava\");").should eq(["\"hello Giava\""])
     interpreter.eval("\"abcdef\".slice(1, 4);").should eq(["\"bcd\""])
     interpreter.eval("\"abc\".startsWith(\"a\");").should eq(["true"])
     interpreter.eval("\"abcdef\".substring(1, 4);").should eq(["\"bcd\""])
@@ -681,6 +683,20 @@ describe GiavaScript do
     interpreter.eval("\"abcdef\".substring(2);").should eq(["\"cdef\""])
   end
 
+  it "supports String.split optional limit and empty separator" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"a,b,c\".split(\",\", 2);").should eq(["[\"a\", \"b\"]"])
+    interpreter.eval("\"abc\".split(\"\");").should eq(["[\"a\", \"b\", \"c\"]"])
+    interpreter.eval("\"abc\".split(\"\", 0);").should eq(["[]"])
+  end
+
+  it "supports String.replace first-match behavior" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"aaaa\".replace(\"aa\", \"b\");").should eq(["\"baa\""])
+    interpreter.eval("\"abc\".replace(\"\", \"_\");").should eq(["\"_abc\""])
+    interpreter.eval("\"abc\".replace(\"z\", \"x\");").should eq(["\"abc\""])
+  end
+
   it "rejects negative counts for String.repeat" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"ab\".repeat(-1);").should eq(["Error: String.repeat expects a non-negative integer argument"])
@@ -691,6 +707,8 @@ describe GiavaScript do
     interpreter.eval("\"abc\".includes(1);").should eq(["Error: String.includes expects a string argument"])
     interpreter.eval("\"abc\".indexOf(true);").should eq(["Error: String.indexOf expects a string argument"])
     interpreter.eval("\"abc\".concat(1);").should eq(["Error: String.concat expects a string argument"])
+    interpreter.eval("\"abc\".split(1);").should eq(["Error: String.split expects a string argument"])
+    interpreter.eval("\"abc\".replace(1, \"x\");").should eq(["Error: String.replace expects a string argument"])
   end
 
   it "validates String index argument type" do
@@ -700,6 +718,7 @@ describe GiavaScript do
     interpreter.eval("\"abc\".slice(1.5);").should eq(["Error: String.slice expects an integer argument"])
     interpreter.eval("\"abc\".substring(1.5);").should eq(["Error: String.substring expects an integer argument"])
     interpreter.eval("\"abc\".repeat(1.5);").should eq(["Error: String.repeat expects an integer argument"])
+    interpreter.eval("\"abc\".split(\",\", 1.5);").should eq(["Error: String.split expects an integer argument"])
   end
 
   it "validates String slice and substring arity" do
@@ -708,6 +727,15 @@ describe GiavaScript do
     interpreter.eval("\"abc\".slice(0, 1, 2);").should eq(["Error: String.slice expects between 1 and 2 arguments but got 3"])
     interpreter.eval("\"abc\".substring();").should eq(["Error: String.substring expects between 1 and 2 arguments but got 0"])
     interpreter.eval("\"abc\".substring(0, 1, 2);").should eq(["Error: String.substring expects between 1 and 2 arguments but got 3"])
+    interpreter.eval("\"abc\".split();").should eq(["Error: String.split expects between 1 and 2 arguments but got 0"])
+    interpreter.eval("\"abc\".split(\",\", 1, 2);").should eq(["Error: String.split expects between 1 and 2 arguments but got 3"])
+    interpreter.eval("\"abc\".replace();").should eq(["Error: String.replace expects 2 arguments but got 0"])
+    interpreter.eval("\"abc\".replace(\"a\");").should eq(["Error: String.replace expects 2 arguments but got 1"])
+  end
+
+  it "rejects negative limits for String.split" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"abc\".split(\",\", -1);").should eq(["Error: String.split expects a non-negative integer argument"])
   end
 
   it "validates String case conversion method arity" do

@@ -112,11 +112,11 @@ Status of built-in methods and properties available through GiavaScript runtime 
 | `padEnd()` | Instance method | Not available |
 | `padStart()` | Instance method | Not available |
 | `repeat()` | Instance method | Available |
-| `replace()` | Instance method | Not available |
+| `replace()` | Instance method | Available |
 | `replaceAll()` | Instance method | Not available |
 | `search()` | Instance method | Not available |
 | `slice()` | Instance method | Available |
-| `split()` | Instance method | Not available |
+| `split()` | Instance method | Available |
 | `startsWith()` | Instance method | Available |
 | `substr()` | Instance method | Not available |
 | `substring()` | Instance method | Available |
