@@ -9,35 +9,35 @@ Status of built-in methods and properties available through GiavaScript runtime 
 | `length` | Instance property | Available |
 | `at()` | Instance method | Available |
 | `charAt()` | Instance method | Available |
-| `charCodeAt()` | Instance method | Not available |
-| `codePointAt()` | Instance method | Not available |
+| `charCodeAt()` | Instance method | Available |
+| `codePointAt()` | Instance method | Available |
 | `concat()` | Instance method | Available |
 | `endsWith()` | Instance method | Available |
-| `fromCharCode()` | Static method | Not available |
+| `fromCharCode()` | Static method | Available |
 | `includes()` | Instance method | Available |
 | `indexOf()` | Instance method | Available |
-| `isWellFormed()` | Instance method | Not available |
+| `isWellFormed()` | Instance method | Available |
 | `lastIndexOf()` | Instance method | Available |
-| `localeCompare()` | Instance method | Not available |
-| `match()` | Instance method | Not available |
-| `matchAll()` | Instance method | Not available |
-| `padEnd()` | Instance method | Not available |
-| `padStart()` | Instance method | Not available |
+| `localeCompare()` | Instance method | Available |
+| `match()` | Instance method | Available |
+| `matchAll()` | Instance method | Available |
+| `padEnd()` | Instance method | Available |
+| `padStart()` | Instance method | Available |
 | `repeat()` | Instance method | Available |
 | `replace()` | Instance method | Available |
-| `replaceAll()` | Instance method | Not available |
-| `search()` | Instance method | Not available |
+| `replaceAll()` | Instance method | Available |
+| `search()` | Instance method | Available |
 | `slice()` | Instance method | Available |
 | `split()` | Instance method | Available |
 | `startsWith()` | Instance method | Available |
 | `substr()` | Instance method | Not available |
 | `substring()` | Instance method | Available |
-| `toLocaleLowerCase()` | Instance method | Not available |
-| `toLocaleUpperCase()` | Instance method | Not available |
+| `toLocaleLowerCase()` | Instance method | Available |
+| `toLocaleUpperCase()` | Instance method | Available |
 | `toLowerCase()` | Instance method | Available |
 | `toString()` | Instance method | Available |
 | `toUpperCase()` | Instance method | Available |
-| `toWellFormed()` | Instance method | Not available |
+| `toWellFormed()` | Instance method | Available |
 | `trim()` | Instance method | Available |
 | `trimEnd()` | Instance method | Available |
 | `trimStart()` | Instance method | Available |

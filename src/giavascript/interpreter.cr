@@ -890,10 +890,29 @@ module GiavaScript
       env["console"] = build_console_object
       env["JSON"] = build_json_object
       env["Math"] = build_math_object
+      env["String"] = build_string_object
       env["parseInt"] = build_parse_int_function
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
       env
+    end
+
+    private def build_string_object : Hash(String, Value)
+      string_object = Hash(String, Value).new
+
+      string_object["fromCharCode"] = BuiltinFunction.new("String.fromCharCode", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "String.fromCharCode")
+
+        String.build do |builder|
+          args.each_with_index do |arg, index|
+            code = number_argument(arg, "String.fromCharCode", index)
+            code_unit = code.to_i32 & 0xFFFF
+            builder << utf16_code_unit_to_string(code_unit)
+          end
+        end.as(Value)
+      end)
+
+      string_object
     end
 
     private def build_parse_int_function : Value
@@ -1267,6 +1286,12 @@ module GiavaScript
       return nil unless lower >= 'a' && lower <= 'z'
 
       lower.ord - 'a'.ord + 10
+    end
+
+    private def utf16_code_unit_to_string(code_unit : Int32) : String
+      return code_unit.chr.to_s unless code_unit >= 0xD800 && code_unit <= 0xDFFF
+
+      "\\u#{code_unit.to_s(16).rjust(4, '0')}"
     end
 
     private def coerce_to_number_for_globals(value : Value) : Number

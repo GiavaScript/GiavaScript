@@ -28,23 +28,36 @@ module GiavaScript
       {
         "at" => BuiltinMethodDefinition.new("String.at", ->(receiver : Value, args : Array(Value)) { string_at(receiver, args).as(Value) }),
         "charAt" => BuiltinMethodDefinition.new("String.charAt", ->(receiver : Value, args : Array(Value)) { string_char_at(receiver, args).as(Value) }),
+        "charCodeAt" => BuiltinMethodDefinition.new("String.charCodeAt", ->(receiver : Value, args : Array(Value)) { string_char_code_at(receiver, args).as(Value) }),
+        "codePointAt" => BuiltinMethodDefinition.new("String.codePointAt", ->(receiver : Value, args : Array(Value)) { string_code_point_at(receiver, args).as(Value) }),
         "concat" => BuiltinMethodDefinition.new("String.concat", ->(receiver : Value, args : Array(Value)) { string_concat(receiver, args).as(Value) }),
         "endsWith" => BuiltinMethodDefinition.new("String.endsWith", ->(receiver : Value, args : Array(Value)) { string_ends_with(receiver, args).as(Value) }),
         "includes" => BuiltinMethodDefinition.new("String.includes", ->(receiver : Value, args : Array(Value)) { string_includes(receiver, args).as(Value) }),
         "indexOf" => BuiltinMethodDefinition.new("String.indexOf", ->(receiver : Value, args : Array(Value)) { string_index_of(receiver, args).as(Value) }),
+        "isWellFormed" => BuiltinMethodDefinition.new("String.isWellFormed", ->(receiver : Value, args : Array(Value)) { string_is_well_formed(receiver, args).as(Value) }),
         "lastIndexOf" => BuiltinMethodDefinition.new("String.lastIndexOf", ->(receiver : Value, args : Array(Value)) { string_last_index_of(receiver, args).as(Value) }),
+        "localeCompare" => BuiltinMethodDefinition.new("String.localeCompare", ->(receiver : Value, args : Array(Value)) { string_locale_compare(receiver, args).as(Value) }),
+        "match" => BuiltinMethodDefinition.new("String.match", ->(receiver : Value, args : Array(Value)) { string_match(receiver, args).as(Value) }),
+        "matchAll" => BuiltinMethodDefinition.new("String.matchAll", ->(receiver : Value, args : Array(Value)) { string_match_all(receiver, args).as(Value) }),
+        "padEnd" => BuiltinMethodDefinition.new("String.padEnd", ->(receiver : Value, args : Array(Value)) { string_pad_end(receiver, args).as(Value) }),
+        "padStart" => BuiltinMethodDefinition.new("String.padStart", ->(receiver : Value, args : Array(Value)) { string_pad_start(receiver, args).as(Value) }),
         "replace" => BuiltinMethodDefinition.new("String.replace", ->(receiver : Value, args : Array(Value)) { string_replace(receiver, args).as(Value) }),
+        "replaceAll" => BuiltinMethodDefinition.new("String.replaceAll", ->(receiver : Value, args : Array(Value)) { string_replace_all(receiver, args).as(Value) }),
         "repeat" => BuiltinMethodDefinition.new("String.repeat", ->(receiver : Value, args : Array(Value)) { string_repeat(receiver, args).as(Value) }),
+        "search" => BuiltinMethodDefinition.new("String.search", ->(receiver : Value, args : Array(Value)) { string_search(receiver, args).as(Value) }),
         "slice" => BuiltinMethodDefinition.new("String.slice", ->(receiver : Value, args : Array(Value)) { string_slice(receiver, args).as(Value) }),
         "split" => BuiltinMethodDefinition.new("String.split", ->(receiver : Value, args : Array(Value)) { string_split(receiver, args).as(Value) }),
         "startsWith" => BuiltinMethodDefinition.new("String.startsWith", ->(receiver : Value, args : Array(Value)) { string_starts_with(receiver, args).as(Value) }),
         "substring" => BuiltinMethodDefinition.new("String.substring", ->(receiver : Value, args : Array(Value)) { string_substring(receiver, args).as(Value) }),
+        "toLocaleLowerCase" => BuiltinMethodDefinition.new("String.toLocaleLowerCase", ->(receiver : Value, args : Array(Value)) { string_to_locale_lower_case(receiver, args).as(Value) }),
+        "toLocaleUpperCase" => BuiltinMethodDefinition.new("String.toLocaleUpperCase", ->(receiver : Value, args : Array(Value)) { string_to_locale_upper_case(receiver, args).as(Value) }),
         "trim" => BuiltinMethodDefinition.new("String.trim", ->(receiver : Value, args : Array(Value)) { string_trim(receiver, args).as(Value) }),
         "trimEnd" => BuiltinMethodDefinition.new("String.trimEnd", ->(receiver : Value, args : Array(Value)) { string_trim_end(receiver, args).as(Value) }),
         "trimStart" => BuiltinMethodDefinition.new("String.trimStart", ->(receiver : Value, args : Array(Value)) { string_trim_start(receiver, args).as(Value) }),
         "toLowerCase" => BuiltinMethodDefinition.new("String.toLowerCase", ->(receiver : Value, args : Array(Value)) { string_to_lower_case(receiver, args).as(Value) }),
         "toString"   => BuiltinMethodDefinition.new("String.toString", ->(receiver : Value, args : Array(Value)) { string_to_string(receiver, args).as(Value) }),
         "toUpperCase" => BuiltinMethodDefinition.new("String.toUpperCase", ->(receiver : Value, args : Array(Value)) { string_to_upper_case(receiver, args).as(Value) }),
+        "toWellFormed" => BuiltinMethodDefinition.new("String.toWellFormed", ->(receiver : Value, args : Array(Value)) { string_to_well_formed(receiver, args).as(Value) }),
         "valueOf" => BuiltinMethodDefinition.new("String.valueOf", ->(receiver : Value, args : Array(Value)) { string_value_of(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
       {
@@ -190,6 +203,28 @@ module GiavaScript
       char.to_s
     end
 
+    private def string_char_code_at(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.charCodeAt")
+      index = integer_argument(args[0], "String.charCodeAt")
+
+      string = receiver_string(receiver, "String.charCodeAt")
+      char = string[index]?
+      return Float64::NAN unless char
+
+      char.ord
+    end
+
+    private def string_code_point_at(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.codePointAt")
+      index = integer_argument(args[0], "String.codePointAt")
+
+      string = receiver_string(receiver, "String.codePointAt")
+      char = string[index]?
+      return UNDEFINED unless char
+
+      char.ord
+    end
+
     private def string_index_of(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 1, "String.indexOf")
       needle = string_argument(args[0], "String.indexOf")
@@ -204,6 +239,90 @@ module GiavaScript
       haystack = receiver_string(receiver, "String.lastIndexOf")
       index = haystack.rindex(needle)
       index ? index : -1
+    end
+
+    private def string_is_well_formed(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.isWellFormed")
+      receiver_string(receiver, "String.isWellFormed")
+      true
+    end
+
+    private def string_locale_compare(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.localeCompare")
+      left = receiver_string(receiver, "String.localeCompare")
+      right = string_argument(args[0], "String.localeCompare")
+
+      compare_result = left <=> right
+      if compare_result == 0
+        0
+      elsif compare_result < 0
+        -1
+      else
+        1
+      end
+    end
+
+    private def string_match(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.match")
+      pattern = string_argument(args[0], "String.match")
+      string = receiver_string(receiver, "String.match")
+
+      if pattern.empty?
+        return [""] of Value
+      end
+
+      return nil unless string.includes?(pattern)
+
+      [pattern] of Value
+    end
+
+    private def string_match_all(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.matchAll")
+      pattern = string_argument(args[0], "String.matchAll")
+      string = receiver_string(receiver, "String.matchAll")
+
+      if pattern.empty?
+        result = Array(Value).new(string.size + 1)
+        (string.size + 1).times { result << "" }
+        return result
+      end
+
+      result = [] of Value
+      start_index = 0
+
+      while start_index <= string.size
+        match_index = string.index(pattern, start_index)
+        break unless match_index
+
+        result << pattern
+        start_index = match_index + pattern.size
+      end
+
+      result
+    end
+
+    private def string_pad_end(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "String.padEnd")
+      string = receiver_string(receiver, "String.padEnd")
+      target_length = integer_argument(args[0], "String.padEnd")
+      pad_string = args.size == 2 ? string_argument(args[1], "String.padEnd") : " "
+
+      return string if target_length <= string.size
+      return string if pad_string.empty?
+
+      string + build_padding(pad_string, target_length - string.size)
+    end
+
+    private def string_pad_start(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "String.padStart")
+      string = receiver_string(receiver, "String.padStart")
+      target_length = integer_argument(args[0], "String.padStart")
+      pad_string = args.size == 2 ? string_argument(args[1], "String.padStart") : " "
+
+      return string if target_length <= string.size
+      return string if pad_string.empty?
+
+      build_padding(pad_string, target_length - string.size) + string
     end
 
     private def string_trim(receiver : Value, args : Array(Value)) : Value
@@ -290,6 +409,34 @@ module GiavaScript
       "#{prefix}#{replacement}#{suffix}"
     end
 
+    private def string_replace_all(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 2, "String.replaceAll")
+      search = string_argument(args[0], "String.replaceAll")
+      replacement = string_argument(args[1], "String.replaceAll")
+      string = receiver_string(receiver, "String.replaceAll")
+
+      if search.empty?
+        result = String.build do |builder|
+          builder << replacement
+          string.each_char do |char|
+            builder << char
+            builder << replacement
+          end
+        end
+        return result
+      end
+
+      string.gsub(search, replacement)
+    end
+
+    private def string_search(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "String.search")
+      pattern = string_argument(args[0], "String.search")
+      string = receiver_string(receiver, "String.search")
+      index = string.index(pattern)
+      index ? index : -1
+    end
+
     private def string_slice(receiver : Value, args : Array(Value)) : Value
       assert_arity_between(args, 1, 2, "String.slice")
       string = receiver_string(receiver, "String.slice")
@@ -325,9 +472,24 @@ module GiavaScript
       receiver_string(receiver, "String.toLowerCase").downcase
     end
 
+    private def string_to_locale_lower_case(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.toLocaleLowerCase")
+      receiver_string(receiver, "String.toLocaleLowerCase").downcase
+    end
+
     private def string_to_upper_case(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "String.toUpperCase")
       receiver_string(receiver, "String.toUpperCase").upcase
+    end
+
+    private def string_to_locale_upper_case(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.toLocaleUpperCase")
+      receiver_string(receiver, "String.toLocaleUpperCase").upcase
+    end
+
+    private def string_to_well_formed(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "String.toWellFormed")
+      receiver_string(receiver, "String.toWellFormed")
     end
 
     private def string_value_of(receiver : Value, args : Array(Value)) : Value
@@ -662,6 +824,22 @@ module GiavaScript
       return 0 if index < 0
       return size if index > size
       index
+    end
+
+    private def build_padding(pad_string : String, desired_length : Int32) : String
+      return "" if desired_length <= 0
+
+      String.build do |builder|
+        chars_written = 0
+        while chars_written < desired_length
+          pad_string.each_char do |char|
+            break if chars_written >= desired_length
+
+            builder << char
+            chars_written += 1
+          end
+        end
+      end
     end
 
     private def string_range_by_char_index(string : String, start_index : Int32, end_index : Int32) : String
