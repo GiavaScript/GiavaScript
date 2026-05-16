@@ -1,6 +1,0 @@
-date,script,giavascript_avg_s,node_lts_version,node_lts_avg_s,node_0_12_18_avg_s
-11-05-2026,Bubble sort,11.835,v24.15.0,0.673,48.417
-11-05-2026,Matrix multiplication,0.250,v24.15.0,0.035,1.880
-11-05-2026,Binary search tree,0.112,v24.15.0,0.721,48.130
-11-05-2026,String slicing,0.037,v24.15.0,0.029,1.952
-11-05-2026,Sieve primes,0.226,v24.15.0,0.035,1.903

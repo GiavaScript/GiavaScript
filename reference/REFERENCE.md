@@ -16,6 +16,12 @@ Source files:
 - `reference/Math.md`
 - `reference/JSON.md`
 
+Regenerate the consolidated file with:
+
+```bash
+python3 scripts/generate_reference.py
+```
+
 ## Language Features
 
 Status of core JavaScript language features in GiavaScript.
