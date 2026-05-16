@@ -468,7 +468,7 @@ module GiavaScript
 
     private def object_to_primitive_for_loose_equality(value : Value) : Value
       if value.is_a?(Array(Value))
-        return array_to_loose_string(value)
+        return array_to_js_string(value)
       end
 
       if value.is_a?(Hash(String, Value))
@@ -482,15 +482,15 @@ module GiavaScript
       value
     end
 
-    private def array_to_loose_string(values : Array(Value)) : String
-      values.map { |item| loose_string_element(item) }.join(",")
+    private def array_to_js_string(values : Array(Value)) : String
+      values.map { |item| js_string_element(item) }.join(",")
     end
 
-    private def loose_string_element(value : Value) : String
+    private def js_string_element(value : Value) : String
       return "" if value.nil? || value.is_a?(UndefinedValue)
 
       if value.is_a?(Array(Value))
-        return array_to_loose_string(value)
+        return array_to_js_string(value)
       end
 
       if value.is_a?(Hash(String, Value))
@@ -605,24 +605,26 @@ module GiavaScript
       end
 
       if value.is_a?(String)
-        value
-      elsif value.is_a?(Array)
-        "[#{value.map { |item| value_to_string(item) }.join(", ")}]"
-      elsif value.is_a?(Hash(String, Value))
-        properties = value.map do |key, property_value|
-          "\"#{escape_string(key)}\": #{value_to_string(property_value)}"
-        end
-        "{#{properties.join(", ")}}"
-      else
-        value.to_s
+        return value
       end
-    end
 
-    private def escape_string(value : String) : String
-      value.gsub('\\', "\\\\")
-        .gsub('"', "\\\"")
-        .gsub('\n', "\\n")
-        .gsub('\t', "\\t")
+      if value.is_a?(Bool)
+        return value ? "true" : "false"
+      end
+
+      if value.is_a?(Array(Value))
+        return array_to_js_string(value)
+      end
+
+      if value.is_a?(Hash(String, Value))
+        return "[object Object]"
+      end
+
+      if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      value.to_s
     end
 
     private def pow_int(base : Int32, exponent : Int32) : Int32

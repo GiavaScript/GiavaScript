@@ -278,6 +278,20 @@ describe GiavaScript do
     interpreter.eval("`Price: \\${5}`;").should eq(["\"Price: ${5}\""])
   end
 
+  it "supports nested template literal interpolation" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("`outer ${`inner ${1 + 1}`}`;").should eq(["\"outer inner 2\""])
+    interpreter.eval("`L1 ${`L2 ${`L3 ${3}`}`}`;").should eq(["\"L1 L2 L3 3\""])
+  end
+
+  it "uses JavaScript-like ToString semantics in string interpolation and concatenation" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("`${[1, undefined, null, [2, 3]]}`;").should eq(["\"1,,,2,3\""])
+    interpreter.eval("`${{ nested: true }}`;").should eq(["\"[object Object]\""])
+    interpreter.eval("\"\" + [1, undefined, null, [2, 3]];").should eq(["\"1,,,2,3\""])
+    interpreter.eval("\"\" + { a: 1 };").should eq(["\"[object Object]\""])
+  end
+
   it "defines functions and reads outer values" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var outsideValue = 0;\nfunction sumNumbers(a, b) {\n  return a + b + outsideValue;\n}\nvar result = sumNumbers(2, 3);").should eq([] of String)
