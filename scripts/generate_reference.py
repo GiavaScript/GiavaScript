@@ -54,6 +54,12 @@ def build_output() -> str:
 
     output_lines.extend([
         "",
+        "Regenerate this file with:",
+        "",
+        "```bash",
+        "python3 scripts/generate_reference.py",
+        "```",
+        "",
         "Source files:",
     ])
 
