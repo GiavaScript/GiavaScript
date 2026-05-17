@@ -140,6 +140,29 @@ describe GiavaScript do
     interpreter.eval("('b' + 'a' + + 'a' + 'a').toLowerCase();").should eq(["\"banana\""])
   end
 
+  it "supports typeof for primitive and object values" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("typeof undefined;").should eq(["\"undefined\""])
+    interpreter.eval("typeof null;").should eq(["\"object\""])
+    interpreter.eval("typeof true;").should eq(["\"boolean\""])
+    interpreter.eval("typeof 42;").should eq(["\"number\""])
+    interpreter.eval("typeof 'hello';").should eq(["\"string\""])
+    interpreter.eval("typeof [1, 2, 3];").should eq(["\"object\""])
+    interpreter.eval("typeof { a: 1 };").should eq(["\"object\""])
+  end
+
+  it "returns function for typeof callable values" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("function sum(a, b) { return a + b; }").should eq([] of String)
+    interpreter.eval("typeof sum;").should eq(["\"function\""])
+    interpreter.eval("typeof console.log;").should eq(["\"function\""])
+  end
+
+  it "returns undefined for typeof undeclared identifiers" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("typeof missingValue;").should eq(["\"undefined\""])
+  end
+
   it "evaluates relational operators" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("1 < 2;").should eq(["true"])

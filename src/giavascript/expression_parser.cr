@@ -137,6 +137,12 @@ module GiavaScript
         return UnaryExpr.new(Tokenizer::TokenKind::Bang, value)
       end
 
+      if @current.kind == Tokenizer::TokenKind::Typeof
+        advance_token
+        value = parse_factor
+        return UnaryExpr.new(Tokenizer::TokenKind::Typeof, value)
+      end
+
       parse_postfix
     end
 

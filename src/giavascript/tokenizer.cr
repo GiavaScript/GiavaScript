@@ -13,6 +13,7 @@ module GiavaScript
       For
       Break
       Continue
+      Typeof
       Plus
       Minus
       Star
@@ -218,6 +219,8 @@ module GiavaScript
                TokenKind::Break
              when "continue"
                TokenKind::Continue
+             when "typeof"
+               TokenKind::Typeof
              else
                TokenKind::Identifier
              end

@@ -77,9 +77,40 @@ module GiavaScript
         negate(evaluate(expr.operand))
       when Tokenizer::TokenKind::Bang
         !truthy?(evaluate(expr.operand))
+      when Tokenizer::TokenKind::Typeof
+        evaluate_typeof(expr.operand)
       else
         raise ExpressionError.new("Error: invalid expression")
       end
+    end
+
+    private def evaluate_typeof(operand : Expr) : String
+      if operand.is_a?(VariableExpr)
+        lookup = @env.lookup(operand.name)
+        if lookup[:found]
+          return typeof_value(lookup[:value])
+        end
+
+        if resolve_function = @resolve_function
+          function_value = resolve_function.call(operand.name)
+          return typeof_value(function_value) if function_value
+        end
+
+        return "undefined"
+      end
+
+      typeof_value(evaluate(operand))
+    end
+
+    private def typeof_value(value : Value) : String
+      return "undefined" if value.is_a?(UndefinedValue)
+      return "object" if value.nil?
+      return "boolean" if value.is_a?(Bool)
+      return "number" if value.is_a?(Int32) || value.is_a?(Float64)
+      return "string" if value.is_a?(String)
+      return "function" if value.is_a?(BuiltinFunction)
+
+      "object"
     end
 
     private def evaluate_binary(expr : BinaryExpr) : Value
