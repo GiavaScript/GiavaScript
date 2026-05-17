@@ -372,6 +372,25 @@ describe GiavaScript do
     interpreter.eval("noReturn();").should eq(["undefined"])
   end
 
+  it "supports function expressions assigned to variables" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var sum = function(a, b) { return a + b; };").should eq([] of String)
+    interpreter.eval("sum(2, 3);").should eq(["5"])
+    interpreter.eval("typeof sum;").should eq(["\"function\""])
+  end
+
+  it "supports immediately-invoked function expressions" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("(function(a, b) { return a + b; })(4, 6);").should eq(["10"])
+  end
+
+  it "supports named function expressions for recursion without leaking the name" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var factorial = function fact(n) { if (n <= 1) return 1; return n * fact(n - 1); };").should eq([] of String)
+    interpreter.eval("factorial(5);").should eq(["120"])
+    interpreter.eval("fact;").should eq(["Error: variable 'fact' does not exist"])
+  end
+
   it "prints error when print is not defined" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("print(\"hello world\");").should eq(["Error: function 'print' does not exist"])

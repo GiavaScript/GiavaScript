@@ -71,6 +71,7 @@ Status of core JavaScript language features in GiavaScript.
 | Feature | Status |
 | --- | --- |
 | Function declarations (`function name(...) { ... }`) | Available |
+| Function expressions (`var f = function(...) { ... }`) | Available |
 | Function calls | Available |
 | Returning values with `return` | Available |
 | First-class function values | Available |

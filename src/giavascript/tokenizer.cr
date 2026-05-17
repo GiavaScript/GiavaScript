@@ -15,6 +15,7 @@ module GiavaScript
       Continue
       Typeof
       Void
+      Function
       Plus
       Minus
       Star
@@ -180,6 +181,14 @@ module GiavaScript
       end
     end
 
+    def cursor : Int32
+      @index
+    end
+
+    def cursor=(value : Int32)
+      @index = value
+    end
+
     private def parse_string_token : Token
       delimiter = current_char
       raise invalid_rhs_error unless delimiter
@@ -224,6 +233,8 @@ module GiavaScript
                TokenKind::Typeof
              when "void"
                TokenKind::Void
+             when "function"
+               TokenKind::Function
              else
                TokenKind::Identifier
              end

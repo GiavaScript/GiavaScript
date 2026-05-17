@@ -1,6 +1,11 @@
 module GiavaScript
   class ExpressionEvaluator
-    def initialize(@env : Environment, @call_function : Proc(String, Array(Value), Value)? = nil, @resolve_function : Proc(String, BuiltinFunction?)? = nil)
+    def initialize(
+      @env : Environment,
+      @call_function : Proc(String, Array(Value), Value)? = nil,
+      @resolve_function : Proc(String, BuiltinFunction?)? = nil,
+      @invoke_user_function : Proc(UserFunction, Array(Value), Value)? = nil
+    )
     end
 
     def evaluate(expr : Expr) : Value
@@ -29,6 +34,8 @@ module GiavaScript
         evaluate_binary(expr)
       when FunctionCallExpr
         evaluate_function_call(expr)
+      when FunctionExpr
+        UserFunction.new(expr.name, expr.parameters, expr.body_source, @env)
       when ArrayLiteral
         values = Array(Value).new(expr.elements.size)
         expr.elements.each do |element|
@@ -111,7 +118,7 @@ module GiavaScript
       return "boolean" if value.is_a?(Bool)
       return "number" if value.is_a?(Int32) || value.is_a?(Float64)
       return "string" if value.is_a?(String)
-      return "function" if value.is_a?(BuiltinFunction)
+      return "function" if value.is_a?(BuiltinFunction) || value.is_a?(UserFunction)
 
       "object"
     end
@@ -260,6 +267,13 @@ module GiavaScript
     private def invoke_callable(value : Value, receiver : Value, args : Array(Value)) : Value
       if value.is_a?(BuiltinFunction)
         return value.call(receiver, args)
+      end
+
+      if value.is_a?(UserFunction)
+        invoke_user_function = @invoke_user_function
+        if invoke_user_function
+          return invoke_user_function.call(value, args)
+        end
       end
 
       raise ExpressionError.new("Error: value is not callable")
@@ -484,6 +498,10 @@ module GiavaScript
         return right.is_a?(BuiltinFunction) && left.object_id == right.object_id
       end
 
+      if left.is_a?(UserFunction)
+        return right.is_a?(UserFunction) && left.object_id == right.object_id
+      end
+
       false
     end
 
@@ -497,7 +515,7 @@ module GiavaScript
     end
 
     private def object_value_for_loose_equality?(value : Value) : Bool
-      value.is_a?(Array(Value)) || value.is_a?(Hash(String, Value)) || value.is_a?(BuiltinFunction)
+      value.is_a?(Array(Value)) || value.is_a?(Hash(String, Value)) || value.is_a?(BuiltinFunction) || value.is_a?(UserFunction)
     end
 
     private def object_to_primitive_for_loose_equality(value : Value) : Value
@@ -510,6 +528,10 @@ module GiavaScript
       end
 
       if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      if value.is_a?(UserFunction)
         return "function"
       end
 
@@ -532,6 +554,10 @@ module GiavaScript
       end
 
       if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      if value.is_a?(UserFunction)
         return "function"
       end
 
@@ -655,6 +681,10 @@ module GiavaScript
       end
 
       if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      if value.is_a?(UserFunction)
         return "function"
       end
 

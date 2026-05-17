@@ -198,6 +198,8 @@ module GiavaScript
         parse_array_literal
       when Tokenizer::TokenKind::LBrace
         parse_object_literal
+      when Tokenizer::TokenKind::Function
+        parse_function_expression
       when Tokenizer::TokenKind::String
         string_value = @current.lexeme
         advance_token
@@ -292,6 +294,51 @@ module GiavaScript
       else
         raise invalid_rhs_error
       end
+    end
+
+    private def parse_function_expression : Expr
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Function
+      advance_token
+
+      function_name = nil.as(String?)
+      if @current.kind == Tokenizer::TokenKind::Identifier
+        function_name = @current.lexeme
+        advance_token
+      end
+
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LParen
+      advance_token
+
+      parameters = [] of String
+      unless @current.kind == Tokenizer::TokenKind::RParen
+        loop do
+          raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
+          parameter = @current.lexeme
+          raise invalid_rhs_error if parameters.includes?(parameter)
+          parameters << parameter
+          advance_token
+
+          if @current.kind == Tokenizer::TokenKind::Comma
+            advance_token
+            next
+          end
+
+          break
+        end
+      end
+
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RParen
+      advance_token
+
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LBrace
+      body_start = @tokenizer.cursor
+      body_end = find_matching_brace_end_index(body_start)
+      body_source = @source[body_start...body_end]
+
+      @tokenizer.cursor = body_end + 1
+      advance_token
+
+      FunctionExpr.new(function_name, parameters, body_source)
     end
 
     private def parse_identifier_expression : Expr
@@ -435,6 +482,44 @@ module GiavaScript
 
           current += 1
           next
+        end
+
+        current += 1
+      end
+
+      raise invalid_rhs_error
+    end
+
+    private def find_matching_brace_end_index(index : Int32) : Int32
+      current = index
+      brace_depth = 1
+      string_delimiter = nil.as(Char?)
+      escaping = false
+
+      while current < @source.size
+        char = @source[current]
+
+        if delimiter = string_delimiter
+          if escaping
+            escaping = false
+          elsif char == '\\'
+            escaping = true
+          elsif char == delimiter
+            string_delimiter = nil
+          end
+
+          current += 1
+          next
+        end
+
+        case char
+        when '"', '\'', '`'
+          string_delimiter = char
+        when '{'
+          brace_depth += 1
+        when '}'
+          brace_depth -= 1
+          return current if brace_depth == 0
         end
 
         current += 1

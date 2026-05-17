@@ -259,7 +259,8 @@ module GiavaScript
       created = ExpressionEvaluator.new(
         env,
         ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) },
-        ->(name : String) { resolve_function_reference(name, env) }
+        ->(name : String) { resolve_function_reference(name, env) },
+        ->(function_value : UserFunction, args : Array(Value)) { invoke_user_function(function_value, args).as(Value) }
       )
       @expression_evaluator_cache[key] = created
       created
@@ -844,6 +845,10 @@ module GiavaScript
         return right.is_a?(BuiltinFunction) && left.object_id == right.object_id
       end
 
+      if left.is_a?(UserFunction)
+        return right.is_a?(UserFunction) && left.object_id == right.object_id
+      end
+
       false
     end
 
@@ -858,6 +863,34 @@ module GiavaScript
       @function_runtime.invoke_function(name, args, env) do |stmt, local_env, inside_function, inside_loop|
         eval_statement(stmt, local_env, inside_function, inside_loop)
       end
+    end
+
+    private def invoke_user_function(function_value : UserFunction, args : Array(Value)) : Value
+      if args.size != function_value.parameters.size
+        display_name = function_value.name || "anonymous"
+        raise ExpressionError.new("Error: function '#{display_name}' expects #{function_value.parameters.size} arguments but got #{args.size}")
+      end
+
+      local_env = Environment.new(function_value.closure)
+      if function_name = function_value.name
+        local_env[function_name] = function_value
+      end
+
+      function_value.parameters.each_with_index do |param, index|
+        local_env[param] = args[index]
+      end
+
+      statements = StatementSplitter.new(function_value.body_source).split
+
+      begin
+        statements.each do |stmt|
+          eval_statement(stmt, local_env, true, false)
+        end
+      rescue ex : FunctionRuntime::ReturnSignal
+        return ex.value
+      end
+
+      UNDEFINED
     end
 
     private def value_to_s(value : Value) : String
@@ -1078,7 +1111,7 @@ module GiavaScript
         assert_builtin_arity(args, 1, "JSON.stringify")
 
         value = args[0]
-        if value.is_a?(UndefinedValue) || value.is_a?(BuiltinFunction)
+        if value.is_a?(UndefinedValue) || value.is_a?(BuiltinFunction) || value.is_a?(UserFunction)
           UNDEFINED.as(Value)
         else
           io = IO::Memory.new
@@ -1338,6 +1371,10 @@ module GiavaScript
         return "function"
       end
 
+      if value.is_a?(UserFunction)
+        return "function"
+      end
+
       value.to_s
     end
 
@@ -1357,6 +1394,10 @@ module GiavaScript
       end
 
       if value.is_a?(BuiltinFunction)
+        return "function"
+      end
+
+      if value.is_a?(UserFunction)
         return "function"
       end
 
@@ -1426,7 +1467,7 @@ module GiavaScript
       case value
       when Nil
         io << "null"
-      when UndefinedValue, BuiltinFunction
+      when UndefinedValue, BuiltinFunction, UserFunction
         io << "null"
       when Bool, Int32
         io << value.to_s
@@ -1450,7 +1491,7 @@ module GiavaScript
           io << '{'
           first = true
           value.each do |key, property_value|
-            next if property_value.is_a?(UndefinedValue) || property_value.is_a?(BuiltinFunction)
+            next if property_value.is_a?(UndefinedValue) || property_value.is_a?(BuiltinFunction) || property_value.is_a?(UserFunction)
 
             io << ',' unless first
             first = false

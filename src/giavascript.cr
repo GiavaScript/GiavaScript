@@ -20,7 +20,24 @@ module GiavaScript
   class BuiltinFunction
   end
 
-  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction
+  class Environment
+  end
+
+  class UserFunction
+    getter name : String?
+    getter parameters : Array(String)
+    getter body_source : String
+    getter closure : Environment
+
+    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @closure : Environment)
+    end
+
+    def to_s(io : IO)
+      io << "function"
+    end
+  end
+
+  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction
 end
 
 require "./giavascript/string_literal_parser"

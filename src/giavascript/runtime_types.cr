@@ -817,6 +817,10 @@ module GiavaScript
         return right.is_a?(BuiltinFunction) && left.object_id == right.object_id
       end
 
+      if left.is_a?(UserFunction)
+        return right.is_a?(UserFunction) && left.object_id == right.object_id
+      end
+
       false
     end
 

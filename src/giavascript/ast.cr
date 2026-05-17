@@ -49,6 +49,15 @@ module GiavaScript
     end
   end
 
+  class FunctionExpr < Expr
+    getter name : String?
+    getter parameters : Array(String)
+    getter body_source : String
+
+    def initialize(@name : String?, @parameters : Array(String), @body_source : String)
+    end
+  end
+
   class ArrayLiteral < Expr
     getter elements : Array(Expr)
 
