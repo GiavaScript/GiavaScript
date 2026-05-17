@@ -163,6 +163,20 @@ describe GiavaScript do
     interpreter.eval("typeof missingValue;").should eq(["\"undefined\""])
   end
 
+  it "supports void and always returns undefined" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("void 42;").should eq(["undefined"])
+    interpreter.eval("void 'hello';").should eq(["undefined"])
+    interpreter.eval("void missingValue;").should eq(["Error: variable 'missingValue' does not exist"])
+  end
+
+  it "evaluates void operand for side effects" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+    interpreter.eval("void console.log('side-effect');").should eq(["undefined"])
+    output.to_s.should eq("side-effect\n")
+  end
+
   it "evaluates relational operators" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("1 < 2;").should eq(["true"])

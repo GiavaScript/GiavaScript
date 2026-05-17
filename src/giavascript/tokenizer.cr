@@ -14,6 +14,7 @@ module GiavaScript
       Break
       Continue
       Typeof
+      Void
       Plus
       Minus
       Star
@@ -221,6 +222,8 @@ module GiavaScript
                TokenKind::Continue
              when "typeof"
                TokenKind::Typeof
+             when "void"
+               TokenKind::Void
              else
                TokenKind::Identifier
              end

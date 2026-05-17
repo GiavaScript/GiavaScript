@@ -79,6 +79,9 @@ module GiavaScript
         !truthy?(evaluate(expr.operand))
       when Tokenizer::TokenKind::Typeof
         evaluate_typeof(expr.operand)
+      when Tokenizer::TokenKind::Void
+        evaluate(expr.operand)
+        UNDEFINED
       else
         raise ExpressionError.new("Error: invalid expression")
       end

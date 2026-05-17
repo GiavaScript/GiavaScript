@@ -28,6 +28,7 @@ Status of core JavaScript language features in GiavaScript.
 | Strict equality (`===`, `!==`) | Available |
 | Logical operators (`&&`, `\|\|`, `!`) | Available |
 | `typeof` operator | Available |
+| `void` operator | Available |
 
 ### Equality operator semantics
 
