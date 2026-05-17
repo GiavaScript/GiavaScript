@@ -187,7 +187,7 @@ module GiavaScript
         return nil
       end
 
-      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*(.+)$/)
+      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
         var_name = match[1]
         rhs = match[2].strip
 
@@ -749,7 +749,7 @@ module GiavaScript
                    end
                  elsif match = key.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)$/)
                    VarRawStatement.new(match[1], nil, nil)
-                 elsif match = key.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*(.+)$/)
+                 elsif match = key.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
                    name = match[1]
                    rhs_source = match[2].strip
                    begin
