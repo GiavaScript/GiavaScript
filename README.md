@@ -1,15 +1,21 @@
 <p align="center">
   <picture align="center">
-    <source media="(prefers-color-scheme: dark)" srcset="assets/gs_logo.png" width="350">
-    <source media="(prefers-color-scheme: light)" srcset="assets/gs_logo_light.png" width="350">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/gs_logo_light.png" width="350">
+    <source media="(prefers-color-scheme: light)" srcset="assets/gs_logo.png" width="350">
     <img alt="GiavaScript Logo" src="gs.png">
   </picture>
 </p>
 <h1 align="center">GiavaScript</h1>
 
 <p align="center">
-  <a href="https://github.com/memburg/GiavaScript/actions/workflows/test.yml">
-    <img src="https://github.com/memburg/GiavaScript/actions/workflows/test.yml/badge.svg" alt="Linux CI" />
+  <a href="https://github.com/memburg/GiavaScript/actions/workflows/linux.yml">
+    <img src="https://github.com/memburg/GiavaScript/actions/workflows/linux.yml/badge.svg" alt="Linux CI" />
+  </a>
+  <a href="https://github.com/memburg/GiavaScript/actions/workflows/macos.yml">
+    <img src="https://github.com/memburg/GiavaScript/actions/workflows/macos.yml/badge.svg" alt="macOS CI" />
+  </a>
+  <a href="https://github.com/memburg/GiavaScript/actions/workflows/windows.yml">
+    <img src="https://github.com/memburg/GiavaScript/actions/workflows/windows.yml/badge.svg" alt="Windows CI" />
   </a>
   <a href="https://crystal-lang.org/">
     <img src="https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white" alt="Crystal" />
@@ -18,21 +24,28 @@
 
 GiavaScript is an open-source, cross-platform, non-standard-compliant JavaScript runtime environment.
 
-## Install (optimized build)
+## Get Started
 
-Build and install the `giavascript` executable globally:
+1. Clone the repository:
 
-```bash
-./install.sh
-```
+   ```bash
+   git clone https://github.com/memburg/GiavaScript.git
+   cd GiavaScript
+   ```
 
-This compiles with Crystal release optimizations and installs to `/usr/local/bin` by default.
+2. Ensure [Crystal](https://crystal-lang.org/) 1.19.1+ is installed and available in your `PATH`.
 
-If you prefer a user-local location:
+3. Build and install the `giavascript` binary:
 
-```bash
-INSTALL_DIR="$HOME/.local/bin" ./install.sh
-```
+   ```bash
+   ./install.sh
+   ```
+
+   If you prefer a user-local install path, run:
+
+   ```bash
+   INSTALL_DIR="$HOME/.local/bin" ./install.sh
+   ```
 
 ## Run a Source File
 
@@ -66,7 +79,3 @@ Table of Contents:
 - [Types](reference/Types.md)
 - [Math](reference/Math.md)
 - [JSON](reference/JSON.md)
-
-## Current Limitations
-
-- Partial JavaScript support; many standard globals and language features are still missing.

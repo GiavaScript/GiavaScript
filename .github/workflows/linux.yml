@@ -1,0 +1,38 @@
+name: GiavaScript Linux CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Crystal
+        uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: 1.19.1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: shards install
+
+      - name: Verify reference docs are up to date
+        run: |
+          python scripts/generate_reference.py
+          git diff --exit-code -- reference/REFERENCE.md
+
+      - name: Run tests
+        run: crystal spec
