@@ -1,6 +1,20 @@
-# GiavaScript
+<p align="center">
+  <picture align="center">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/gs_logo.png" width="350">
+    <source media="(prefers-color-scheme: light)" srcset="assets/gs_logo_light.png" width="350">
+    <img alt="GiavaScript Logo" src="gs.png">
+  </picture>
+</p>
+<h1 align="center">GiavaScript</h1>
 
-![crystal](https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white)
+<p align="center">
+  <a href="https://github.com/memburg/GiavaScript/actions/workflows/test.yml">
+    <img src="https://github.com/memburg/GiavaScript/actions/workflows/test.yml/badge.svg" alt="Linux CI" />
+  </a>
+  <a href="https://crystal-lang.org/">
+    <img src="https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white" alt="Crystal" />
+  </a>
+</p>
 
 GiavaScript is an open-source, cross-platform, non-standard-compliant JavaScript runtime environment.
 
