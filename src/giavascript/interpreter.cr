@@ -103,7 +103,7 @@ module GiavaScript
     def eval(input : String) : Array(String)
       messages = [] of String
       statements = begin
-        StatementSplitter.new(input).split
+        StatementSplitter.new(CommentStripper.strip(input)).split
       rescue ex : ExpressionError
         return [ex.message || "Error: invalid statement"]
       end
@@ -1267,6 +1267,12 @@ module GiavaScript
           end
           min_value.as(Value)
         end
+      end)
+
+      math["random"] = BuiltinFunction.new("Math.random", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.random")
+        assert_builtin_arity(args, 0, "Math.random")
+        rand.as(Value)
       end)
 
       math

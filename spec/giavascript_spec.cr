@@ -60,6 +60,43 @@ describe GiavaScript do
     interpreter.eval("b;").should eq(["\"hello\""])
   end
 
+  it "supports single-line comments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var a = 1; // set a\nvar b = 2; // set b\na + b;").should eq(["3"])
+  end
+
+  it "supports multi-line comments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var a = 1; /* comment with ; and } and // */ var b = 2; a + b;").should eq(["3"])
+  end
+
+  it "ignores comment markers inside strings" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("\"//not a comment\";").should eq(["\"//not a comment\""])
+    interpreter.eval("\"/*not a comment*/\";").should eq(["\"/*not a comment*/\""])
+  end
+
+  it "reports unterminated multi-line comments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var a = 1; /* missing end").should eq(["Error: unterminated block comment"])
+  end
+
+  it "supports comments in if and else control flow" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var x = 0; if /*cond*/ (true) { x = 1; } else { x = 2; } x;").should eq(["1"])
+  end
+
+  it "supports comments in for-loop headers and bodies" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var total = 0; for (var i = 0; /*cond*/ i < 3; /*step*/ i++) { total += i; // add i\n } total;").should eq(["3"])
+  end
+
   it "evaluates integer arithmetic" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var result = 2 + 3 * 4;").should eq([] of String)
@@ -448,6 +485,8 @@ describe GiavaScript do
     interpreter.eval("Math.trunc(-1.8);").should eq(["-1"])
     interpreter.eval("Math.max(1, 9, 3);").should eq(["9.0"])
     interpreter.eval("Math.min(1, 9, 3);").should eq(["1.0"])
+    interpreter.eval("var randomValue = Math.random();").should eq([] of String)
+    interpreter.eval("randomValue >= 0 && randomValue < 1;").should eq(["true"])
   end
 
   it "supports Math.max and Math.min empty argument behavior" do
@@ -481,6 +520,7 @@ describe GiavaScript do
     interpreter.eval("Math.ceil(\"up\");").should eq(["Error: Math.ceil argument 1 must be a number"])
     interpreter.eval("Math.max(1, \"two\");").should eq(["Error: Math.max argument 2 must be a number"])
     interpreter.eval("Math.cos(\"angle\");").should eq(["Error: Math.cos argument 1 must be a number"])
+    interpreter.eval("Math.random(1);").should eq(["Error: Math.random expects 0 arguments but got 1"])
   end
 
   it "raises runtime error when Math method is overwritten with non-callable" do
