@@ -256,7 +256,7 @@ Status of the JavaScript `Math` global object in GiavaScript.
 | `max()` | Static method | Available |
 | `min()` | Static method | Available |
 | `pow()` | Static method | Available |
-| `random()` | Static method | Not available |
+| `random()` | Static method | Available |
 | `round()` | Static method | Available |
 | `sign()` | Static method | Available |
 | `sin()` | Static method | Available |
@@ -268,7 +268,8 @@ Status of the JavaScript `Math` global object in GiavaScript.
 
 ### Notes
 
-- Recently added: `acos()`, `asin()`, `atan()`, `atan2()`, `cos()`, `exp()`, `log()`, `sin()`, and `tan()`.
+- `Math.random()` returns a pseudo-random number in the range `[0, 1)`.
+- `Math.random()` is not cryptographically secure.
 
 ## JSON
 
