@@ -1,4 +1,4 @@
-name: GiavaScript Linux CI
+name: Linux CI
 
 on:
   push:

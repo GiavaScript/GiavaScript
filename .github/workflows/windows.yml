@@ -1,4 +1,4 @@
-name: GiavaScript Windows CI
+name: Windows CI
 
 on:
   push:
