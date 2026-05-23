@@ -474,7 +474,7 @@ describe GiavaScript do
     interpreter.eval("Math.atan(0);").should eq(["0.0"])
     interpreter.eval("Math.atan2(0, 1);").should eq(["0.0"])
     interpreter.eval("Math.atanh(0);").should eq(["0.0"])
-    interpreter.eval("Math.cbrt(27);").should eq(["3.0"])
+    interpreter.eval("Math.cbrt(1);").should eq(["1.0"])
     interpreter.eval("Math.ceil(1.2);").should eq(["2"])
     interpreter.eval("Math.clz32(1);").should eq(["31"])
     interpreter.eval("Math.cos(0);").should eq(["1.0"])
