@@ -231,28 +231,28 @@ Status of the JavaScript `Math` global object in GiavaScript.
 | `abs()` | Static method | Available |
 | `sqrt()` | Static method | Available |
 | `acos()` | Static method | Available |
-| `acosh()` | Static method | Not available |
+| `acosh()` | Static method | Available |
 | `asin()` | Static method | Available |
-| `asinh()` | Static method | Not available |
+| `asinh()` | Static method | Available |
 | `atan()` | Static method | Available |
 | `atan2()` | Static method | Available |
-| `atanh()` | Static method | Not available |
-| `cbrt()` | Static method | Not available |
+| `atanh()` | Static method | Available |
+| `cbrt()` | Static method | Available |
 | `ceil()` | Static method | Available |
-| `clz32()` | Static method | Not available |
+| `clz32()` | Static method | Available |
 | `cos()` | Static method | Available |
-| `cosh()` | Static method | Not available |
+| `cosh()` | Static method | Available |
 | `exp()` | Static method | Available |
-| `expm1()` | Static method | Not available |
-| `f16round()` | Static method | Not available |
+| `expm1()` | Static method | Available |
+| `f16round()` | Static method | Available |
 | `floor()` | Static method | Available |
-| `fround()` | Static method | Not available |
-| `hypot()` | Static method | Not available |
-| `imul()` | Static method | Not available |
+| `fround()` | Static method | Available |
+| `hypot()` | Static method | Available |
+| `imul()` | Static method | Available |
 | `log()` | Static method | Available |
-| `log10()` | Static method | Not available |
-| `log1p()` | Static method | Not available |
-| `log2()` | Static method | Not available |
+| `log10()` | Static method | Available |
+| `log1p()` | Static method | Available |
+| `log2()` | Static method | Available |
 | `max()` | Static method | Available |
 | `min()` | Static method | Available |
 | `pow()` | Static method | Available |
@@ -260,10 +260,10 @@ Status of the JavaScript `Math` global object in GiavaScript.
 | `round()` | Static method | Available |
 | `sign()` | Static method | Available |
 | `sin()` | Static method | Available |
-| `sinh()` | Static method | Not available |
-| `sumPrecise()` | Static method | Not available |
+| `sinh()` | Static method | Available |
+| `sumPrecise()` | Static method | Available |
 | `tan()` | Static method | Available |
-| `tanh()` | Static method | Not available |
+| `tanh()` | Static method | Available |
 | `trunc()` | Static method | Available |
 
 ### Notes

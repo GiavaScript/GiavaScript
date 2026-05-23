@@ -1140,14 +1140,35 @@ module GiavaScript
         Math.sqrt(unary_number_arg_f64(args, "Math.sqrt")).as(Value)
       end)
 
+      math["abs"] = BuiltinFunction.new("Math.abs", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.abs")
+        assert_builtin_arity(args, 1, "Math.abs")
+        value = number_argument(args[0], "Math.abs", 0)
+        if value.is_a?(Int32)
+          value.abs.as(Value)
+        else
+          value.abs.to_f64.as(Value)
+        end
+      end)
+
       math["acos"] = BuiltinFunction.new("Math.acos", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.acos")
         Math.acos(unary_number_arg_f64(args, "Math.acos")).as(Value)
       end)
 
+      math["acosh"] = BuiltinFunction.new("Math.acosh", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.acosh")
+        Math.acosh(unary_number_arg_f64(args, "Math.acosh")).as(Value)
+      end)
+
       math["asin"] = BuiltinFunction.new("Math.asin", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.asin")
         Math.asin(unary_number_arg_f64(args, "Math.asin")).as(Value)
+      end)
+
+      math["asinh"] = BuiltinFunction.new("Math.asinh", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.asinh")
+        Math.asinh(unary_number_arg_f64(args, "Math.asinh")).as(Value)
       end)
 
       math["atan"] = BuiltinFunction.new("Math.atan", ->(receiver : Value, args : Array(Value)) do
@@ -1161,30 +1182,14 @@ module GiavaScript
         Math.atan2(y, x).as(Value)
       end)
 
-      math["cos"] = BuiltinFunction.new("Math.cos", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.cos")
-        Math.cos(unary_number_arg_f64(args, "Math.cos")).as(Value)
+      math["atanh"] = BuiltinFunction.new("Math.atanh", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.atanh")
+        Math.atanh(unary_number_arg_f64(args, "Math.atanh")).as(Value)
       end)
 
-      math["exp"] = BuiltinFunction.new("Math.exp", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.exp")
-        Math.exp(unary_number_arg_f64(args, "Math.exp")).as(Value)
-      end)
-
-      math["log"] = BuiltinFunction.new("Math.log", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.log")
-        Math.log(unary_number_arg_f64(args, "Math.log")).as(Value)
-      end)
-
-      math["abs"] = BuiltinFunction.new("Math.abs", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.abs")
-        assert_builtin_arity(args, 1, "Math.abs")
-        value = number_argument(args[0], "Math.abs", 0)
-        if value.is_a?(Int32)
-          value.abs.as(Value)
-        else
-          value.abs.to_f64.as(Value)
-        end
+      math["cbrt"] = BuiltinFunction.new("Math.cbrt", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.cbrt")
+        Math.cbrt(unary_number_arg_f64(args, "Math.cbrt")).as(Value)
       end)
 
       math["ceil"] = BuiltinFunction.new("Math.ceil", ->(receiver : Value, args : Array(Value)) do
@@ -1192,49 +1197,126 @@ module GiavaScript
         unary_number_arg_f64(args, "Math.ceil").ceil.to_i32.as(Value)
       end)
 
+      math["clz32"] = BuiltinFunction.new("Math.clz32", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.clz32")
+        assert_builtin_arity(args, 1, "Math.clz32")
+        value = number_argument(args[0], "Math.clz32", 0)
+        number_to_uint32(value).leading_zeros_count.to_i32.as(Value)
+      end)
+
+      math["cos"] = BuiltinFunction.new("Math.cos", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.cos")
+        Math.cos(unary_number_arg_f64(args, "Math.cos")).as(Value)
+      end)
+
+      math["cosh"] = BuiltinFunction.new("Math.cosh", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.cosh")
+        Math.cosh(unary_number_arg_f64(args, "Math.cosh")).as(Value)
+      end)
+
+      math["exp"] = BuiltinFunction.new("Math.exp", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.exp")
+        Math.exp(unary_number_arg_f64(args, "Math.exp")).as(Value)
+      end)
+
+      math["expm1"] = BuiltinFunction.new("Math.expm1", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.expm1")
+        Math.expm1(unary_number_arg_f64(args, "Math.expm1")).as(Value)
+      end)
+
+      math["f16round"] = BuiltinFunction.new("Math.f16round", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.f16round")
+        math_f16round(unary_number_arg_f64(args, "Math.f16round")).as(Value)
+      end)
+
       math["floor"] = BuiltinFunction.new("Math.floor", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.floor")
         unary_number_arg_f64(args, "Math.floor").floor.to_i32.as(Value)
       end)
 
-      math["round"] = BuiltinFunction.new("Math.round", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.round")
-        unary_number_arg_f64(args, "Math.round").round.to_i32.as(Value)
+      math["fround"] = BuiltinFunction.new("Math.fround", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.fround")
+        unary_number_arg_f64(args, "Math.fround").to_f32.to_f64.as(Value)
       end)
 
-      math["trunc"] = BuiltinFunction.new("Math.trunc", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.trunc")
-        unary_number_arg_f64(args, "Math.trunc").trunc.to_i32.as(Value)
-      end)
+      math["hypot"] = BuiltinFunction.new("Math.hypot", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.hypot")
 
-      math["sign"] = BuiltinFunction.new("Math.sign", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.sign")
-        assert_builtin_arity(args, 1, "Math.sign")
-
-        value = unary_number_arg_f64(args, "Math.sign")
-        if value < 0
-          -1.as(Value)
-        elsif value > 0
-          1.as(Value)
+        case args.size
+        when 0
+          0.0.as(Value)
+        when 1
+          number_argument(args[0], "Math.hypot", 0).to_f64.abs.as(Value)
+        when 2
+          x = number_argument(args[0], "Math.hypot", 0).to_f64
+          y = number_argument(args[1], "Math.hypot", 1).to_f64
+          Math.hypot(x, y).as(Value)
         else
-          0.as(Value)
+          max_value = 0.0
+          sum = 0.0
+          encountered_nan = false
+          encountered_infinity = false
+
+          index = 0
+          while index < args.size
+            value = number_argument(args[index], "Math.hypot", index).to_f64
+            if value.nan?
+              encountered_nan = true
+            else
+              absolute = value.abs
+              if absolute.infinite?
+                encountered_infinity = true
+              elsif absolute > max_value
+                ratio = max_value == 0.0 ? 0.0 : max_value / absolute
+                sum = sum * ratio * ratio + 1.0
+                max_value = absolute
+              elsif absolute != 0.0
+                ratio = absolute / max_value
+                sum += ratio * ratio
+              end
+            end
+
+            index += 1
+          end
+
+          if encountered_infinity
+            Float64::INFINITY.as(Value)
+          elsif encountered_nan
+            Float64::NAN.as(Value)
+          elsif max_value == 0.0
+            0.0.as(Value)
+          else
+            (max_value * Math.sqrt(sum)).as(Value)
+          end
         end
       end)
 
-      math["pow"] = BuiltinFunction.new("Math.pow", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.pow")
-        base, exponent = binary_number_args_f64(args, "Math.pow")
-        (base ** exponent).as(Value)
+      math["imul"] = BuiltinFunction.new("Math.imul", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.imul")
+        assert_builtin_arity(args, 2, "Math.imul")
+        left = number_to_uint32(number_argument(args[0], "Math.imul", 0))
+        right = number_to_uint32(number_argument(args[1], "Math.imul", 1))
+        (left &* right).unsafe_as(Int32).as(Value)
       end)
 
-      math["sin"] = BuiltinFunction.new("Math.sin", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.sin")
-        Math.sin(unary_number_arg_f64(args, "Math.sin")).as(Value)
+      math["log"] = BuiltinFunction.new("Math.log", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.log")
+        Math.log(unary_number_arg_f64(args, "Math.log")).as(Value)
       end)
 
-      math["tan"] = BuiltinFunction.new("Math.tan", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.tan")
-        Math.tan(unary_number_arg_f64(args, "Math.tan")).as(Value)
+      math["log10"] = BuiltinFunction.new("Math.log10", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.log10")
+        Math.log10(unary_number_arg_f64(args, "Math.log10")).as(Value)
+      end)
+
+      math["log1p"] = BuiltinFunction.new("Math.log1p", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.log1p")
+        Math.log1p(unary_number_arg_f64(args, "Math.log1p")).as(Value)
+      end)
+
+      math["log2"] = BuiltinFunction.new("Math.log2", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.log2")
+        Math.log2(unary_number_arg_f64(args, "Math.log2")).as(Value)
       end)
 
       math["max"] = BuiltinFunction.new("Math.max", ->(receiver : Value, args : Array(Value)) do
@@ -1269,10 +1351,85 @@ module GiavaScript
         end
       end)
 
+      math["pow"] = BuiltinFunction.new("Math.pow", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.pow")
+        base, exponent = binary_number_args_f64(args, "Math.pow")
+        (base ** exponent).as(Value)
+      end)
+
       math["random"] = BuiltinFunction.new("Math.random", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.random")
         assert_builtin_arity(args, 0, "Math.random")
         rand.as(Value)
+      end)
+
+      math["round"] = BuiltinFunction.new("Math.round", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.round")
+        unary_number_arg_f64(args, "Math.round").round.to_i32.as(Value)
+      end)
+
+      math["sign"] = BuiltinFunction.new("Math.sign", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.sign")
+        assert_builtin_arity(args, 1, "Math.sign")
+
+        value = unary_number_arg_f64(args, "Math.sign")
+        if value < 0
+          -1.as(Value)
+        elsif value > 0
+          1.as(Value)
+        else
+          0.as(Value)
+        end
+      end)
+
+      math["sin"] = BuiltinFunction.new("Math.sin", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.sin")
+        Math.sin(unary_number_arg_f64(args, "Math.sin")).as(Value)
+      end)
+
+      math["sinh"] = BuiltinFunction.new("Math.sinh", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.sinh")
+        Math.sinh(unary_number_arg_f64(args, "Math.sinh")).as(Value)
+      end)
+
+      math["sumPrecise"] = BuiltinFunction.new("Math.sumPrecise", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.sumPrecise")
+
+        if args.empty?
+          0.0.as(Value)
+        elsif args.size == 1
+          number_argument(args[0], "Math.sumPrecise", 0).to_f64.as(Value)
+        else
+          sum = 0.0
+          compensation = 0.0
+
+          index = 0
+          while index < args.size
+            value = number_argument(args[index], "Math.sumPrecise", index).to_f64
+            y = value - compensation
+            t = sum + y
+            compensation = (t - sum) - y
+            sum = t
+            index += 1
+          end
+
+          sum.as(Value)
+        end
+      end)
+
+      math["tan"] = BuiltinFunction.new("Math.tan", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.tan")
+        Math.tan(unary_number_arg_f64(args, "Math.tan")).as(Value)
+      end)
+
+      math["tanh"] = BuiltinFunction.new("Math.tanh", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.tanh")
+        Math.tanh(unary_number_arg_f64(args, "Math.tanh")).as(Value)
+      end)
+
+      math["trunc"] = BuiltinFunction.new("Math.trunc", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Math.trunc")
+        unary_number_arg_f64(args, "Math.trunc").trunc.to_i32.as(Value)
       end)
 
       math
@@ -1314,6 +1471,104 @@ module GiavaScript
         number_argument(args[0], method_name, 0).to_f64,
         number_argument(args[1], method_name, 1).to_f64,
       }
+    end
+
+    private def number_to_uint32(value : Number) : UInt32
+      if value.is_a?(Int32)
+        value.unsafe_as(UInt32)
+      else
+        number_to_uint32(value.to_f64)
+      end
+    end
+
+    private def number_to_uint32(value : Float64) : UInt32
+      return 0_u32 if value.nan? || value.infinite? || value == 0.0
+
+      two32 = 4_294_967_296.0
+      reduced = value.trunc % two32
+      reduced += two32 if reduced < 0
+      reduced.to_u64.to_u32
+    end
+
+    private def math_f16round(value : Float64) : Float64
+      return value if value.nan? || value.infinite? || value == 0.0
+
+      bits = value.to_f32.unsafe_as(UInt32)
+      sign = (bits >> 16) & 0x8000_u32
+      exponent = ((bits >> 23) & 0xFF_u32).to_i32
+      mantissa = bits & 0x007F_FFFF_u32
+
+      half = if exponent == 0xFF
+               sign | 0x7C00_u32 | (mantissa >> 13)
+             else
+               adjusted_exponent = exponent - 127 + 15
+
+               if adjusted_exponent >= 0x1F
+                 sign | 0x7C00_u32
+               elsif adjusted_exponent <= 0
+                 if adjusted_exponent < -10
+                   sign
+                 else
+                   mantissa_with_hidden_bit = mantissa | 0x0080_0000_u32
+                   shift = 14 - adjusted_exponent
+                   rounded_mantissa = mantissa_with_hidden_bit >> shift
+                   remainder = mantissa_with_hidden_bit & ((1_u32 << shift) - 1)
+                   midpoint = 1_u32 << (shift - 1)
+
+                   if remainder > midpoint || (remainder == midpoint && (rounded_mantissa & 1_u32) == 1_u32)
+                     rounded_mantissa += 1
+                   end
+
+                   sign | rounded_mantissa
+                 end
+               else
+                 half_exponent = (adjusted_exponent << 10).to_u32
+                 rounded_mantissa = mantissa >> 13
+                 remainder = mantissa & 0x1FFF_u32
+
+                 if remainder > 0x1000_u32 || (remainder == 0x1000_u32 && (rounded_mantissa & 1_u32) == 1_u32)
+                   rounded_mantissa += 1
+                   if rounded_mantissa == 0x400_u32
+                     rounded_mantissa = 0_u32
+                     half_exponent += 0x0400_u32
+                     half_exponent = 0x7C00_u32 if half_exponent >= 0x7C00_u32
+                   end
+                 end
+
+                 sign | half_exponent | rounded_mantissa
+               end
+             end
+
+      half_to_f64(half)
+    end
+
+    private def half_to_f64(half : UInt32) : Float64
+      sign32 = (half & 0x8000_u32) << 16
+      exponent = (half >> 10) & 0x1F_u32
+      mantissa = half & 0x03FF_u32
+
+      bits32 = if exponent == 0
+                 if mantissa == 0
+                   sign32
+                 else
+                   normalized = mantissa
+                   exponent_value = -14
+                   while (normalized & 0x0400_u32) == 0
+                     normalized <<= 1
+                     exponent_value -= 1
+                   end
+                   normalized &= 0x03FF_u32
+                   exponent32 = (exponent_value + 127).to_u32 << 23
+                   sign32 | exponent32 | (normalized << 13)
+                 end
+               elsif exponent == 0x1F
+                 sign32 | 0x7F80_0000_u32 | (mantissa << 13)
+               else
+                 exponent32 = ((exponent.to_i32 - 15 + 127).to_u32) << 23
+                 sign32 | exponent32 | (mantissa << 13)
+               end
+
+      bits32.unsafe_as(Float32).to_f64
     end
 
     private def parse_int_digit_value(char : Char) : Int32?
