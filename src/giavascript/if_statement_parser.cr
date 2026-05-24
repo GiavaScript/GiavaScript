@@ -1,6 +1,6 @@
 module GiavaScript
   class IfStatementParser
-    INVALID_IF_ERROR = "Error: invalid if statement"
+    INVALID_IF_ERROR       = "Error: invalid if statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"
 
     record ParsedIf, statement : IfStatement, end_index : Int32

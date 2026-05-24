@@ -1,6 +1,6 @@
 module GiavaScript
   class ForStatementParser
-    INVALID_FOR_ERROR = "Error: invalid for statement"
+    INVALID_FOR_ERROR      = "Error: invalid for statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"
 
     record ParsedFor, statement : ForStatement, end_index : Int32
@@ -122,10 +122,10 @@ module GiavaScript
       raise invalid_for_error unless segments.size == 3
 
       {
-        init_source: segments[0],
+        init_source:      segments[0],
         condition_source: segments[1],
-        update_source: segments[2],
-        end_paren_index: current,
+        update_source:    segments[2],
+        end_paren_index:  current,
       }
     end
 

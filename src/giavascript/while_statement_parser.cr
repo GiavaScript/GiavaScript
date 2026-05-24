@@ -1,6 +1,6 @@
 module GiavaScript
   class WhileStatementParser
-    INVALID_WHILE_ERROR = "Error: invalid while statement"
+    INVALID_WHILE_ERROR    = "Error: invalid while statement"
     INVALID_DO_WHILE_ERROR = "Error: invalid do...while statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"
 

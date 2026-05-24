@@ -49,6 +49,7 @@ module GiavaScript
 
       value.to_s
     end
+
     private def current_char : Char?
       @source[@index]?
     end

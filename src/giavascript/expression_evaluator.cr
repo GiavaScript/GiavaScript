@@ -4,7 +4,7 @@ module GiavaScript
       @env : Environment,
       @call_function : Proc(String, Array(Value), Value)? = nil,
       @resolve_function : Proc(String, BuiltinFunction?)? = nil,
-      @invoke_user_function : Proc(UserFunction, Array(Value), Value)? = nil
+      @invoke_user_function : Proc(UserFunction, Array(Value), Value)? = nil,
     )
     end
 

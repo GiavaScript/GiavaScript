@@ -1,10 +1,10 @@
 module GiavaScript
   class Interpreter
-    IDENTIFIER_REGEX         = /^[A-Za-z_][A-Za-z0-9_]*$/
-    MAX_JSON_STRINGIFY_DEPTH = 1000
-    MAX_EXPRESSION_CACHE_SIZE = 8_192
+    IDENTIFIER_REGEX             = /^[A-Za-z_][A-Za-z0-9_]*$/
+    MAX_JSON_STRINGIFY_DEPTH     =  1000
+    MAX_EXPRESSION_CACHE_SIZE    = 8_192
     MAX_RAW_STATEMENT_CACHE_SIZE = 8_192
-    MAX_EVALUATOR_CACHE_SIZE = 1_024
+    MAX_EVALUATOR_CACHE_SIZE     = 1_024
 
     class BreakSignal < Exception
       def initialize
@@ -956,65 +956,65 @@ module GiavaScript
         nan = Float64::NAN.as(Value)
 
         result = if source.empty?
-          nan
-        else
-          sign = 1
-          if source.starts_with?('+')
-            source = source[1...source.size]
-          elsif source.starts_with?('-')
-            sign = -1
-            source = source[1...source.size]
-          end
+                   nan
+                 else
+                   sign = 1
+                   if source.starts_with?('+')
+                     source = source[1...source.size]
+                   elsif source.starts_with?('-')
+                     sign = -1
+                     source = source[1...source.size]
+                   end
 
-          if source.empty?
-            nan
-          else
-            radix = 0
-            if args.size == 2
-              radix_number = number_argument(args[1], "parseInt", 1)
-              radix = radix_number.to_i32
-            end
+                   if source.empty?
+                     nan
+                   else
+                     radix = 0
+                     if args.size == 2
+                       radix_number = number_argument(args[1], "parseInt", 1)
+                       radix = radix_number.to_i32
+                     end
 
-            if radix != 0 && (radix < 2 || radix > 36)
-              nan
-            else
-              if radix == 0
-                if source.starts_with?("0x") || source.starts_with?("0X")
-                  radix = 16
-                  source = source[2...source.size]
-                else
-                  radix = 10
-                end
-              elsif radix == 16 && (source.starts_with?("0x") || source.starts_with?("0X"))
-                source = source[2...source.size]
-              end
+                     if radix != 0 && (radix < 2 || radix > 36)
+                       nan
+                     else
+                       if radix == 0
+                         if source.starts_with?("0x") || source.starts_with?("0X")
+                           radix = 16
+                           source = source[2...source.size]
+                         else
+                           radix = 10
+                         end
+                       elsif radix == 16 && (source.starts_with?("0x") || source.starts_with?("0X"))
+                         source = source[2...source.size]
+                       end
 
-              value = 0.0
-              parsed_any_digit = false
+                       value = 0.0
+                       parsed_any_digit = false
 
-              source.each_char do |char|
-                digit = parse_int_digit_value(char)
-                break unless digit
-                break if digit >= radix
+                       source.each_char do |char|
+                         digit = parse_int_digit_value(char)
+                         break unless digit
+                         break if digit >= radix
 
-                parsed_any_digit = true
-                value = value * radix + digit
-              end
+                         parsed_any_digit = true
+                         value = value * radix + digit
+                       end
 
-              if parsed_any_digit
-                value *= sign
+                       if parsed_any_digit
+                         value *= sign
 
-                if value.finite? && value >= Int32::MIN && value <= Int32::MAX
-                  value.to_i32.as(Value)
-                else
-                  value.as(Value)
-                end
-              else
-                nan
-              end
-            end
-          end
-        end
+                         if value.finite? && value >= Int32::MIN && value <= Int32::MAX
+                           value.to_i32.as(Value)
+                         else
+                           value.as(Value)
+                         end
+                       else
+                         nan
+                       end
+                     end
+                   end
+                 end
 
         result.as(Value)
       end)
@@ -1027,19 +1027,19 @@ module GiavaScript
         nan = Float64::NAN.as(Value)
 
         result = if match = source.match(/\A[+-]?(?:Infinity|(?:(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?))/)
-          token = match[0]
+                   token = match[0]
 
-          if token == "Infinity" || token == "+Infinity"
-            Float64::INFINITY.as(Value)
-          elsif token == "-Infinity"
-            (-Float64::INFINITY).as(Value)
-          else
-            parsed = token.to_f64?
-            parsed ? parsed.as(Value) : nan
-          end
-        else
-          nan
-        end
+                   if token == "Infinity" || token == "+Infinity"
+                     Float64::INFINITY.as(Value)
+                   elsif token == "-Infinity"
+                     (-Float64::INFINITY).as(Value)
+                   else
+                     parsed = token.to_f64?
+                     parsed ? parsed.as(Value) : nan
+                   end
+                 else
+                   nan
+                 end
 
         result.as(Value)
       end)
