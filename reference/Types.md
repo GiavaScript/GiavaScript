@@ -1,6 +1,6 @@
 # Type Methods and Properties
 
-Status of built-in methods and properties available through GiavaScript runtime types.
+Status of built-in methods and properties on GiavaScript runtime types.
 
 ## String
 
@@ -108,3 +108,7 @@ Status of built-in methods and properties available through GiavaScript runtime 
 | Member | Kind | Status |
 | --- | --- | --- |
 | `toString()` | Instance method | Available |
+
+## Notes
+
+- This reflects current behavior in the interpreter and specs.

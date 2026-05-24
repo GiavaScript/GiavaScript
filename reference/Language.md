@@ -76,5 +76,6 @@ Status of core JavaScript language features in GiavaScript.
 | `parseFloat()` | Available |
 | `isNaN()` | Available |
 
-Notes:
+## Notes
+
 - This reflects current behavior in the interpreter and specs.

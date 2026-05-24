@@ -16,6 +16,8 @@ Primary responsibilities:
 Working rules:
 - Prefer updating the nearest relevant document instead of creating duplicate docs.
 - Preserve existing project voice and formatting conventions.
+- Follow the Microsoft Writing Style Guide: https://learn.microsoft.com/en-us/style-guide/welcome/
+- Use US English spelling and grammar.
 - Verify command examples against current scripts and entry points.
 - Call out assumptions when behavior is unclear from code.
 - Do not invent unsupported features.

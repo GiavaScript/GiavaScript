@@ -22,60 +22,104 @@
   </a>
 </p>
 
-GiavaScript is an open-source, cross-platform, non-standard-compliant JavaScript runtime environment.
+GiavaScript is an open-source, cross-platform JavaScript runtime implemented in Crystal.
 
-## Get Started
+It intentionally does not aim for full ECMAScript compliance. Check the reference docs before relying on specific language features.
 
-1. Clone the repository:
+## Quick start
 
-   ```bash
-   git clone https://github.com/memburg/GiavaScript.git
-   cd GiavaScript
-   ```
+### Prerequisites
 
-2. Ensure [Crystal](https://crystal-lang.org/) 1.19.1+ is installed and available in your `PATH`.
+- [Crystal](https://crystal-lang.org/) 1.19.1 or later
+- Python 3 (only needed to regenerate `reference/REFERENCE.md`)
 
-3. Build and install the `giavascript` binary:
-
-   ```bash
-   ./install.sh
-   ```
-
-   If you prefer a user-local install path, run:
-
-   ```bash
-   INSTALL_DIR="$HOME/.local/bin" ./install.sh
-   ```
-
-## Run a Source File
+### Install the CLI
 
 ```bash
-giavascript path/to/program.js
+git clone https://github.com/memburg/GiavaScript.git
+cd GiavaScript
+./install.sh
 ```
 
-The interpreter reads the file and executes it through the same evaluation pipeline used for in-memory strings.
+This installs the `giavascript` binary to `/usr/local/bin` by default.
 
-## Run the REPL
+Install to a user-local path instead of `/usr/local/bin`:
+
+```bash
+INSTALL_DIR="$HOME/.local/bin" ./install.sh
+```
+
+Make sure your install directory is on `PATH`.
+
+## CLI usage
+
+### Start the REPL
 
 ```bash
 giavascript
 ```
 
-Exit with:
+REPL commands:
 
-```txt
-:quit
+- `:quit` exits the REPL.
+
+### Run a file
+
+```bash
+giavascript path/to/program.js
 ```
 
-## JavaScript Feature Reference
+Behavior to expect:
 
-Use the reference docs to track which standard JavaScript features are currently available:
+- Empty files return an error.
+- If a runtime error occurs, messages are written to standard error.
+- Process exit code is `1` when any `Error:` message is produced; otherwise `0`.
 
-- [Consolidated Reference](reference/REFERENCE.md)
+### Run without installing
 
-Table of Contents:
+```bash
+crystal run src/giavascript_cli.cr -- examples/templateLiterals.js
+```
 
-- [Language](reference/Language.md)
-- [Types](reference/Types.md)
+## Development workflow
+
+Install dependencies and run tests:
+
+```bash
+shards install
+crystal spec
+```
+
+Regenerate consolidated reference docs after editing files under `reference/`:
+
+```bash
+python3 scripts/generate_reference.py
+```
+
+CI verifies that `reference/REFERENCE.md` matches generated output.
+
+## JavaScript feature reference
+
+- [Consolidated reference](reference/REFERENCE.md)
+- [Language features](reference/Language.md)
+- [Type methods and properties](reference/Types.md)
 - [Math](reference/Math.md)
 - [JSON](reference/JSON.md)
+
+## Examples
+
+Sample programs are in `examples/`:
+
+- `examples/templateLiterals.js` - string interpolation and expression formatting
+- `examples/matrixMultiply.js` - nested loops and array indexing
+- `examples/sievePrimes.js` - control flow and simple algorithm implementation
+
+Run any example with:
+
+```bash
+giavascript examples/templateLiterals.js
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, test, and documentation update guidelines.
