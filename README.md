@@ -17,6 +17,9 @@
   <a href="https://github.com/memburg/GiavaScript/actions/workflows/windows.yml">
     <img src="https://github.com/memburg/GiavaScript/actions/workflows/windows.yml/badge.svg" alt="Windows CI" />
   </a>
+  <a href="https://github.com/memburg/GiavaScript/actions/workflows/nightly.yml">
+    <img src="https://github.com/memburg/GiavaScript/actions/workflows/nightly.yml/badge.svg" alt="Nightly Crystal CI" />
+  </a>
   <a href="https://crystal-lang.org/">
     <img src="https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white" alt="Crystal" />
   </a>
