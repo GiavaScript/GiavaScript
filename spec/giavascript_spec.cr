@@ -874,6 +874,14 @@ describe GiavaScript do
     interpreter.eval("numbers.findIndex(function(value, index, array) { return value * 2 == array.length + index + 1; });").should eq(["3"])
   end
 
+  it "uses JS-compatible callback arity for array methods" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var array = [1, 4, 9, 16];").should eq([] of String)
+    interpreter.eval("array.map(function(x) { return x * 2; });").should eq(["[2, 8, 18, 32]"])
+    interpreter.eval("array.map(function(value, index, source, extra) { return extra; });").should eq(["[undefined, undefined, undefined, undefined]"])
+    interpreter.eval("[1, 2, 3].reduce(function(acc, value) { return acc + value; }, 0);").should eq(["6"])
+  end
+
   it "supports Array.reduce with and without an initial value" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3].reduce(function(acc, value, index, array) { return acc + value + index + array.length; }, 0);").should eq(["18"])

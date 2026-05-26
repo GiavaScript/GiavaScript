@@ -959,7 +959,26 @@ module GiavaScript
         raise ExpressionError.new("Error: #{method_name} callback invoker is not configured")
       end
 
-      invoker.call(callback, args)
+      callback_args = normalize_callback_args(callback, args)
+      invoker.call(callback, callback_args)
+    end
+
+    private def normalize_callback_args(callback : Value, args : Array(Value)) : Array(Value)
+      return args unless callback.is_a?(UserFunction)
+
+      expected_count = callback.parameters.size
+      provided_count = args.size
+      return args if expected_count == provided_count
+
+      normalized = Array(Value).new(expected_count)
+      index = 0
+
+      while index < expected_count
+        normalized << (index < provided_count ? args[index] : UNDEFINED)
+        index += 1
+      end
+
+      normalized
     end
 
     private def string_argument(value : Value, method_name : String) : String

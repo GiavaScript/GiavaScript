@@ -203,6 +203,12 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | `values()` | Instance method | Not available |
 | `with()` | Instance method | Not available |
 
+#### Array callback argument behavior
+
+- In array methods that accept callbacks, user-defined callback functions use JavaScript-compatible argument normalization.
+- Extra callback arguments are ignored.
+- Missing callback arguments are passed as `undefined`.
+
 ### Object
 
 | Member | Kind | Status |
