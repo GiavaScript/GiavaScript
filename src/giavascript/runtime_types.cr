@@ -8,7 +8,11 @@ module GiavaScript
   class BuiltinFunction
     getter name : String
 
-    def initialize(@name : String, @body : BuiltinMethodBody)
+    def initialize(
+      @name : String,
+      @body : BuiltinMethodBody,
+      @callback_arity_resolver : Proc(Int32?)? = nil,
+    )
     end
 
     def call(receiver : Value, args : Array(Value)) : Value
@@ -17,6 +21,13 @@ module GiavaScript
 
     def to_s(io : IO)
       io << "[builtin " << @name << "]"
+    end
+
+    def callback_arity : Int32?
+      resolver = @callback_arity_resolver
+      return nil unless resolver
+
+      resolver.call
     end
   end
 
@@ -964,9 +975,9 @@ module GiavaScript
     end
 
     private def normalize_callback_args(callback : Value, args : Array(Value)) : Array(Value)
-      return args unless callback.is_a?(UserFunction)
+      expected_count = callback_expected_arity(callback)
+      return args unless expected_count
 
-      expected_count = callback.parameters.size
       provided_count = args.size
       return args if expected_count == provided_count
 
@@ -979,6 +990,13 @@ module GiavaScript
       end
 
       normalized
+    end
+
+    private def callback_expected_arity(callback : Value) : Int32?
+      return callback.parameters.size if callback.is_a?(UserFunction)
+      return callback.callback_arity if callback.is_a?(BuiltinFunction)
+
+      nil
     end
 
     private def string_argument(value : Value, method_name : String) : String

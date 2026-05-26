@@ -99,7 +99,7 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 ### Array callback argument behavior
 
-- In array methods that accept callbacks, user-defined callback functions use JavaScript-compatible argument normalization.
+- In array methods that accept callbacks, JavaScript-compatible argument normalization applies to user-defined function expressions and references to function declarations.
 - Extra callback arguments are ignored.
 - Missing callback arguments are passed as `undefined`.
 
