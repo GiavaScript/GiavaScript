@@ -861,6 +861,34 @@ describe GiavaScript do
     interpreter.eval("items;").should eq(["[1, 2, 3, 4]"])
   end
 
+  it "supports callback-based Array methods" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var numbers = [1, 2, 3, 4];").should eq([] of String)
+    interpreter.eval("var seen = []; numbers.forEach(function(value, index, array) { seen.push(value + index + array.length); });").should eq(["undefined"])
+    interpreter.eval("seen;").should eq(["[5, 7, 9, 11]"])
+    interpreter.eval("numbers.map(function(value, index, array) { return value * index + array.length; });").should eq(["[4, 6, 10, 16]"])
+    interpreter.eval("numbers.filter(function(value, index, array) { return value + index > array.length; });").should eq(["[3, 4]"])
+    interpreter.eval("numbers.some(function(value, index, array) { return value + index == array.length; });").should eq(["false"])
+    interpreter.eval("numbers.every(function(value, index, array) { return value + index >= 1; });").should eq(["true"])
+    interpreter.eval("numbers.find(function(value, index, array) { return value * 2 == array.length + index + 1; });").should eq(["4"])
+    interpreter.eval("numbers.findIndex(function(value, index, array) { return value * 2 == array.length + index + 1; });").should eq(["3"])
+  end
+
+  it "supports Array.reduce with and without an initial value" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3].reduce(function(acc, value, index, array) { return acc + value + index + array.length; }, 0);").should eq(["18"])
+    interpreter.eval("[1, 2, 3].reduce(function(acc, value, index, array) { return acc + value + index + array.length; });").should eq(["15"])
+    interpreter.eval("[].reduce(function(acc, value, index, array) { return acc + value + index + array.length; }, 10);").should eq(["10"])
+  end
+
+  it "handles empty and miss cases for callback-based Array methods" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[].some(function(value, index, array) { return true; });").should eq(["false"])
+    interpreter.eval("[].every(function(value, index, array) { return false; });").should eq(["true"])
+    interpreter.eval("[1, 2].find(function(value, index, array) { return value == 9; });").should eq(["undefined"])
+    interpreter.eval("[1, 2].findIndex(function(value, index, array) { return value == 9; });").should eq(["-1"])
+  end
+
   it "validates Array method argument counts and index types" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1].at();").should eq(["Error: Array.at expects 1 arguments but got 0"])
@@ -873,6 +901,10 @@ describe GiavaScript do
     interpreter.eval("[1].shift(1);").should eq(["Error: Array.shift expects 0 arguments but got 1"])
     interpreter.eval("[1].reverse(1);").should eq(["Error: Array.reverse expects 0 arguments but got 1"])
     interpreter.eval("[1].sort(1);").should eq(["Error: Array.sort expects 0 arguments but got 1"])
+    interpreter.eval("[1].forEach();").should eq(["Error: Array.forEach expects 1 arguments but got 0"])
+    interpreter.eval("[1].map(1);").should eq(["Error: Array.map expects a function argument"])
+    interpreter.eval("[1].reduce();").should eq(["Error: Array.reduce expects between 1 and 2 arguments but got 0"])
+    interpreter.eval("[].reduce(function(acc, value, index, array) { return acc + value + index + array.length; });").should eq(["Error: Array.reduce cannot reduce an empty array without an initial value"])
   end
 
   it "handles String.at and String.charAt out-of-range indexes" do

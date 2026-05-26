@@ -266,7 +266,13 @@ module GiavaScript
 
     private def invoke_callable(value : Value, receiver : Value, args : Array(Value)) : Value
       if value.is_a?(BuiltinFunction)
-        return value.call(receiver, args)
+        callback_invoker = ->(callable : Value, callback_args : Array(Value)) do
+          invoke_callable(callable, nil, callback_args).as(Value)
+        end
+
+        return RuntimeTypes.with_callback_invoker(callback_invoker) do
+          value.call(receiver, args)
+        end
       end
 
       if value.is_a?(UserFunction)

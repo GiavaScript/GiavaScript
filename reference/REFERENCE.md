@@ -168,30 +168,30 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | `concat()` | Instance method | Available |
 | `copyWithin()` | Instance method | Not available |
 | `entries()` | Instance method | Not available |
-| `every()` | Instance method | Not available |
+| `every()` | Instance method | Available |
 | `fill()` | Instance method | Not available |
-| `filter()` | Instance method | Not available |
-| `find()` | Instance method | Not available |
-| `findIndex()` | Instance method | Not available |
+| `filter()` | Instance method | Available |
+| `find()` | Instance method | Available |
+| `findIndex()` | Instance method | Available |
 | `findLast()` | Instance method | Not available |
 | `findLastIndex()` | Instance method | Not available |
 | `flat()` | Instance method | Not available |
 | `flatMap()` | Instance method | Not available |
-| `forEach()` | Instance method | Not available |
+| `forEach()` | Instance method | Available |
 | `includes()` | Instance method | Available |
 | `indexOf()` | Instance method | Available |
 | `join()` | Instance method | Available |
 | `keys()` | Instance method | Not available |
 | `lastIndexOf()` | Instance method | Available |
-| `map()` | Instance method | Not available |
+| `map()` | Instance method | Available |
 | `pop()` | Instance method | Available |
 | `push()` | Instance method | Available |
-| `reduce()` | Instance method | Not available |
+| `reduce()` | Instance method | Available |
 | `reduceRight()` | Instance method | Not available |
 | `reverse()` | Instance method | Available |
 | `shift()` | Instance method | Available |
 | `slice()` | Instance method | Available |
-| `some()` | Instance method | Not available |
+| `some()` | Instance method | Available |
 | `sort()` | Instance method | Available |
 | `splice()` | Instance method | Not available |
 | `toLocaleString()` | Instance method | Not available |

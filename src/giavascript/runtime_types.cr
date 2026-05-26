@@ -23,6 +23,8 @@ module GiavaScript
   module RuntimeTypes
     extend self
 
+    @@callback_invoker : Proc(Value, Array(Value), Value)? = nil
+
     STRING_TYPE = TypeObject.new(
       "String",
       {
@@ -78,15 +80,23 @@ module GiavaScript
       {
         "at"          => BuiltinMethodDefinition.new("Array.at", ->(receiver : Value, args : Array(Value)) { array_at(receiver, args).as(Value) }),
         "concat"      => BuiltinMethodDefinition.new("Array.concat", ->(receiver : Value, args : Array(Value)) { array_concat(receiver, args).as(Value) }),
+        "every"       => BuiltinMethodDefinition.new("Array.every", ->(receiver : Value, args : Array(Value)) { array_every(receiver, args).as(Value) }),
+        "filter"      => BuiltinMethodDefinition.new("Array.filter", ->(receiver : Value, args : Array(Value)) { array_filter(receiver, args).as(Value) }),
+        "find"        => BuiltinMethodDefinition.new("Array.find", ->(receiver : Value, args : Array(Value)) { array_find(receiver, args).as(Value) }),
+        "findIndex"   => BuiltinMethodDefinition.new("Array.findIndex", ->(receiver : Value, args : Array(Value)) { array_find_index(receiver, args).as(Value) }),
+        "forEach"     => BuiltinMethodDefinition.new("Array.forEach", ->(receiver : Value, args : Array(Value)) { array_for_each(receiver, args).as(Value) }),
         "includes"    => BuiltinMethodDefinition.new("Array.includes", ->(receiver : Value, args : Array(Value)) { array_includes(receiver, args).as(Value) }),
         "indexOf"     => BuiltinMethodDefinition.new("Array.indexOf", ->(receiver : Value, args : Array(Value)) { array_index_of(receiver, args).as(Value) }),
         "join"        => BuiltinMethodDefinition.new("Array.join", ->(receiver : Value, args : Array(Value)) { array_join(receiver, args).as(Value) }),
         "lastIndexOf" => BuiltinMethodDefinition.new("Array.lastIndexOf", ->(receiver : Value, args : Array(Value)) { array_last_index_of(receiver, args).as(Value) }),
+        "map"         => BuiltinMethodDefinition.new("Array.map", ->(receiver : Value, args : Array(Value)) { array_map(receiver, args).as(Value) }),
         "pop"         => BuiltinMethodDefinition.new("Array.pop", ->(receiver : Value, args : Array(Value)) { array_pop(receiver, args).as(Value) }),
         "push"        => BuiltinMethodDefinition.new("Array.push", ->(receiver : Value, args : Array(Value)) { array_push(receiver, args).as(Value) }),
+        "reduce"      => BuiltinMethodDefinition.new("Array.reduce", ->(receiver : Value, args : Array(Value)) { array_reduce(receiver, args).as(Value) }),
         "reverse"     => BuiltinMethodDefinition.new("Array.reverse", ->(receiver : Value, args : Array(Value)) { array_reverse(receiver, args).as(Value) }),
         "shift"       => BuiltinMethodDefinition.new("Array.shift", ->(receiver : Value, args : Array(Value)) { array_shift(receiver, args).as(Value) }),
         "slice"       => BuiltinMethodDefinition.new("Array.slice", ->(receiver : Value, args : Array(Value)) { array_slice(receiver, args).as(Value) }),
+        "some"        => BuiltinMethodDefinition.new("Array.some", ->(receiver : Value, args : Array(Value)) { array_some(receiver, args).as(Value) }),
         "sort"        => BuiltinMethodDefinition.new("Array.sort", ->(receiver : Value, args : Array(Value)) { array_sort(receiver, args).as(Value) }),
         "toString"    => BuiltinMethodDefinition.new("Array.toString", ->(receiver : Value, args : Array(Value)) { array_to_string(receiver, args).as(Value) }),
         "unshift"     => BuiltinMethodDefinition.new("Array.unshift", ->(receiver : Value, args : Array(Value)) { array_unshift(receiver, args).as(Value) }),
@@ -145,6 +155,15 @@ module GiavaScript
       end
 
       {found: false, value: UNDEFINED}
+    end
+
+    def with_callback_invoker(invoker : Proc(Value, Array(Value), Value)?, &block : -> T) : T forall T
+      previous = @@callback_invoker
+      @@callback_invoker = invoker
+      result = block.call
+      result
+    ensure
+      @@callback_invoker = previous
     end
 
     private def string_length(receiver : Value) : Value
@@ -532,6 +551,194 @@ module GiavaScript
       result
     end
 
+    private def array_for_each(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.forEach")
+      callback = callback_argument(args[0], "Array.forEach")
+      array_receiver = receiver_array(receiver, "Array.forEach")
+      length = array_receiver.size
+
+      index = 0
+      while index < length
+        break if index >= array_receiver.size
+
+        invoke_callback(
+          callback,
+          [array_receiver[index], index, array_receiver] of Value,
+          "Array.forEach"
+        )
+        index += 1
+      end
+
+      UNDEFINED
+    end
+
+    private def array_map(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.map")
+      callback = callback_argument(args[0], "Array.map")
+      array_receiver = receiver_array(receiver, "Array.map")
+      length = array_receiver.size
+      result = Array(Value).new(length)
+
+      index = 0
+      while index < length
+        break if index >= array_receiver.size
+
+        mapped = invoke_callback(
+          callback,
+          [array_receiver[index], index, array_receiver] of Value,
+          "Array.map"
+        )
+        result << mapped
+        index += 1
+      end
+
+      result
+    end
+
+    private def array_filter(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.filter")
+      callback = callback_argument(args[0], "Array.filter")
+      array_receiver = receiver_array(receiver, "Array.filter")
+      length = array_receiver.size
+      result = [] of Value
+
+      index = 0
+      while index < length
+        break if index >= array_receiver.size
+
+        value = array_receiver[index]
+        predicate_result = invoke_callback(
+          callback,
+          [value, index, array_receiver] of Value,
+          "Array.filter"
+        )
+        result << value if runtime_truthy?(predicate_result)
+        index += 1
+      end
+
+      result
+    end
+
+    private def array_reduce(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "Array.reduce")
+      callback = callback_argument(args[0], "Array.reduce")
+      array_receiver = receiver_array(receiver, "Array.reduce")
+      length = array_receiver.size
+
+      accumulator = if args.size == 2
+                      args[1]
+                    else
+                      if array_receiver.empty?
+                        raise ExpressionError.new("Error: Array.reduce cannot reduce an empty array without an initial value")
+                      end
+
+                      array_receiver[0]
+                    end
+
+      index = args.size == 2 ? 0 : 1
+      while index < length
+        break if index >= array_receiver.size
+
+        accumulator = invoke_callback(
+          callback,
+          [accumulator, array_receiver[index], index, array_receiver] of Value,
+          "Array.reduce"
+        )
+        index += 1
+      end
+
+      accumulator
+    end
+
+    private def array_some(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.some")
+      callback = callback_argument(args[0], "Array.some")
+      array_receiver = receiver_array(receiver, "Array.some")
+      length = array_receiver.size
+
+      index = 0
+      while index < length
+        break if index >= array_receiver.size
+
+        predicate_result = invoke_callback(
+          callback,
+          [array_receiver[index], index, array_receiver] of Value,
+          "Array.some"
+        )
+        return true if runtime_truthy?(predicate_result)
+        index += 1
+      end
+
+      false
+    end
+
+    private def array_every(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.every")
+      callback = callback_argument(args[0], "Array.every")
+      array_receiver = receiver_array(receiver, "Array.every")
+      length = array_receiver.size
+
+      index = 0
+      while index < length
+        break if index >= array_receiver.size
+
+        predicate_result = invoke_callback(
+          callback,
+          [array_receiver[index], index, array_receiver] of Value,
+          "Array.every"
+        )
+        return false unless runtime_truthy?(predicate_result)
+        index += 1
+      end
+
+      true
+    end
+
+    private def array_find(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.find")
+      callback = callback_argument(args[0], "Array.find")
+      array_receiver = receiver_array(receiver, "Array.find")
+      length = array_receiver.size
+
+      index = 0
+      while index < length
+        break if index >= array_receiver.size
+
+        value = array_receiver[index]
+        predicate_result = invoke_callback(
+          callback,
+          [value, index, array_receiver] of Value,
+          "Array.find"
+        )
+        return value if runtime_truthy?(predicate_result)
+        index += 1
+      end
+
+      UNDEFINED
+    end
+
+    private def array_find_index(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.findIndex")
+      callback = callback_argument(args[0], "Array.findIndex")
+      array_receiver = receiver_array(receiver, "Array.findIndex")
+      length = array_receiver.size
+
+      index = 0
+      while index < length
+        break if index >= array_receiver.size
+
+        predicate_result = invoke_callback(
+          callback,
+          [array_receiver[index], index, array_receiver] of Value,
+          "Array.findIndex"
+        )
+        return index if runtime_truthy?(predicate_result)
+        index += 1
+      end
+
+      -1
+    end
+
     private def array_includes(receiver : Value, args : Array(Value)) : Value
       assert_arity_between(args, 1, 2, "Array.includes")
       needle = args[0]
@@ -740,6 +947,21 @@ module GiavaScript
       raise ExpressionError.new("Error: #{method_name} receiver must be a boolean")
     end
 
+    private def callback_argument(value : Value, method_name : String) : Value
+      return value if value.is_a?(BuiltinFunction)
+      return value if value.is_a?(UserFunction)
+      raise ExpressionError.new("Error: #{method_name} expects a function argument")
+    end
+
+    private def invoke_callback(callback : Value, args : Array(Value), method_name : String) : Value
+      invoker = @@callback_invoker
+      unless invoker
+        raise ExpressionError.new("Error: #{method_name} callback invoker is not configured")
+      end
+
+      invoker.call(callback, args)
+    end
+
     private def string_argument(value : Value, method_name : String) : String
       return value if value.is_a?(String)
       raise ExpressionError.new("Error: #{method_name} expects a string argument")
@@ -822,6 +1044,29 @@ module GiavaScript
       end
 
       false
+    end
+
+    private def runtime_truthy?(value : Value) : Bool
+      return false if value.nil?
+      return false if value.is_a?(UndefinedValue)
+
+      if value.is_a?(Bool)
+        return value
+      end
+
+      if value.is_a?(String)
+        return !value.empty?
+      end
+
+      if value.is_a?(Int32)
+        return value != 0
+      end
+
+      if value.is_a?(Float64)
+        return value != 0.0
+      end
+
+      true
     end
 
     private def clamp_substring_index(index : Int32, size : Int32) : Int32
