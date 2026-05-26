@@ -36,6 +36,13 @@ module GiavaScript
       @functions.has_key?(name)
     end
 
+    def function_parameter_count(name : String) : Int32?
+      function = @functions[name]?
+      return nil unless function
+
+      function.parameters.size
+    end
+
     def invoke_function(name : String, args : Array(Value), outer_env : Environment, &evaluate_statement : String, Environment, Bool, Bool -> String?) : Value
       function = @functions[name]?
       raise ExpressionError.new("Error: function '#{name}' does not exist") unless function

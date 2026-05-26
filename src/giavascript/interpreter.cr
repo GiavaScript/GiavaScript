@@ -269,7 +269,12 @@ module GiavaScript
     private def resolve_function_reference(name : String, env : Environment) : BuiltinFunction?
       return nil unless @function_runtime.function_defined?(name)
 
-      BuiltinFunction.new(name, ->(_receiver : Value, args : Array(Value)) { call_function(name, args, env).as(Value) })
+      callback_arity_resolver = -> { @function_runtime.function_parameter_count(name) }
+      BuiltinFunction.new(
+        name,
+        ->(_receiver : Value, args : Array(Value)) { call_function(name, args, env).as(Value) },
+        callback_arity_resolver
+      )
     end
 
     private def parse_assignment_target(lhs : String) : Expr

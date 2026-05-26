@@ -882,6 +882,26 @@ describe GiavaScript do
     interpreter.eval("[1, 2, 3].reduce(function(acc, value) { return acc + value; }, 0);").should eq(["6"])
   end
 
+  it "uses JS-compatible callback arity for function declaration references" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("function double(value) { return value * 2; }").should eq([] of String)
+    interpreter.eval("[1, 2, 3].map(double);").should eq(["[2, 4, 6]"])
+
+    interpreter.eval("function takeFourth(value, index, source, extra) { return extra; }").should eq([] of String)
+    interpreter.eval("[1, 2].map(takeFourth);").should eq(["[undefined, undefined]"])
+
+    interpreter.eval("function sum(acc, value) { return acc + value; }").should eq([] of String)
+    interpreter.eval("[1, 2, 3].reduce(sum, 0);").should eq(["6"])
+  end
+
+  it "keeps strict arity for non-callback function declaration calls" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("function addOne(x) { return x + 1; }").should eq([] of String)
+    interpreter.eval("addOne(1, 2);").should eq(["Error: function 'addOne' expects 1 arguments but got 2"])
+    interpreter.eval("var ref = addOne;").should eq([] of String)
+    interpreter.eval("ref(1, 2);").should eq(["Error: function 'addOne' expects 1 arguments but got 2"])
+  end
+
   it "supports Array.reduce with and without an initial value" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3].reduce(function(acc, value, index, array) { return acc + value + index + array.length; }, 0);").should eq(["18"])
