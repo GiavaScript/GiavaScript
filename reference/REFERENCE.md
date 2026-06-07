@@ -101,6 +101,8 @@ Status of core JavaScript language features in GiavaScript.
 | `parseInt()` | Available |
 | `parseFloat()` | Available |
 | `isNaN()` | Available |
+| `Date.now()` | Available |
+| `new Date()` | Available |
 
 ### Notes
 
@@ -225,6 +227,18 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | Member | Kind | Status |
 | --- | --- | --- |
 | `toString()` | Instance method | Available |
+
+### Date
+
+| Member | Kind | Status |
+| --- | --- | --- |
+| `getTime()` | Instance method | Available |
+| `toString()` | Instance method | Available |
+
+#### Date notes
+
+- In Node.js, `Date.prototype.toString()` usually prints a locale/timezone representation.
+- In GiavaScript, `Date.prototype.toString()` returns a UTC ISO-like string (`YYYY-MM-DDTHH:mm:ss.SSSZ`) by design.
 
 ### Notes
 

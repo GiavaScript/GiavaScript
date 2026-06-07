@@ -136,6 +136,15 @@ module GiavaScript
       {} of String => BuiltinPropertyGetter
     )
 
+    DATE_TYPE = TypeObject.new(
+      "Date",
+      {
+        "getTime"  => BuiltinMethodDefinition.new("Date.getTime", ->(receiver : Value, args : Array(Value)) { date_get_time(receiver, args).as(Value) }),
+        "toString" => BuiltinMethodDefinition.new("Date.toString", ->(receiver : Value, args : Array(Value)) { date_to_string(receiver, args).as(Value) }),
+      } of String => BuiltinMethodDefinition,
+      {} of String => BuiltinPropertyGetter
+    )
+
     def get_type(value : Value) : TypeObject?
       return nil if value.nil?
       return nil if value.is_a?(UndefinedValue)
@@ -151,6 +160,8 @@ module GiavaScript
         OBJECT_TYPE
       when Bool
         BOOL_TYPE
+      when DateValue
+        DATE_TYPE
       else
         nil
       end
@@ -999,6 +1010,18 @@ module GiavaScript
       receiver_bool(receiver, "Bool.toString").to_s
     end
 
+    private def date_get_time(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Date.getTime")
+      receiver_date(receiver, "Date.getTime").timestamp_ms
+    end
+
+    private def date_to_string(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Date.toString")
+      date = receiver_date(receiver, "Date.toString")
+      timestamp = date.timestamp_ms.round.to_i64
+      Time.unix_ms(timestamp).to_s("%Y-%m-%dT%H:%M:%S.%3N") + "Z"
+    end
+
     private def runtime_to_string(value : Value) : String
       if value.nil?
         return "null"
@@ -1050,6 +1073,11 @@ module GiavaScript
     private def receiver_bool(value : Value, method_name : String) : Bool
       return value if value.is_a?(Bool)
       raise ExpressionError.new("Error: #{method_name} receiver must be a boolean")
+    end
+
+    private def receiver_date(value : Value, method_name : String) : DateValue
+      return value if value.is_a?(DateValue)
+      raise ExpressionError.new("Error: #{method_name} receiver must be a date")
     end
 
     private def callback_argument(value : Value, method_name : String) : Value
@@ -1199,6 +1227,10 @@ module GiavaScript
 
       if left.is_a?(UserFunction)
         return right.is_a?(UserFunction) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(DateValue)
+        return right.is_a?(DateValue) && left.object_id == right.object_id
       end
 
       false

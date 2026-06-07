@@ -932,6 +932,10 @@ module GiavaScript
         return right.is_a?(UserFunction) && left.object_id == right.object_id
       end
 
+      if left.is_a?(DateValue)
+        return right.is_a?(DateValue) && left.object_id == right.object_id
+      end
+
       false
     end
 
@@ -980,6 +984,10 @@ module GiavaScript
       return "null" if value.nil?
       return "undefined" if value.is_a?(UndefinedValue)
 
+      if value.is_a?(Int32) || value.is_a?(Float64)
+        return format_number_for_output(value)
+      end
+
       if value.is_a?(String)
         "\"#{escape_string(value)}\""
       elsif value.is_a?(Array)
@@ -1007,6 +1015,7 @@ module GiavaScript
       env["JSON"] = build_json_object
       env["Math"] = build_math_object
       env["Object"] = build_object_object
+      env["Date"] = build_date_object
       env["String"] = build_string_object
       env["parseInt"] = build_parse_int_function
       env["parseFloat"] = build_parse_float_function
@@ -1050,6 +1059,24 @@ module GiavaScript
       end)
 
       object
+    end
+
+    private def build_date_object : Hash(String, Value)
+      date = Hash(String, Value).new
+
+      date["now"] = BuiltinFunction.new("Date.now", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Date.now")
+        assert_builtin_arity(args, 0, "Date.now")
+        Time.utc.to_unix_ms.to_f64.as(Value)
+      end)
+
+      date["__construct"] = BuiltinFunction.new("Date", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Date")
+        assert_builtin_arity(args, 0, "Date")
+        DateValue.new(Time.utc.to_unix_ms.to_f64).as(Value)
+      end)
+
+      date
     end
 
     private def build_string_object : Hash(String, Value)
@@ -1193,6 +1220,7 @@ module GiavaScript
     private def console_value_to_s(value : Value) : String
       return "null" if value.nil?
       return "undefined" if value.is_a?(UndefinedValue)
+      return format_number_for_output(value) if value.is_a?(Int32) || value.is_a?(Float64)
       return value if value.is_a?(String)
 
       if value.is_a?(Array(Value))
@@ -1207,6 +1235,19 @@ module GiavaScript
       end
 
       value.to_s
+    end
+
+    private def format_number_for_output(value : Number) : String
+      return value.to_s if value.is_a?(Int32)
+
+      float_value = value.to_f64
+      return float_value.to_s unless float_value.finite?
+
+      if float_value == float_value.round && float_value.abs >= 1_000_000_000.0
+        return float_value.round.to_i64.to_s
+      end
+
+      float_value.to_s
     end
 
     private def build_json_object : Hash(String, Value)

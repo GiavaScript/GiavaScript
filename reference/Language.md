@@ -77,6 +77,8 @@ Status of core JavaScript language features in GiavaScript.
 | `parseInt()` | Available |
 | `parseFloat()` | Available |
 | `isNaN()` | Available |
+| `Date.now()` | Available |
+| `new Date()` | Available |
 
 ## Notes
 
