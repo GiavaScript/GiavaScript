@@ -598,6 +598,30 @@ describe GiavaScript do
     interpreter.eval("JSON.parse(\"{}\");").should eq(["Error: value is not callable"])
   end
 
+  it "provides Object.keys, Object.values, and Object.entries as global static methods" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var obj = {\"name\": \"giava\", \"count\": 3, \"ok\": true};").should eq([] of String)
+    interpreter.eval("Object.keys(obj);").should eq(["[\"name\", \"count\", \"ok\"]"])
+    interpreter.eval("Object.values(obj);").should eq(["[\"giava\", 3, true]"])
+    interpreter.eval("Object.entries(obj);").should eq(["[[\"name\", \"giava\"], [\"count\", 3], [\"ok\", true]]"])
+  end
+
+  it "validates Object static method arity and argument types" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Object.keys();").should eq(["Error: Object.keys expects 1 arguments but got 0"])
+    interpreter.eval("Object.values({}, 1);").should eq(["Error: Object.values expects 1 arguments but got 2"])
+    interpreter.eval("Object.entries(1);").should eq(["Error: Object.entries argument 1 must be an object"])
+  end
+
+  it "raises runtime error when Object method is overwritten with non-callable" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Object.keys = 5;").should eq([] of String)
+    interpreter.eval("Object.keys({});").should eq(["Error: value is not callable"])
+  end
+
   it "provides parseInt, parseFloat, and isNaN as global functions" do
     interpreter = GiavaScript::Interpreter.new
 
