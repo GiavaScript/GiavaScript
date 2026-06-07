@@ -127,12 +127,37 @@ module GiavaScript
         when ';'
           return current if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
         when '\n', '\r'
-          return current if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
+          if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
+            return current unless chained_property_continuation_after_line_break?(current)
+          end
         end
 
         current += 1
       end
 
+      current
+    end
+
+    private def chained_property_continuation_after_line_break?(line_break_index : Int32) : Bool
+      current = line_break_index
+
+      if @source[current] == '\r' && @source[current + 1]? == '\n'
+        current += 1
+      end
+
+      current += 1
+      current = skip_inline_whitespace(current)
+
+      @source[current]? == '.'
+    end
+
+    private def skip_inline_whitespace(index : Int32) : Int32
+      current = index
+      while current < @source.size
+        char = @source[current]
+        break unless char == ' ' || char == '\t'
+        current += 1
+      end
       current
     end
 
