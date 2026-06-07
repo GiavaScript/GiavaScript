@@ -874,6 +874,17 @@ describe GiavaScript do
     interpreter.eval("numbers.findIndex(function(value, index, array) { return value * 2 == array.length + index + 1; });").should eq(["3"])
   end
 
+  it "supports multiline chained calls after assignment" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var numbers = [3, -1, 1, 4];").should eq([] of String)
+    interpreter.eval(<<-JS).should eq([] of String)
+      var averaged = numbers
+        .filter(function(n) { return n > 0; })
+        .map(function(n) { return n; });
+    JS
+    interpreter.eval("averaged;").should eq(["[3, 1, 4]"])
+  end
+
   it "uses JS-compatible callback arity for array methods" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var array = [1, 4, 9, 16];").should eq([] of String)
