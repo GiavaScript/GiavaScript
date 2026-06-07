@@ -237,8 +237,8 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 #### Date notes
 
-- `Date.prototype.toString()` in Node.js typically returns a locale/timezone formatted string (for example, `Sun Jun 07 2026 16:22:12 GMT+0000 (Coordinated Universal Time)`).
-- `Date.prototype.toString()` in GiavaScript returns a UTC ISO-like string (`YYYY-MM-DDTHH:mm:ss.SSSZ`) by design.
+- In Node.js, `Date.prototype.toString()` usually prints a locale/timezone representation.
+- In GiavaScript, `Date.prototype.toString()` returns a UTC ISO-like string (`YYYY-MM-DDTHH:mm:ss.SSSZ`) by design.
 
 ### Notes
 
