@@ -984,6 +984,10 @@ module GiavaScript
       return "null" if value.nil?
       return "undefined" if value.is_a?(UndefinedValue)
 
+      if value.is_a?(Int32) || value.is_a?(Float64)
+        return format_number_for_output(value)
+      end
+
       if value.is_a?(String)
         "\"#{escape_string(value)}\""
       elsif value.is_a?(Array)
@@ -1216,6 +1220,7 @@ module GiavaScript
     private def console_value_to_s(value : Value) : String
       return "null" if value.nil?
       return "undefined" if value.is_a?(UndefinedValue)
+      return format_number_for_output(value) if value.is_a?(Int32) || value.is_a?(Float64)
       return value if value.is_a?(String)
 
       if value.is_a?(Array(Value))
@@ -1230,6 +1235,19 @@ module GiavaScript
       end
 
       value.to_s
+    end
+
+    private def format_number_for_output(value : Number) : String
+      return value.to_s if value.is_a?(Int32)
+
+      float_value = value.to_f64
+      return float_value.to_s unless float_value.finite?
+
+      if float_value == float_value.round && float_value.abs >= 1_000_000_000.0
+        return float_value.round.to_i64.to_s
+      end
+
+      float_value.to_s
     end
 
     private def build_json_object : Hash(String, Value)
