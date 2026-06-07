@@ -1386,6 +1386,43 @@ describe GiavaScript do
     interpreter.eval("switch (1) { case 1: continue; }").should eq(["Error: continue can only be used inside loops"])
   end
 
+  it "supports try/catch with catch parameter binding" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var message = \"\";").should eq([] of String)
+    interpreter.eval("try { throw \"boom\"; } catch (err) { message = err + \"!\"; }").should eq([] of String)
+    interpreter.eval("message;").should eq(["\"boom!\""])
+  end
+
+  it "supports try/finally without catch" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var value = 1;").should eq([] of String)
+    interpreter.eval("try { value = value + 1; } finally { value = value * 3; }").should eq([] of String)
+    interpreter.eval("value;").should eq(["6"])
+  end
+
+  it "propagates uncaught throw after running finally" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var marker = 0;").should eq([] of String)
+    interpreter.eval("try { throw 7; } finally { marker = 1; }").should eq(["Error: uncaught 7"])
+    interpreter.eval("marker;").should eq(["1"])
+  end
+
+  it "supports rethrow from catch blocks" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("try { try { throw \"inner\"; } catch (err) { throw err + \"-x\"; } } catch (outer) { outer; }").should eq(["\"inner-x\""])
+  end
+
+  it "allows finally to override return in functions" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function pick() { try { return 1; } finally { return 2; } }").should eq([] of String)
+    interpreter.eval("pick();").should eq(["2"])
+  end
+
   it "stops block execution after first runtime error" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)
@@ -1427,6 +1464,11 @@ describe GiavaScript do
   it "returns error for invalid switch syntax" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("switch value) { case 1: value = 1; }").should eq(["Error: invalid switch statement"])
+  end
+
+  it "returns error for invalid try syntax" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("try { var value = 1; }").should eq(["Error: invalid try statement"])
   end
 
   it "prints error for missing variables" do

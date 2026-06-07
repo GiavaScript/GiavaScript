@@ -37,6 +37,26 @@ module GiavaScript
       @values[name] = value
     end
 
+    def local_has_key?(name : String) : Bool
+      @values.has_key?(name)
+    end
+
+    def local_lookup(name : String) : NamedTuple(found: Bool, value: Value)
+      if @values.has_key?(name)
+        {found: true, value: @values[name]}
+      else
+        {found: false, value: UNDEFINED}
+      end
+    end
+
+    def set_local(name : String, value : Value) : Value
+      @values[name] = value
+    end
+
+    def delete_local(name : String)
+      @values.delete(name)
+    end
+
     protected getter values : Hash(String, Value)
     protected getter parent : Environment?
   end

@@ -56,6 +56,8 @@ Status of core JavaScript language features in GiavaScript.
 | `break` / `continue` inside loops | Available |
 | `while` / `do...while` loops | Available |
 | `switch` statements | Available |
+| `throw` statements | Available |
+| `try` / `catch` / `finally` | Available |
 
 ## Values and collections
 
