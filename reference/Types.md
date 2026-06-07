@@ -125,6 +125,11 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | `getTime()` | Instance method | Available |
 | `toString()` | Instance method | Available |
 
+### Date notes
+
+- In Node.js, `Date.prototype.toString()` usually prints a locale/timezone representation.
+- In GiavaScript, `Date.prototype.toString()` returns a UTC ISO-like string (`YYYY-MM-DDTHH:mm:ss.SSSZ`) by design.
+
 ## Notes
 
 - This reflects current behavior in the interpreter and specs.
