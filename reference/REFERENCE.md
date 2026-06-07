@@ -155,7 +155,10 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 | Member | Kind | Status |
 | --- | --- | --- |
+| `entries()` | Static method | Available |
+| `keys()` | Static method | Available |
 | `toString()` | Instance method | Available |
+| `values()` | Static method | Available |
 
 ### Array
 
