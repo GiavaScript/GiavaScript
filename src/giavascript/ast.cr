@@ -152,6 +152,16 @@ module GiavaScript
     end
   end
 
+  class TryStatement < Statement
+    getter try_branch : Statement
+    getter catch_parameter : String?
+    getter catch_branch : Statement?
+    getter finally_branch : Statement?
+
+    def initialize(@try_branch : Statement, @catch_parameter : String?, @catch_branch : Statement?, @finally_branch : Statement?)
+    end
+  end
+
   class BreakStatement < Statement
   end
 

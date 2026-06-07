@@ -18,6 +18,14 @@ module GiavaScript
       end
     end
 
+    class ThrowSignal < Exception
+      getter value : Value
+
+      def initialize(@value : Value)
+        super("throw")
+      end
+    end
+
     @env : Environment
     @function_runtime : FunctionRuntime
     @expression_cache : Hash(String, Expr)
@@ -109,8 +117,12 @@ module GiavaScript
       end
 
       statements.each do |stmt|
-        message = eval_statement(stmt, @env, false, false, false)
-        messages << message if message
+        begin
+          message = eval_statement(stmt, @env, false, false, false)
+          messages << message if message
+        rescue ex : ThrowSignal
+          messages << "Error: uncaught #{value_to_s(ex.value)}"
+        end
       end
       messages
     end
@@ -139,6 +151,16 @@ module GiavaScript
 
       if starts_with_keyword?(stmt, "switch")
         return eval_switch_statement(stmt, env, inside_function, inside_loop, inside_switch)
+      end
+
+      if starts_with_keyword?(stmt, "try")
+        return eval_try_statement(stmt, env, inside_function, inside_loop, inside_switch)
+      end
+
+      if match = stmt.match(/^throw(?:\s+([\s\S]+))?$/)
+        throw_source = match[1]?
+        value = throw_source ? eval_rhs(throw_source.strip, env) : UNDEFINED
+        raise ThrowSignal.new(value)
       end
 
       if stmt == "break"
@@ -643,6 +665,59 @@ module GiavaScript
       end
     end
 
+    private def eval_try_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+      parsed_try = begin
+        TryStatementParser.new(stmt).parse_from
+      rescue ex : ExpressionError
+        return ex.message || "Error: invalid try statement"
+      end
+
+      eval_try_ast(parsed_try.statement, env, inside_function, inside_loop, inside_switch)
+    end
+
+    private def eval_try_ast(try_statement : TryStatement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+      message = nil.as(String?)
+
+      begin
+        begin
+          message = eval_statement_node(try_statement.try_branch, env, inside_function, inside_loop, inside_switch)
+        rescue ex : ThrowSignal
+          catch_branch = try_statement.catch_branch
+          raise ex unless catch_branch
+
+          if catch_parameter = try_statement.catch_parameter
+            previous_local = env.local_lookup(catch_parameter)
+            env.set_local(catch_parameter, ex.value)
+
+            begin
+              message = eval_statement_node(catch_branch, env, inside_function, inside_loop, inside_switch)
+            ensure
+              if previous_local[:found]
+                env.set_local(catch_parameter, previous_local[:value])
+              else
+                env.delete_local(catch_parameter)
+              end
+            end
+          else
+            message = eval_statement_node(catch_branch, env, inside_function, inside_loop, inside_switch)
+          end
+        end
+      ensure
+        if finally_branch = try_statement.finally_branch
+          final_message = eval_statement_node(finally_branch, env, inside_function, inside_loop, inside_switch)
+          if final_message && final_message.starts_with?("Error:")
+            message = final_message
+          elsif message.nil? && final_message
+            message = final_message
+          end
+        end
+      end
+
+      message
+    rescue ex : ExpressionError
+      ex.message || "Error: invalid try statement"
+    end
+
     private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       case statement
       when RawStatement
@@ -667,6 +742,8 @@ module GiavaScript
         eval_do_while_ast(statement, env, inside_function, inside_loop, inside_switch)
       when SwitchStatement
         eval_switch_ast(statement, env, inside_function, inside_loop, inside_switch)
+      when TryStatement
+        eval_try_ast(statement, env, inside_function, inside_loop, inside_switch)
       when BreakStatement
         return "Error: break can only be used inside loops or switch statements" unless inside_loop || inside_switch
         raise BreakSignal.new
@@ -741,7 +818,8 @@ module GiavaScript
       return cached if cached
 
       compiled = if key.starts_with?("function ") || starts_with_keyword?(key, "if") || starts_with_keyword?(key, "for") ||
-                    starts_with_keyword?(key, "while") || starts_with_keyword?(key, "do") ||
+                    starts_with_keyword?(key, "while") || starts_with_keyword?(key, "do") || starts_with_keyword?(key, "switch") ||
+                    starts_with_keyword?(key, "try") || starts_with_keyword?(key, "throw") ||
                     key == "break" || key == "continue" || key.starts_with?("return")
                    FallbackRawStatement.new(source)
                  elsif match = key.match(/^(.+?)\s*(\+\+|--)$/)

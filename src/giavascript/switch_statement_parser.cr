@@ -123,6 +123,10 @@ module GiavaScript
         return SwitchStatementParser.new(source).parse_from.statement
       end
 
+      if starts_with_keyword_in_whole_source?(source, "try")
+        return TryStatementParser.new(source).parse_from.statement
+      end
+
       return BreakStatement.new if source == "break"
       return ContinueStatement.new if source == "continue"
 
