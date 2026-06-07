@@ -861,6 +861,35 @@ describe GiavaScript do
     interpreter.eval("items;").should eq(["[1, 2, 3, 4]"])
   end
 
+  it "supports Array.flat with configurable depth" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var nested = [1, [2, [3, [4]]], 5];").should eq([] of String)
+    interpreter.eval("nested.flat();").should eq(["[1, 2, [3, [4]], 5]"])
+    interpreter.eval("nested.flat(2);").should eq(["[1, 2, 3, [4], 5]"])
+    interpreter.eval("nested.flat(99);").should eq(["[1, 2, 3, 4, 5]"])
+    interpreter.eval("nested;").should eq(["[1, [2, [3, [4]]], 5]"])
+  end
+
+  it "supports Array.flatMap" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var numbers = [1, 2, 3];").should eq([] of String)
+    interpreter.eval("numbers.flatMap(function(n) { return [n, n * 10]; });").should eq(["[1, 10, 2, 20, 3, 30]"])
+    interpreter.eval("numbers.flatMap(function(n) { return n * 2; });").should eq(["[2, 4, 6]"])
+    interpreter.eval("numbers;").should eq(["[1, 2, 3]"])
+  end
+
+  it "supports Array.splice with insertion and deletion" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var items = [1, 2, 3, 4, 5];").should eq([] of String)
+    interpreter.eval("items.splice(1, 2, 9, 8);").should eq(["[2, 3]"])
+    interpreter.eval("items;").should eq(["[1, 9, 8, 4, 5]"])
+    interpreter.eval("items.splice(-2);").should eq(["[4, 5]"])
+    interpreter.eval("items;").should eq(["[1, 9, 8]"])
+  end
+
   it "supports callback-based Array methods" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var numbers = [1, 2, 3, 4];").should eq([] of String)
@@ -942,6 +971,11 @@ describe GiavaScript do
     interpreter.eval("[1].sort(1);").should eq(["Error: Array.sort expects 0 arguments but got 1"])
     interpreter.eval("[1].forEach();").should eq(["Error: Array.forEach expects 1 arguments but got 0"])
     interpreter.eval("[1].map(1);").should eq(["Error: Array.map expects a function argument"])
+    interpreter.eval("[1].flat(1.5);").should eq(["Error: Array.flat expects an integer argument"])
+    interpreter.eval("[1].flatMap();").should eq(["Error: Array.flatMap expects 1 arguments but got 0"])
+    interpreter.eval("[1].flatMap(1);").should eq(["Error: Array.flatMap expects a function argument"])
+    interpreter.eval("[1].splice();").should eq(["Error: Array.splice expects at least 1 arguments but got 0"])
+    interpreter.eval("[1].splice(0, 1.5);").should eq(["Error: Array.splice expects an integer argument"])
     interpreter.eval("[1].reduce();").should eq(["Error: Array.reduce expects between 1 and 2 arguments but got 0"])
     interpreter.eval("[].reduce(function(acc, value, index, array) { return acc + value + index + array.length; });").should eq(["Error: Array.reduce cannot reduce an empty array without an initial value"])
   end

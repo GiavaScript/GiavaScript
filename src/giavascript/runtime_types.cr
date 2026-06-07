@@ -93,6 +93,8 @@ module GiavaScript
         "concat"      => BuiltinMethodDefinition.new("Array.concat", ->(receiver : Value, args : Array(Value)) { array_concat(receiver, args).as(Value) }),
         "every"       => BuiltinMethodDefinition.new("Array.every", ->(receiver : Value, args : Array(Value)) { array_every(receiver, args).as(Value) }),
         "filter"      => BuiltinMethodDefinition.new("Array.filter", ->(receiver : Value, args : Array(Value)) { array_filter(receiver, args).as(Value) }),
+        "flat"        => BuiltinMethodDefinition.new("Array.flat", ->(receiver : Value, args : Array(Value)) { array_flat(receiver, args).as(Value) }),
+        "flatMap"     => BuiltinMethodDefinition.new("Array.flatMap", ->(receiver : Value, args : Array(Value)) { array_flat_map(receiver, args).as(Value) }),
         "find"        => BuiltinMethodDefinition.new("Array.find", ->(receiver : Value, args : Array(Value)) { array_find(receiver, args).as(Value) }),
         "findIndex"   => BuiltinMethodDefinition.new("Array.findIndex", ->(receiver : Value, args : Array(Value)) { array_find_index(receiver, args).as(Value) }),
         "forEach"     => BuiltinMethodDefinition.new("Array.forEach", ->(receiver : Value, args : Array(Value)) { array_for_each(receiver, args).as(Value) }),
@@ -108,6 +110,7 @@ module GiavaScript
         "shift"       => BuiltinMethodDefinition.new("Array.shift", ->(receiver : Value, args : Array(Value)) { array_shift(receiver, args).as(Value) }),
         "slice"       => BuiltinMethodDefinition.new("Array.slice", ->(receiver : Value, args : Array(Value)) { array_slice(receiver, args).as(Value) }),
         "some"        => BuiltinMethodDefinition.new("Array.some", ->(receiver : Value, args : Array(Value)) { array_some(receiver, args).as(Value) }),
+        "splice"      => BuiltinMethodDefinition.new("Array.splice", ->(receiver : Value, args : Array(Value)) { array_splice(receiver, args).as(Value) }),
         "sort"        => BuiltinMethodDefinition.new("Array.sort", ->(receiver : Value, args : Array(Value)) { array_sort(receiver, args).as(Value) }),
         "toString"    => BuiltinMethodDefinition.new("Array.toString", ->(receiver : Value, args : Array(Value)) { array_to_string(receiver, args).as(Value) }),
         "unshift"     => BuiltinMethodDefinition.new("Array.unshift", ->(receiver : Value, args : Array(Value)) { array_unshift(receiver, args).as(Value) }),
@@ -630,6 +633,46 @@ module GiavaScript
       result
     end
 
+    private def array_flat(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 0, 1, "Array.flat")
+      array_receiver = receiver_array(receiver, "Array.flat")
+      depth = args.empty? ? 1 : integer_argument(args[0], "Array.flat")
+      normalized_depth = depth < 0 ? 0 : depth
+
+      result = [] of Value
+      flatten_array_values(result, array_receiver, normalized_depth)
+      result
+    end
+
+    private def array_flat_map(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.flatMap")
+      callback = callback_argument(args[0], "Array.flatMap")
+      array_receiver = receiver_array(receiver, "Array.flatMap")
+      length = array_receiver.size
+      result = [] of Value
+
+      index = 0
+      while index < length
+        break if index >= array_receiver.size
+
+        mapped = invoke_callback(
+          callback,
+          [array_receiver[index], index, array_receiver] of Value,
+          "Array.flatMap"
+        )
+
+        if mapped.is_a?(Array(Value))
+          mapped.each { |value| result << value }
+        else
+          result << mapped
+        end
+
+        index += 1
+      end
+
+      result
+    end
+
     private def array_reduce(receiver : Value, args : Array(Value)) : Value
       assert_arity_between(args, 1, 2, "Array.reduce")
       callback = callback_argument(args[0], "Array.reduce")
@@ -870,6 +913,57 @@ module GiavaScript
       array_receiver
     end
 
+    private def array_splice(receiver : Value, args : Array(Value)) : Value
+      if args.empty?
+        raise ExpressionError.new("Error: Array.splice expects at least 1 arguments but got 0")
+      end
+
+      array_receiver = receiver_array(receiver, "Array.splice")
+      size = array_receiver.size
+      start = normalize_splice_start(integer_argument(args[0], "Array.splice"), size)
+
+      delete_count = if args.size >= 2
+                       normalize_splice_delete_count(integer_argument(args[1], "Array.splice"), size - start)
+                     else
+                       size - start
+                     end
+
+      removed = Array(Value).new(delete_count)
+      index = 0
+      while index < delete_count
+        removed << array_receiver[start + index]
+        index += 1
+      end
+
+      replacement = [] of Value
+      index = 2
+      while index < args.size
+        replacement << args[index]
+        index += 1
+      end
+
+      rebuilt = Array(Value).new(size - delete_count + replacement.size)
+
+      index = 0
+      while index < start
+        rebuilt << array_receiver[index]
+        index += 1
+      end
+
+      replacement.each { |value| rebuilt << value }
+
+      tail_index = start + delete_count
+      while tail_index < size
+        rebuilt << array_receiver[tail_index]
+        tail_index += 1
+      end
+
+      array_receiver.clear
+      rebuilt.each { |value| array_receiver << value }
+
+      removed
+    end
+
     private def array_to_string(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "Array.toString")
       array_receiver = receiver_array(receiver, "Array.toString")
@@ -1036,6 +1130,33 @@ module GiavaScript
 
       return size - 1 if index >= size
       index
+    end
+
+    private def normalize_splice_start(start : Int32, size : Int32) : Int32
+      if start < 0
+        normalized = size + start
+        return 0 if normalized < 0
+        return normalized
+      end
+
+      return size if start > size
+      start
+    end
+
+    private def normalize_splice_delete_count(count : Int32, remaining : Int32) : Int32
+      return 0 if count < 0
+      return remaining if count > remaining
+      count
+    end
+
+    private def flatten_array_values(target : Array(Value), source : Array(Value), depth : Int32)
+      source.each do |value|
+        if depth > 0 && value.is_a?(Array(Value))
+          flatten_array_values(target, value, depth - 1)
+        else
+          target << value
+        end
+      end
     end
 
     private def array_value_equals?(left : Value, right : Value) : Bool

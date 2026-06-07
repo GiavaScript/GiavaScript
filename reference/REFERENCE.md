@@ -177,8 +177,8 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | `findIndex()` | Instance method | Available |
 | `findLast()` | Instance method | Not available |
 | `findLastIndex()` | Instance method | Not available |
-| `flat()` | Instance method | Not available |
-| `flatMap()` | Instance method | Not available |
+| `flat()` | Instance method | Available |
+| `flatMap()` | Instance method | Available |
 | `forEach()` | Instance method | Available |
 | `includes()` | Instance method | Available |
 | `indexOf()` | Instance method | Available |
@@ -195,7 +195,7 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | `slice()` | Instance method | Available |
 | `some()` | Instance method | Available |
 | `sort()` | Instance method | Available |
-| `splice()` | Instance method | Not available |
+| `splice()` | Instance method | Available |
 | `toLocaleString()` | Instance method | Not available |
 | `toReversed()` | Instance method | Not available |
 | `toSorted()` | Instance method | Not available |
