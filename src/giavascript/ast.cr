@@ -49,6 +49,14 @@ module GiavaScript
     end
   end
 
+  class NewExpr < Expr
+    getter callee : Expr
+    getter args : Array(Expr)
+
+    def initialize(@callee : Expr, @args : Array(Expr))
+    end
+  end
+
   class FunctionExpr < Expr
     getter name : String?
     getter parameters : Array(String)

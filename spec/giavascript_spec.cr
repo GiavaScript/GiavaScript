@@ -622,6 +622,31 @@ describe GiavaScript do
     interpreter.eval("Object.keys({});").should eq(["Error: value is not callable"])
   end
 
+  it "supports Date.now and new Date with basic instance methods" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var before = Date.now();").should eq([] of String)
+    interpreter.eval("var d = new Date();").should eq([] of String)
+    interpreter.eval("var after = Date.now();").should eq([] of String)
+    interpreter.eval("d.getTime() >= before && d.getTime() <= after;").should eq(["true"])
+    interpreter.eval("typeof d.toString() == \"string\" && d.toString().length > 0;").should eq(["true"])
+  end
+
+  it "validates Date arity and constructor behavior" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Date.now(1);").should eq(["Error: Date.now expects 0 arguments but got 1"])
+    interpreter.eval("new Date(1);").should eq(["Error: Date expects 0 arguments but got 1"])
+    interpreter.eval("new Math();").should eq(["Error: value is not a constructor"])
+  end
+
+  it "raises runtime error when Date static method is overwritten with non-callable" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Date.now = 5;").should eq([] of String)
+    interpreter.eval("Date.now();").should eq(["Error: value is not callable"])
+  end
+
   it "provides parseInt, parseFloat, and isNaN as global functions" do
     interpreter = GiavaScript::Interpreter.new
 

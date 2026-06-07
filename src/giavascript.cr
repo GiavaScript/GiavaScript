@@ -1,5 +1,6 @@
 require "json"
 require "set"
+require "time"
 
 module GiavaScript
   VERSION = "0.1.0"
@@ -37,7 +38,18 @@ module GiavaScript
     end
   end
 
-  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction
+  class DateValue
+    getter timestamp_ms : Float64
+
+    def initialize(@timestamp_ms : Float64)
+    end
+
+    def to_s(io : IO)
+      io << Time.unix_ms(@timestamp_ms.round.to_i64).to_s("%Y-%m-%dT%H:%M:%S.%3N") << "Z"
+    end
+  end
+
+  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue
 end
 
 require "./giavascript/string_literal_parser"

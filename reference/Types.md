@@ -118,6 +118,13 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | --- | --- | --- |
 | `toString()` | Instance method | Available |
 
+## Date
+
+| Member | Kind | Status |
+| --- | --- | --- |
+| `getTime()` | Instance method | Available |
+| `toString()` | Instance method | Available |
+
 ## Notes
 
 - This reflects current behavior in the interpreter and specs.

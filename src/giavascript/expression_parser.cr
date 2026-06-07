@@ -149,6 +149,13 @@ module GiavaScript
         return UnaryExpr.new(Tokenizer::TokenKind::Void, value)
       end
 
+      if @current.kind == Tokenizer::TokenKind::New
+        advance_token
+        callee = parse_primary
+        args = @current.kind == Tokenizer::TokenKind::LParen ? parse_call_arguments : [] of Expr
+        return NewExpr.new(callee, args)
+      end
+
       parse_postfix
     end
 

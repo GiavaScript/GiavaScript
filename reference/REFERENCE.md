@@ -101,6 +101,8 @@ Status of core JavaScript language features in GiavaScript.
 | `parseInt()` | Available |
 | `parseFloat()` | Available |
 | `isNaN()` | Available |
+| `Date.now()` | Available |
+| `new Date()` | Available |
 
 ### Notes
 
@@ -224,6 +226,13 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 | Member | Kind | Status |
 | --- | --- | --- |
+| `toString()` | Instance method | Available |
+
+### Date
+
+| Member | Kind | Status |
+| --- | --- | --- |
+| `getTime()` | Instance method | Available |
 | `toString()` | Instance method | Available |
 
 ### Notes

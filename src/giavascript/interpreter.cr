@@ -932,6 +932,10 @@ module GiavaScript
         return right.is_a?(UserFunction) && left.object_id == right.object_id
       end
 
+      if left.is_a?(DateValue)
+        return right.is_a?(DateValue) && left.object_id == right.object_id
+      end
+
       false
     end
 
@@ -1007,6 +1011,7 @@ module GiavaScript
       env["JSON"] = build_json_object
       env["Math"] = build_math_object
       env["Object"] = build_object_object
+      env["Date"] = build_date_object
       env["String"] = build_string_object
       env["parseInt"] = build_parse_int_function
       env["parseFloat"] = build_parse_float_function
@@ -1050,6 +1055,24 @@ module GiavaScript
       end)
 
       object
+    end
+
+    private def build_date_object : Hash(String, Value)
+      date = Hash(String, Value).new
+
+      date["now"] = BuiltinFunction.new("Date.now", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Date.now")
+        assert_builtin_arity(args, 0, "Date.now")
+        Time.utc.to_unix_ms.to_f64.as(Value)
+      end)
+
+      date["__construct"] = BuiltinFunction.new("Date", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Date")
+        assert_builtin_arity(args, 0, "Date")
+        DateValue.new(Time.utc.to_unix_ms.to_f64).as(Value)
+      end)
+
+      date
     end
 
     private def build_string_object : Hash(String, Value)

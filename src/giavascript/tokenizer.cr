@@ -15,6 +15,7 @@ module GiavaScript
       Continue
       Typeof
       Void
+      New
       Function
       Plus
       Minus
@@ -233,6 +234,8 @@ module GiavaScript
                TokenKind::Typeof
              when "void"
                TokenKind::Void
+             when "new"
+               TokenKind::New
              when "function"
                TokenKind::Function
              else

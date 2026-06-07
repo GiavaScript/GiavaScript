@@ -34,6 +34,8 @@ module GiavaScript
         evaluate_binary(expr)
       when FunctionCallExpr
         evaluate_function_call(expr)
+      when NewExpr
+        evaluate_new_expression(expr)
       when FunctionExpr
         UserFunction.new(expr.name, expr.parameters, expr.body_source, @env)
       when ArrayLiteral
@@ -148,6 +150,24 @@ module GiavaScript
       end
 
       invoke_callable(callee_with_receiver[:callable], callee_with_receiver[:receiver], args)
+    end
+
+    private def evaluate_new_expression(expr : NewExpr) : Value
+      callee = evaluate(expr.callee)
+
+      args = Array(Value).new(expr.args.size)
+      expr.args.each do |arg|
+        args << evaluate(arg)
+      end
+
+      if callee.is_a?(Hash(String, Value))
+        constructor = callee["__construct"]?
+        if constructor.is_a?(BuiltinFunction)
+          return invoke_callable(constructor, callee, args)
+        end
+      end
+
+      raise ExpressionError.new("Error: value is not a constructor")
     end
 
     private def evaluate_index_expression(expr : IndexExpr) : Value
