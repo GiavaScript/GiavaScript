@@ -607,12 +607,27 @@ describe GiavaScript do
     interpreter.eval("Object.entries(obj);").should eq(["[[\"name\", \"giava\"], [\"count\", 3], [\"ok\", true]]"])
   end
 
+  it "provides Object.assign and Object.hasOwn as global static methods" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var target = {\"a\": 1}; var source = {\"b\": 2};").should eq([] of String)
+    interpreter.eval("Object.assign(target, source) === target;").should eq(["true"])
+    interpreter.eval("target;").should eq(["{\"a\": 1, \"b\": 2}"])
+    interpreter.eval("Object.hasOwn(target, \"a\");").should eq(["true"])
+    interpreter.eval("Object.hasOwn(target, \"missing\");").should eq(["false"])
+    interpreter.eval("Object.hasOwn({\"1\": true}, 1);").should eq(["true"])
+  end
+
   it "validates Object static method arity and argument types" do
     interpreter = GiavaScript::Interpreter.new
 
     interpreter.eval("Object.keys();").should eq(["Error: Object.keys expects 1 arguments but got 0"])
     interpreter.eval("Object.values({}, 1);").should eq(["Error: Object.values expects 1 arguments but got 2"])
     interpreter.eval("Object.entries(1);").should eq(["Error: Object.entries argument 1 must be an object"])
+    interpreter.eval("Object.assign();").should eq(["Error: Object.assign expects at least 1 arguments but got 0"])
+    interpreter.eval("Object.assign({}, 1);").should eq(["Error: Object.assign argument 2 must be an object"])
+    interpreter.eval("Object.hasOwn({});").should eq(["Error: Object.hasOwn expects 2 arguments but got 1"])
+    interpreter.eval("Object.hasOwn({}, []);").should eq(["Error: Object.hasOwn argument 2 must be a string, number, boolean, null, or undefined"])
   end
 
   it "raises runtime error when Object method is overwritten with non-callable" do
@@ -620,6 +635,29 @@ describe GiavaScript do
 
     interpreter.eval("Object.keys = 5;").should eq([] of String)
     interpreter.eval("Object.keys({});").should eq(["Error: value is not callable"])
+  end
+
+  it "provides Array.isArray and Array.of as global static methods" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Array.isArray([]);").should eq(["true"])
+    interpreter.eval("Array.isArray({});").should eq(["false"])
+    interpreter.eval("Array.of(1, \"two\", true);").should eq(["[1, \"two\", true]"])
+    interpreter.eval("Array.of();").should eq(["[]"])
+  end
+
+  it "validates Array static method arity" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Array.isArray();").should eq(["Error: Array.isArray expects 1 arguments but got 0"])
+    interpreter.eval("Array.isArray([], 1);").should eq(["Error: Array.isArray expects 1 arguments but got 2"])
+  end
+
+  it "raises runtime error when Array method is overwritten with non-callable" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Array.of = 5;").should eq([] of String)
+    interpreter.eval("Array.of(1);").should eq(["Error: value is not callable"])
   end
 
   it "supports Date.now and new Date with basic instance methods" do

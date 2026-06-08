@@ -58,8 +58,8 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | --- | --- | --- |
 | `from()` | Static method | Not available |
 | `fromAsync()` | Static method | Not available |
-| `isArray()` | Static method | Not available |
-| `of()` | Static method | Not available |
+| `isArray()` | Static method | Available |
+| `of()` | Static method | Available |
 | `length` | Instance property | Available |
 | `at()` | Instance method | Available |
 | `concat()` | Instance method | Available |
@@ -110,7 +110,12 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 | Member | Kind | Status |
 | --- | --- | --- |
+| `assign()` | Static method | Available |
+| `entries()` | Static method | Available |
+| `hasOwn()` | Static method | Available |
+| `keys()` | Static method | Available |
 | `toString()` | Instance method | Available |
+| `values()` | Static method | Available |
 
 ## Boolean
 
