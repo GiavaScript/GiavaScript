@@ -1524,6 +1524,32 @@ describe GiavaScript do
     interpreter.eval("continue;").should eq(["Error: continue can only be used inside loops"])
   end
 
+  it "rejects let and const declarations" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("let value = 1;").should eq(["Error: invalid assignment target 'let value'"])
+    interpreter.eval("const total = 2;").should eq(["Error: invalid assignment target 'const total'"])
+  end
+
+  it "rejects class declarations" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("class Person {}").should eq(["Error: invalid right-hand side 'class Person {}'"])
+  end
+
+  it "rejects module import and export statements" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("import value from \"mod\";").should eq(["Error: invalid right-hand side 'import value from \"mod\"'"])
+    interpreter.eval("export default 1;").should eq(["Error: invalid right-hand side 'export default 1'"])
+  end
+
+  it "rejects async and await syntax" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("async function load() {}").should eq(["Error: invalid right-hand side 'async function load() {}'"])
+    interpreter.eval("await load();").should eq(["Error: invalid right-hand side 'await load()'"])
+  end
+
   it "returns error for invalid if syntax" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("if value) value = 1;").should eq(["Error: invalid if statement"])
