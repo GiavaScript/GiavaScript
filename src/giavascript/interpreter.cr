@@ -1014,6 +1014,7 @@ module GiavaScript
       env["console"] = build_console_object
       env["JSON"] = build_json_object
       env["Math"] = build_math_object
+      env["Array"] = build_array_object
       env["Object"] = build_object_object
       env["Date"] = build_date_object
       env["String"] = build_string_object
@@ -1025,6 +1026,35 @@ module GiavaScript
 
     private def build_object_object : Hash(String, Value)
       object = Hash(String, Value).new
+
+      object["assign"] = BuiltinFunction.new("Object.assign", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Object.assign")
+        assert_builtin_arity_at_least(args, 1, "Object.assign")
+
+        target = object_argument(args[0], "Object.assign", 0)
+
+        if args.size >= 2
+          index = 1
+          while index < args.size
+            source = object_argument(args[index], "Object.assign", index)
+            source.each do |key, value|
+              target[key] = value
+            end
+            index += 1
+          end
+        end
+
+        target.as(Value)
+      end)
+
+      object["hasOwn"] = BuiltinFunction.new("Object.hasOwn", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Object.hasOwn")
+        assert_builtin_arity(args, 2, "Object.hasOwn")
+
+        target = object_argument(args[0], "Object.hasOwn", 0)
+        property_key = property_key_argument(args[1], "Object.hasOwn", 1)
+        target.has_key?(property_key).as(Value)
+      end)
 
       object["keys"] = BuiltinFunction.new("Object.keys", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Object.keys")
@@ -1059,6 +1089,25 @@ module GiavaScript
       end)
 
       object
+    end
+
+    private def build_array_object : Hash(String, Value)
+      array = Hash(String, Value).new
+
+      array["isArray"] = BuiltinFunction.new("Array.isArray", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Array.isArray")
+        assert_builtin_arity(args, 1, "Array.isArray")
+        args[0].is_a?(Array(Value)).as(Value)
+      end)
+
+      array["of"] = BuiltinFunction.new("Array.of", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Array.of")
+        values = Array(Value).new(args.size)
+        args.each { |arg| values << arg }
+        values.as(Value)
+      end)
+
+      array
     end
 
     private def build_date_object : Hash(String, Value)
@@ -1616,6 +1665,12 @@ module GiavaScript
       raise ExpressionError.new("Error: #{method_name} expects between #{min} and #{max} arguments but got #{args.size}")
     end
 
+    private def assert_builtin_arity_at_least(args : Array(Value), minimum : Int32, method_name : String)
+      return if args.size >= minimum
+
+      raise ExpressionError.new("Error: #{method_name} expects at least #{minimum} arguments but got #{args.size}")
+    end
+
     private def number_argument(value : Value, method_name : String, index : Int32) : Number
       return value if value.is_a?(Int32)
       return value if value.is_a?(Float64)
@@ -1627,6 +1682,17 @@ module GiavaScript
       return value if value.is_a?(Hash(String, Value))
 
       raise ExpressionError.new("Error: #{method_name} argument #{index + 1} must be an object")
+    end
+
+    private def property_key_argument(value : Value, method_name : String, index : Int32) : String
+      case value
+      when String
+        value
+      when Int32, Float64, Bool, Nil, UndefinedValue
+        value.to_s
+      else
+        raise ExpressionError.new("Error: #{method_name} argument #{index + 1} must be a string, number, boolean, null, or undefined")
+      end
     end
 
     private def unary_number_arg_f64(args : Array(Value), method_name : String) : Float64
