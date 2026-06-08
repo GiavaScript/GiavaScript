@@ -33,3 +33,6 @@ jobs:
 
       - name: Run tests
         run: crystal spec
+
+      - name: Run example smoke tests
+        run: python3 scripts/run_examples_smoke.py
