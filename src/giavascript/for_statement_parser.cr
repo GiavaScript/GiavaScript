@@ -1,5 +1,7 @@
 module GiavaScript
   class ForStatementParser
+    include StatementParserShared
+
     INVALID_FOR_ERROR      = "Error: invalid for statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"
 
@@ -159,7 +161,7 @@ module GiavaScript
       end
 
       if starts_with_keyword?(current, "function")
-        function_end_index = find_function_end_index(current)
+        function_end_index = find_function_end_index(current, INVALID_FUNCTION_ERROR)
         source = @source[current...function_end_index].strip
         raise invalid_for_error if source.empty?
 
@@ -167,7 +169,7 @@ module GiavaScript
       end
 
       if @source[current]? == '{'
-        block_end_index = find_matching_brace_end_index(current) + 1
+        block_end_index = find_matching_brace_end_index(current, INVALID_FOR_ERROR) + 1
         block_body = @source[current + 1...block_end_index - 1]
         statements = parse_block_statements(block_body)
 
@@ -179,229 +181,6 @@ module GiavaScript
       raise invalid_for_error if source.empty?
 
       ParsedStatement.new(parse_statement_source(source), simple_end_index)
-    end
-
-    private def parse_block_statements(block_body : String) : Array(Statement)
-      statements = [] of Statement
-      tokenizer = StatementTokenizer.new(block_body)
-
-      while statement_source = tokenizer.next_statement
-        statement_source = statement_source.strip
-        next if statement_source.empty?
-
-        statements << parse_statement_source(statement_source)
-      end
-
-      statements
-    end
-
-    private def parse_statement_source(source : String) : Statement
-      if starts_with_keyword_in_source?(source, "if")
-        return IfStatementParser.new(source).parse_from.statement
-      end
-
-      if starts_with_keyword_in_source?(source, "for")
-        return ForStatementParser.new(source).parse_from.statement
-      end
-
-      if starts_with_keyword_in_source?(source, "while") || starts_with_keyword_in_source?(source, "do")
-        return WhileStatementParser.new(source).parse_from.statement
-      end
-
-      if starts_with_keyword_in_source?(source, "switch")
-        return SwitchStatementParser.new(source).parse_from.statement
-      end
-
-      if starts_with_keyword_in_source?(source, "try")
-        return TryStatementParser.new(source).parse_from.statement
-      end
-
-      return BreakStatement.new if source == "break"
-      return ContinueStatement.new if source == "continue"
-
-      RawStatement.new(source)
-    end
-
-    private def starts_with_keyword_in_source?(source : String, keyword : String) : Bool
-      return false unless source.starts_with?(keyword)
-
-      next_char = source[keyword.size]?
-      next_char.nil? || !identifier_continue?(next_char)
-    end
-
-    private def find_simple_statement_end_index(index : Int32) : Int32
-      current = index
-      string_delimiter = nil.as(Char?)
-      escaping = false
-      paren_depth = 0
-
-      while current < @source.size
-        char = @source[current]
-
-        if delimiter = string_delimiter
-          if escaping
-            escaping = false
-          elsif char == '\\'
-            escaping = true
-          elsif char == delimiter
-            string_delimiter = nil
-          end
-
-          current += 1
-          next
-        end
-
-        case char
-        when '"', '\'', '`'
-          string_delimiter = char
-        when '('
-          paren_depth += 1
-        when ')'
-          paren_depth -= 1 if paren_depth > 0
-        when ';'
-          return current if paren_depth == 0
-        when '\n', '\r'
-          return current if paren_depth == 0
-        when '}'
-          return current if paren_depth == 0
-        end
-
-        current += 1
-      end
-
-      current
-    end
-
-    private def find_function_end_index(index : Int32) : Int32
-      header_end_index = find_function_header_end_index(index)
-      raise ExpressionError.new(INVALID_FUNCTION_ERROR) unless @source[header_end_index]? == '{'
-
-      find_matching_brace_end_index(header_end_index, INVALID_FUNCTION_ERROR) + 1
-    end
-
-    private def find_function_header_end_index(index : Int32) : Int32
-      current = index + "function".size
-      current = skip_whitespace(current)
-
-      unless identifier_start?(@source[current]?)
-        raise ExpressionError.new(INVALID_FUNCTION_ERROR)
-      end
-
-      current += 1
-      while current < @source.size && identifier_continue?(@source[current])
-        current += 1
-      end
-
-      current = skip_whitespace(current)
-      raise ExpressionError.new(INVALID_FUNCTION_ERROR) unless @source[current]? == '('
-
-      paren_depth = 0
-      string_delimiter = nil.as(Char?)
-      escaping = false
-
-      while current < @source.size
-        char = @source[current]
-
-        if delimiter = string_delimiter
-          if escaping
-            escaping = false
-          elsif char == '\\'
-            escaping = true
-          elsif char == delimiter
-            string_delimiter = nil
-          end
-
-          current += 1
-          next
-        end
-
-        case char
-        when '"', '\'', '`'
-          string_delimiter = char
-        when '('
-          paren_depth += 1
-        when ')'
-          paren_depth -= 1
-          if paren_depth == 0
-            current += 1
-            return skip_whitespace(current)
-          end
-        end
-
-        current += 1
-      end
-
-      raise ExpressionError.new(INVALID_FUNCTION_ERROR)
-    end
-
-    private def find_matching_brace_end_index(index : Int32, error_message : String = INVALID_FOR_ERROR) : Int32
-      current = index
-      brace_depth = 0
-      string_delimiter = nil.as(Char?)
-      escaping = false
-
-      while current < @source.size
-        char = @source[current]
-
-        if delimiter = string_delimiter
-          if escaping
-            escaping = false
-          elsif char == '\\'
-            escaping = true
-          elsif char == delimiter
-            string_delimiter = nil
-          end
-
-          current += 1
-          next
-        end
-
-        case char
-        when '"', '\'', '`'
-          string_delimiter = char
-        when '{'
-          brace_depth += 1
-        when '}'
-          brace_depth -= 1
-          return current if brace_depth == 0
-        end
-
-        current += 1
-      end
-
-      raise ExpressionError.new(error_message)
-    end
-
-    private def skip_whitespace(index : Int32) : Int32
-      current = index
-      while current < @source.size
-        char = @source[current]
-        break unless char == '\n' || char == '\r' || char == ' ' || char == '\t'
-        current += 1
-      end
-      current
-    end
-
-    private def starts_with_keyword?(index : Int32, keyword : String) : Bool
-      return false unless @source[index, keyword.size]? == keyword
-
-      previous_char = index > 0 ? @source[index - 1] : nil
-      next_char = @source[index + keyword.size]?
-
-      previous_ok = previous_char.nil? || !identifier_continue?(previous_char)
-      next_ok = next_char.nil? || !identifier_continue?(next_char)
-
-      previous_ok && next_ok
-    end
-
-    private def identifier_start?(char : Char?) : Bool
-      return false unless char
-      char.ascii_letter? || char == '_'
-    end
-
-    private def identifier_continue?(char : Char?) : Bool
-      return false unless char
-      char.ascii_letter? || char.ascii_number? || char == '_'
     end
 
     private def invalid_for_error : ExpressionError
