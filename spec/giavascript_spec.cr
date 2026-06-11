@@ -428,6 +428,64 @@ describe GiavaScript do
     interpreter.eval("fact;").should eq(["Error: variable 'fact' does not exist"])
   end
 
+  it "supports no-parameter arrow with expression body" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("(() => 42)();").should eq(["42"])
+  end
+
+  it "supports single-parameter arrow without parens with expression body" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var double = x => x * 2;").should eq([] of String)
+    interpreter.eval("double(5);").should eq(["10"])
+  end
+
+  it "supports multi-parameter arrow with expression body" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var sum = (a, b) => a + b;").should eq([] of String)
+    interpreter.eval("sum(2, 3);").should eq(["5"])
+  end
+
+  it "supports no-parameter arrow with block body" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var fn = () => { return 42; };").should eq([] of String)
+    interpreter.eval("fn();").should eq(["42"])
+  end
+
+  it "supports single-parameter arrow with block body" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var triple = x => { return x * 3; };").should eq([] of String)
+    interpreter.eval("triple(4);").should eq(["12"])
+  end
+
+  it "supports multi-parameter arrow with block body" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var multiply = (a, b) => { return a * b; };").should eq([] of String)
+    interpreter.eval("multiply(4, 5);").should eq(["20"])
+  end
+
+  it "supports immediately-invoked arrow function" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("((a, b) => a + b)(4, 6);").should eq(["10"])
+  end
+
+  it "returns function for typeof arrow function" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var fn = () => 1;").should eq([] of String)
+    interpreter.eval("typeof fn;").should eq(["\"function\""])
+  end
+
+  it "supports arrow with implicit return of empty block" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var fn = () => {};").should eq([] of String)
+    interpreter.eval("fn();").should eq(["undefined"])
+  end
+
+  it "supports arrow functions returning expressions with operators" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var fn = (a, b) => a * b + 1;").should eq([] of String)
+    interpreter.eval("fn(3, 4);").should eq(["13"])
+  end
+
   it "prints error when print is not defined" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("print(\"hello world\");").should eq(["Error: function 'print' does not exist"])

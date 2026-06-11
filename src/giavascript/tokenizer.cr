@@ -17,6 +17,7 @@ module GiavaScript
       Void
       New
       Function
+      Arrow
       Plus
       Minus
       Star
@@ -96,7 +97,10 @@ module GiavaScript
         end
       when '='
         advance
-        if current_char == '='
+        if current_char == '>'
+          advance
+          Token.new(TokenKind::Arrow, "=>")
+        elsif current_char == '='
           advance
           if current_char == '='
             advance
