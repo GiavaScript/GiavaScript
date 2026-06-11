@@ -1562,11 +1562,16 @@ describe GiavaScript do
     interpreter.eval("continue;").should eq(["Error: continue can only be used inside loops"])
   end
 
-  it "rejects let and const declarations" do
+  it "rejects let declarations with an explicit unsupported-declaration error" do
     interpreter = GiavaScript::Interpreter.new
 
-    interpreter.eval("let value = 1;").should eq(["Error: invalid assignment target 'let value'"])
-    interpreter.eval("const total = 2;").should eq(["Error: invalid assignment target 'const total'"])
+    interpreter.eval("let value = 1;").should eq(["Error: unsupported declaration 'let'"])
+  end
+
+  it "rejects const declarations with an explicit unsupported-declaration error" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("const total = 2;").should eq(["Error: unsupported declaration 'const'"])
   end
 
   it "rejects class declarations" do

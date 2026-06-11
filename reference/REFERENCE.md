@@ -107,6 +107,8 @@ Status of core JavaScript language features in GiavaScript.
 ### Notes
 
 - This reflects current behavior in the interpreter and specs.
+- `let` and `const` declarations return explicit errors: `Error: unsupported declaration 'let'` and `Error: unsupported declaration 'const'`.
+- Use `var` for variable declarations.
 
 ## Type Methods and Properties
 

@@ -85,6 +85,13 @@ module GiavaScript
       end
     end
 
+    class UnsupportedDeclarationRawStatement < CompiledRawStatement
+      getter keyword : String
+
+      def initialize(@keyword : String)
+      end
+    end
+
     def initialize(@console_output : IO = STDOUT)
       @env = build_global_env
       @function_runtime = FunctionRuntime.new
@@ -183,6 +190,10 @@ module GiavaScript
         end
 
         return "Error: return can only be used inside functions"
+      end
+
+      if keyword = unsupported_declaration_keyword(stmt)
+        return "Error: unsupported declaration '#{keyword}'"
       end
 
       if match = stmt.match(/^(.+?)\s*(\+\+|--)$/)
@@ -811,6 +822,8 @@ module GiavaScript
         rescue ex : ExpressionError
           ex.message || "Error: invalid right-hand side '#{compiled.source}'"
         end
+      when UnsupportedDeclarationRawStatement
+        "Error: unsupported declaration '#{compiled.keyword}'"
       end
     end
 
@@ -843,6 +856,8 @@ module GiavaScript
                    rescue
                      FallbackRawStatement.new(source)
                    end
+                 elsif keyword = unsupported_declaration_keyword(key)
+                   UnsupportedDeclarationRawStatement.new(keyword)
                  elsif assignment = split_assignment_statement(key)
                    begin
                      target = parse_assignment_target(assignment[:lhs])
@@ -946,6 +961,13 @@ module GiavaScript
 
       next_char = source[keyword.size]?
       next_char.nil? || !(next_char.ascii_letter? || next_char.ascii_number? || next_char == '_')
+    end
+
+    private def unsupported_declaration_keyword(source : String) : String?
+      return "let" if starts_with_keyword?(source, "let")
+      return "const" if starts_with_keyword?(source, "const")
+
+      nil
     end
 
     private def call_function(name : String, args : Array(Value), env : Environment) : Value
