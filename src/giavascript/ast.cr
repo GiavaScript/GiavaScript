@@ -66,6 +66,14 @@ module GiavaScript
     end
   end
 
+  class ArrowFunctionExpr < Expr
+    getter parameters : Array(String)
+    getter body_source : String
+
+    def initialize(@parameters : Array(String), @body_source : String)
+    end
+  end
+
   class ArrayLiteral < Expr
     getter elements : Array(Expr)
 

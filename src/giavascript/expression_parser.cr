@@ -196,6 +196,9 @@ module GiavaScript
     private def parse_primary : Expr
       case @current.kind
       when Tokenizer::TokenKind::LParen
+        parsed_arrow = try_parse_paren_arrow_function
+        return parsed_arrow if parsed_arrow
+
         advance_token
         value = parse_expression
         raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RParen
@@ -226,6 +229,8 @@ module GiavaScript
         advance_token
         LiteralExpr.new(parse_number_value(number_lexeme))
       when Tokenizer::TokenKind::Identifier
+        parsed_arrow = try_parse_identifier_arrow_function
+        return parsed_arrow if parsed_arrow
         parse_identifier_expression
       else
         raise invalid_rhs_error
@@ -346,6 +351,96 @@ module GiavaScript
       advance_token
 
       FunctionExpr.new(function_name, parameters, body_source)
+    end
+
+    private def try_parse_paren_arrow_function : ArrowFunctionExpr?
+      return nil unless @current.kind == Tokenizer::TokenKind::LParen
+
+      saved_cursor = @tokenizer.cursor
+      saved_token = @current
+
+      advance_token
+
+      parameters = [] of String
+
+      if @current.kind == Tokenizer::TokenKind::RParen
+        advance_token
+        if @current.kind == Tokenizer::TokenKind::Arrow
+          advance_token
+          return parse_arrow_body(parameters)
+        end
+      elsif @current.kind == Tokenizer::TokenKind::Identifier
+        loop do
+          param = @current.lexeme
+          return restore_and_nil(saved_cursor, saved_token) if parameters.includes?(param)
+          parameters << param
+          advance_token
+
+          if @current.kind == Tokenizer::TokenKind::Comma
+            advance_token
+            return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Identifier
+            next
+          end
+
+          break
+        end
+
+        if @current.kind == Tokenizer::TokenKind::RParen
+          advance_token
+          if @current.kind == Tokenizer::TokenKind::Arrow
+            advance_token
+            return parse_arrow_body(parameters)
+          end
+        end
+      end
+
+      @tokenizer.cursor = saved_cursor
+      @current = saved_token
+      nil
+    end
+
+    private def try_parse_identifier_arrow_function : ArrowFunctionExpr?
+      return nil unless @current.kind == Tokenizer::TokenKind::Identifier
+
+      saved_cursor = @tokenizer.cursor
+      saved_token = @current
+
+      param = @current.lexeme
+      advance_token
+
+      if @current.kind == Tokenizer::TokenKind::Arrow
+        advance_token
+        return parse_arrow_body([param])
+      end
+
+      @tokenizer.cursor = saved_cursor
+      @current = saved_token
+      nil
+    end
+
+    private def restore_and_nil(saved_cursor : Int32, saved_token : Tokenizer::Token) : Nil
+      @tokenizer.cursor = saved_cursor
+      @current = saved_token
+      nil
+    end
+
+    private def parse_arrow_body(parameters : Array(String)) : ArrowFunctionExpr
+      if @current.kind == Tokenizer::TokenKind::LBrace
+        body_start = @tokenizer.cursor
+        body_end = find_matching_brace_end_index(body_start)
+        body_source = @source[body_start...body_end]
+
+        @tokenizer.cursor = body_end + 1
+        advance_token
+
+        return ArrowFunctionExpr.new(parameters, body_source)
+      end
+
+      body_start = @tokenizer.cursor - @current.lexeme.size
+      parse_expression
+      body_end = @tokenizer.cursor - @current.lexeme.size
+      body_source = "return " + @source[body_start...body_end].strip + ";"
+      ArrowFunctionExpr.new(parameters, body_source)
     end
 
     private def parse_identifier_expression : Expr

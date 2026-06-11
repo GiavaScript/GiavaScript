@@ -38,6 +38,8 @@ module GiavaScript
         evaluate_new_expression(expr)
       when FunctionExpr
         UserFunction.new(expr.name, expr.parameters, expr.body_source, @env)
+      when ArrowFunctionExpr
+        UserFunction.new(nil, expr.parameters, expr.body_source, @env)
       when ArrayLiteral
         values = Array(Value).new(expr.elements.size)
         expr.elements.each do |element|
