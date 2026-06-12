@@ -29,11 +29,25 @@ Status of core JavaScript language features in GiavaScript.
 | Logical operators (`&&`, `\|\|`, `!`) | Available |
 | `typeof` operator | Available |
 | `void` operator | Available |
+| Unary plus (`+`) | Available |
+| Comments (`//`, `/* */`) | Available |
+| Template literals | Available |
 
 ### Equality operator semantics
 
 - `==` and `!=` use coercive (loose) equality behavior.
 - `===` and `!==` use strict (non-coercive) equality behavior.
+
+### `typeof` semantics
+
+`typeof` returns string representations of value types:
+
+- `"number"` for `Int32` and `Float64`
+- `"string"` for `String`
+- `"boolean"` for `Bool`
+- `"object"` for `Array`, `Hash`, and `null`
+- `"function"` for callable values (user-defined and built-in)
+- `"undefined"` for `undefined` and undeclared identifiers (does not throw)
 
 ### Logical operator semantics
 
@@ -48,11 +62,13 @@ Status of core JavaScript language features in GiavaScript.
 | --- | --- |
 | Function declarations (`function name(...) { ... }`) | Available |
 | Function expressions (`var f = function(...) { ... }`) | Available |
+| Named function expressions (`var f = function name(...) { ... }`) | Available |
+| Arrow functions (`() => expr`, `x => expr`, `() => { ... }`) | Available |
 | Function calls | Available |
 | Returning values with `return` | Available |
 | First-class function values | Available |
 | `if`, `else if`, `else` | Available |
-| `for (...)` loops | Available |
+| C-style `for` loops (`for (init; condition; update)`) | Available |
 | `break` / `continue` inside loops | Available |
 | `while` / `do...while` loops | Available |
 | `switch` statements | Available |
@@ -79,9 +95,11 @@ Status of core JavaScript language features in GiavaScript.
 | `isNaN()` | Available |
 | `Date.now()` | Available |
 | `new Date()` | Available |
+| `console.log()` | Available |
 
 ## Notes
 
-- This reflects current behavior in the interpreter and specs.
+- This reflects the current behavior in the interpreter and specs.
 - `let` and `const` declarations return explicit errors: `Error: unsupported declaration 'let'` and `Error: unsupported declaration 'const'`.
 - Use `var` for variable declarations.
+- Statements can be separated by newlines without requiring semicolons. A semicolon is not required when two statements are on separate lines.

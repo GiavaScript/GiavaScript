@@ -27,7 +27,8 @@ def run_file(path : String) : Int32
     end
   end
 
-  messages.any? { |message| message.starts_with?("Error:") } ? 1 : 0
+  has_errors = messages.any? { |message| message.starts_with?("Error:") }
+  has_errors ? 1 : 0
 end
 
 if ARGV.empty?
@@ -35,6 +36,6 @@ if ARGV.empty?
 elsif ARGV.size == 1
   exit run_file(ARGV[0])
 else
-  STDERR.puts "Usage: crystal run src/giavascript_cli.cr -- [path/to/file.ls]"
+  STDERR.puts "Usage: crystal run src/giavascript_cli.cr -- [path/to/file.js]"
   exit 1
 end

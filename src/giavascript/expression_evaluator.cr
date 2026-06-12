@@ -491,44 +491,18 @@ module GiavaScript
     private def strict_equality_result(left : Value, right : Value) : Bool
       if left.is_a?(Int32) || left.is_a?(Float64)
         return false unless right.is_a?(Int32) || right.is_a?(Float64)
-
-        left_number = left.to_f64
-        right_number = right.to_f64
-        return false if left_number.nan? || right_number.nan?
-        return left_number == right_number
+        return false if left.to_f64.nan? || right.to_f64.nan?
+        return left.to_f64 == right.to_f64
       end
 
-      if left.is_a?(String)
-        return right.is_a?(String) && left == right
-      end
-
-      if left.is_a?(Bool)
-        return right.is_a?(Bool) && left == right
-      end
-
-      if left.nil?
-        return right.nil?
-      end
-
-      if left.is_a?(UndefinedValue)
-        return right.is_a?(UndefinedValue)
-      end
-
-      if left.is_a?(Array(Value))
-        return right.is_a?(Array(Value)) && left.object_id == right.object_id
-      end
-
-      if left.is_a?(Hash(String, Value))
-        return right.is_a?(Hash(String, Value)) && left.object_id == right.object_id
-      end
-
-      if left.is_a?(BuiltinFunction)
-        return right.is_a?(BuiltinFunction) && left.object_id == right.object_id
-      end
-
-      if left.is_a?(UserFunction)
-        return right.is_a?(UserFunction) && left.object_id == right.object_id
-      end
+      return right.is_a?(String) && left == right if left.is_a?(String)
+      return right.is_a?(Bool) && left == right if left.is_a?(Bool)
+      return right.nil? if left.nil?
+      return right.is_a?(UndefinedValue) if left.is_a?(UndefinedValue)
+      return right.is_a?(Array(Value)) && left.object_id == right.object_id if left.is_a?(Array(Value))
+      return right.is_a?(Hash(String, Value)) && left.object_id == right.object_id if left.is_a?(Hash(String, Value))
+      return right.is_a?(BuiltinFunction) && left.object_id == right.object_id if left.is_a?(BuiltinFunction)
+      return right.is_a?(UserFunction) && left.object_id == right.object_id if left.is_a?(UserFunction)
 
       false
     end
@@ -618,22 +592,10 @@ module GiavaScript
     private def truthy?(value : Value) : Bool
       return false if value.nil?
       return false if value.is_a?(UndefinedValue)
-
-      if value.is_a?(Bool)
-        return value
-      end
-
-      if value.is_a?(String)
-        return !value.empty?
-      end
-
-      if value.is_a?(Int32)
-        return value != 0
-      end
-
-      if value.is_a?(Float64)
-        return value != 0.0
-      end
+      return value if value.is_a?(Bool)
+      return !value.empty? if value.is_a?(String)
+      return value != 0 if value.is_a?(Int32)
+      return value != 0.0 if value.is_a?(Float64)
 
       true
     end

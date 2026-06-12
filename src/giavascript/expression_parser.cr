@@ -322,11 +322,12 @@ module GiavaScript
       advance_token
 
       parameters = [] of String
+      param_set = Set(String).new
       unless @current.kind == Tokenizer::TokenKind::RParen
         loop do
           raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
           parameter = @current.lexeme
-          raise invalid_rhs_error if parameters.includes?(parameter)
+          raise invalid_rhs_error unless param_set.add?(parameter)
           parameters << parameter
           advance_token
 
@@ -362,6 +363,7 @@ module GiavaScript
       advance_token
 
       parameters = [] of String
+      param_set = Set(String).new
 
       if @current.kind == Tokenizer::TokenKind::RParen
         advance_token
@@ -372,7 +374,7 @@ module GiavaScript
       elsif @current.kind == Tokenizer::TokenKind::Identifier
         loop do
           param = @current.lexeme
-          return restore_and_nil(saved_cursor, saved_token) if parameters.includes?(param)
+          return restore_and_nil(saved_cursor, saved_token) unless param_set.add?(param)
           parameters << param
           advance_token
 

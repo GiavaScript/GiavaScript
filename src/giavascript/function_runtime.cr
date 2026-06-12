@@ -1,7 +1,6 @@
 module GiavaScript
   class FunctionRuntime
-    IDENTIFIER_REGEX    = /^[A-Za-z_][A-Za-z0-9_]*$/
-    FUNCTION_NAME_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
+    IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
 
     record FunctionDefinition, parameters : Array(String), statements : Array(String)
 
@@ -25,7 +24,7 @@ module GiavaScript
       param_list = match[2].strip
       body = match[3].strip
 
-      raise ExpressionError.new("Error: invalid function name '#{function_name}'") unless function_name.matches?(FUNCTION_NAME_REGEX)
+      raise ExpressionError.new("Error: invalid function name '#{function_name}'") unless function_name.matches?(IDENTIFIER_REGEX)
 
       parameters = parse_function_parameters(param_list)
       statements = StatementSplitter.new(body).split
@@ -37,10 +36,7 @@ module GiavaScript
     end
 
     def function_parameter_count(name : String) : Int32?
-      function = @functions[name]?
-      return nil unless function
-
-      function.parameters.size
+      @functions[name]?.try(&.parameters.size)
     end
 
     def invoke_function(name : String, args : Array(Value), outer_env : Environment, &evaluate_statement : String, Environment, Bool, Bool -> String?) : Value

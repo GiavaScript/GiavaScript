@@ -47,9 +47,7 @@ If you change any reference source file in `reference/` (`Language.md`, `Types.m
 python3 scripts/generate_reference.py
 ```
 
-Before opening a pull request, make sure this file is clean in `git diff` unless your change intentionally updates it:
-
-- `reference/REFERENCE.md`
+Before opening a pull request, make sure `reference/REFERENCE.md` shows no unintended changes in `git diff`. If your PR intentionally updates the reference docs, run the generator first. CI checks that this file matches the generator output; a mismatch will fail the build.
 
 ## Pull request checklist
 
