@@ -2,7 +2,7 @@
   <picture align="center">
     <source media="(prefers-color-scheme: dark)" srcset="assets/gs_logo_light.png" width="350">
     <source media="(prefers-color-scheme: light)" srcset="assets/gs_logo.png" width="350">
-    <img alt="GiavaScript Logo" src="gs.png">
+    <img alt="GiavaScript Logo" src="assets/gs_logo.png">
   </picture>
 </p>
 <h1 align="center">GiavaScript</h1>
@@ -114,8 +114,13 @@ CI verifies that `reference/REFERENCE.md` matches generated output.
 Sample programs are in `examples/`:
 
 - `examples/templateLiterals.js` - string interpolation and expression formatting
-- `examples/matrixMultiply.js` - nested loops and array indexing
-- `examples/sievePrimes.js` - control flow and simple algorithm implementation
+- `examples/arrayFlatFlatMapSplice.js` - array manipulation methods
+- `examples/dateBasics.js` - Date object usage
+- `examples/functionExpressionsAndOperators.js` - function expressions and operators
+- `examples/multilineMethodChaining.js` - method chaining patterns
+- `examples/objectKeysValuesEntries.js` - Object.keys, values, entries
+- `examples/random.js` - random number generation
+- `examples/tryCatchFinally.js` - error handling with try/catch/finally
 
 Run any example with:
 

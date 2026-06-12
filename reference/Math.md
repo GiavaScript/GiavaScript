@@ -54,3 +54,5 @@ Status of the JavaScript `Math` global object in GiavaScript.
 
 - `Math.random()` returns a pseudo-random number in the range `[0, 1)`.
 - `Math.random()` is not cryptographically secure.
+- `Math.max()` with zero arguments returns `-Infinity`. `Math.min()` with zero arguments returns `Infinity`.
+- All Math methods that accept numeric arguments coerce non-numeric values to numbers. Invalid coercions produce `NaN` or `Infinity` as appropriate.

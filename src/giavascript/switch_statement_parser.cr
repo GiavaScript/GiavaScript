@@ -47,7 +47,7 @@ module GiavaScript
       current = 0
       saw_default = false
 
-      while true
+      loop do
         current = skip_whitespace_in_source(source, current)
         break if current >= source.size
 

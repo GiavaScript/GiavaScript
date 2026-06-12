@@ -920,7 +920,19 @@ module GiavaScript
     private def array_sort(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "Array.sort")
       array_receiver = receiver_array(receiver, "Array.sort")
-      array_receiver.sort! { |left, right| runtime_to_string(left) <=> runtime_to_string(right) }
+      return array_receiver if array_receiver.size <= 1
+
+      keys = Array(String).new(array_receiver.size)
+      array_receiver.each { |v| keys << runtime_to_string(v) }
+
+      indices = (0...array_receiver.size).to_a
+      indices.sort! { |a, b| keys[a] <=> keys[b] }
+
+      sorted = Array(Value).new(array_receiver.size)
+      indices.each { |i| sorted << array_receiver[i] }
+
+      array_receiver.clear
+      sorted.each { |v| array_receiver << v }
       array_receiver
     end
 
@@ -939,38 +951,12 @@ module GiavaScript
                        size - start
                      end
 
-      removed = Array(Value).new(delete_count)
-      index = 0
-      while index < delete_count
-        removed << array_receiver[start + index]
-        index += 1
-      end
+      removed = array_receiver[start, delete_count]
 
-      replacement = [] of Value
-      index = 2
-      while index < args.size
-        replacement << args[index]
-        index += 1
-      end
+      replacement = Array(Value).new(Math.max(0, args.size - 2))
+      (2...args.size).each { |i| replacement << args[i] }
 
-      rebuilt = Array(Value).new(size - delete_count + replacement.size)
-
-      index = 0
-      while index < start
-        rebuilt << array_receiver[index]
-        index += 1
-      end
-
-      replacement.each { |value| rebuilt << value }
-
-      tail_index = start + delete_count
-      while tail_index < size
-        rebuilt << array_receiver[tail_index]
-        tail_index += 1
-      end
-
-      array_receiver.clear
-      rebuilt.each { |value| array_receiver << value }
+      array_receiver[start, delete_count] = replacement
 
       removed
     end
@@ -985,12 +971,7 @@ module GiavaScript
       array_receiver = receiver_array(receiver, "Array.unshift")
       return array_receiver.size if args.empty?
 
-      result = Array(Value).new(array_receiver.size + args.size)
-      args.each { |arg| result << arg }
-      array_receiver.each { |value| result << value }
-
-      array_receiver.clear
-      result.each { |value| array_receiver << value }
+      args.reverse_each { |arg| array_receiver.unshift(arg) }
 
       array_receiver.size
     end

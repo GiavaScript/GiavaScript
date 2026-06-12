@@ -3,7 +3,7 @@ module GiavaScript
     include InterpreterBuiltins
 
     IDENTIFIER_REGEX             = /^[A-Za-z_][A-Za-z0-9_]*$/
-    MAX_JSON_STRINGIFY_DEPTH     =  1000
+    MAX_JSON_STRINGIFY_DEPTH     = 1_000
     MAX_EXPRESSION_CACHE_SIZE    = 8_192
     MAX_RAW_STATEMENT_CACHE_SIZE = 8_192
     MAX_EVALUATOR_CACHE_SIZE     = 1_024
@@ -411,6 +411,8 @@ module GiavaScript
     end
 
     private def split_assignment_statement(stmt : String) : NamedTuple(lhs: String, rhs: String, operator: String)?
+      return nil unless stmt.includes?('=')
+
       current = 0
       string_delimiter = nil.as(Char?)
       escaping = false
@@ -876,10 +878,8 @@ module GiavaScript
                    end
                  end
 
-      unless compiled.is_a?(FallbackRawStatement)
-        @raw_statement_cache.clear if @raw_statement_cache.size >= MAX_RAW_STATEMENT_CACHE_SIZE
-        @raw_statement_cache[key] = compiled
-      end
+      @raw_statement_cache.clear if @raw_statement_cache.size >= MAX_RAW_STATEMENT_CACHE_SIZE
+      @raw_statement_cache[key] = compiled
 
       compiled
     end
@@ -887,22 +887,10 @@ module GiavaScript
     private def truthy?(value : Value) : Bool
       return false if value.nil?
       return false if value.is_a?(UndefinedValue)
-
-      if value.is_a?(Bool)
-        return value
-      end
-
-      if value.is_a?(String)
-        return !value.empty?
-      end
-
-      if value.is_a?(Int32)
-        return value != 0
-      end
-
-      if value.is_a?(Float64)
-        return value != 0.0
-      end
+      return value if value.is_a?(Bool)
+      return !value.empty? if value.is_a?(String)
+      return value != 0 if value.is_a?(Int32)
+      return value != 0.0 if value.is_a?(Float64)
 
       true
     end
@@ -910,48 +898,19 @@ module GiavaScript
     private def strict_equals_values?(left : Value, right : Value) : Bool
       if left.is_a?(Int32) || left.is_a?(Float64)
         return false unless right.is_a?(Int32) || right.is_a?(Float64)
-
-        left_number = left.to_f64
-        right_number = right.to_f64
-        return false if left_number.nan? || right_number.nan?
-        return left_number == right_number
+        return false if left.to_f64.nan? || right.to_f64.nan?
+        return left.to_f64 == right.to_f64
       end
 
-      if left.is_a?(String)
-        return right.is_a?(String) && left == right
-      end
-
-      if left.is_a?(Bool)
-        return right.is_a?(Bool) && left == right
-      end
-
-      if left.nil?
-        return right.nil?
-      end
-
-      if left.is_a?(UndefinedValue)
-        return right.is_a?(UndefinedValue)
-      end
-
-      if left.is_a?(Array(Value))
-        return right.is_a?(Array(Value)) && left.object_id == right.object_id
-      end
-
-      if left.is_a?(Hash(String, Value))
-        return right.is_a?(Hash(String, Value)) && left.object_id == right.object_id
-      end
-
-      if left.is_a?(BuiltinFunction)
-        return right.is_a?(BuiltinFunction) && left.object_id == right.object_id
-      end
-
-      if left.is_a?(UserFunction)
-        return right.is_a?(UserFunction) && left.object_id == right.object_id
-      end
-
-      if left.is_a?(DateValue)
-        return right.is_a?(DateValue) && left.object_id == right.object_id
-      end
+      return right.is_a?(String) && left == right if left.is_a?(String)
+      return right.is_a?(Bool) && left == right if left.is_a?(Bool)
+      return right.nil? if left.nil?
+      return right.is_a?(UndefinedValue) if left.is_a?(UndefinedValue)
+      return right.is_a?(Array(Value)) && left.object_id == right.object_id if left.is_a?(Array(Value))
+      return right.is_a?(Hash(String, Value)) && left.object_id == right.object_id if left.is_a?(Hash(String, Value))
+      return right.is_a?(BuiltinFunction) && left.object_id == right.object_id if left.is_a?(BuiltinFunction)
+      return right.is_a?(UserFunction) && left.object_id == right.object_id if left.is_a?(UserFunction)
+      return right.is_a?(DateValue) && left.object_id == right.object_id if left.is_a?(DateValue)
 
       false
     end
@@ -1015,22 +974,41 @@ module GiavaScript
       if value.is_a?(String)
         "\"#{escape_string(value)}\""
       elsif value.is_a?(Array)
-        "[#{value.map { |item| value_to_s(item) }.join(", ")}]"
-      elsif value.is_a?(Hash(String, Value))
-        properties = value.map do |key, property_value|
-          "\"#{escape_string(key)}\": #{value_to_s(property_value)}"
+        String.build do |io|
+          io << '['
+          value.each_with_index do |item, i|
+            io << ", " if i > 0
+            io << value_to_s(item)
+          end
+          io << ']'
         end
-        "{#{properties.join(", ")}}"
+      elsif value.is_a?(Hash(String, Value))
+        String.build do |io|
+          io << '{'
+          first = true
+          value.each do |key, property_value|
+            first ? (first = false) : (io << ", ")
+            io << '"' << escape_string(key) << "\": " << value_to_s(property_value)
+          end
+          io << '}'
+        end
       else
         value.to_s
       end
     end
 
     private def escape_string(value : String) : String
-      value.gsub('\\', "\\\\")
-        .gsub('"', "\\\"")
-        .gsub('\n', "\\n")
-        .gsub('\t', "\\t")
+      String.build do |io|
+        value.each_char do |char|
+          case char
+          when '\\' then io << "\\\\"
+          when '"'  then io << "\\\""
+          when '\n' then io << "\\n"
+          when '\t' then io << "\\t"
+          else           io << char
+          end
+        end
+      end
     end
 
     private def json_any_to_value(value : ::JSON::Any) : Value

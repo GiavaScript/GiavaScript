@@ -134,4 +134,4 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 ## Notes
 
-- This reflects current behavior in the interpreter and specs.
+- This reflects the current behavior in the interpreter and specs.
