@@ -23,6 +23,9 @@
   <a href="https://crystal-lang.org/">
     <img src="https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white" alt="Crystal" />
   </a>
+  <a href="https://github.com/memburg/GiavaScript/releases">
+    <img src="https://img.shields.io/github/v/release/memburg/GiavaScript?include_prereleases" alt="Version" />
+  </a>
 </p>
 
 GiavaScript is an open-source, cross-platform JavaScript runtime implemented in Crystal.
