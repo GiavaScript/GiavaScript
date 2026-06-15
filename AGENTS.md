@@ -78,6 +78,20 @@ evaluators (1024 entries), JSON stringify depth limit (1000).
 - Main test file: `spec/giavascript_spec.cr` (~1700 lines)
 - Documentation in `reference/` (split by topic) + auto-generated `REFERENCE.md`
 
+## Versioning
+
+GiavaScript follows Semantic Versioning 2.0. Pre-1.0: patch bumps for bug
+fixes, minor bumps for new features (breaking or not — stability not guaranteed
+until 1.0).
+
+Version is stored in two places — both must be updated together for a release:
+
+- `shard.yml` (`version:` field)
+- `src/giavascript.cr` (`VERSION` constant)
+
+Release checklist: bump both locations, update `CHANGELOG.md`, then
+`git tag v<version>`.
+
 ## Key constraints
 
 - **Never add external Crystal dependencies** unless explicitly requested
