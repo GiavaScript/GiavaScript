@@ -1,0 +1,22 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md"],
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "crystal *": "allow",
+      "python3 *": "allow",
+      "shards *": "allow",
+      "git *": "allow",
+      "./install.sh": "allow",
+      "rm *": "ask",
+      "sudo *": "ask",
+      "brew *": "ask",
+      "npm *": "deny",
+      "npx *": "deny",
+      "yarn *": "deny",
+      "pnpm *": "deny",
+      "*": "ask"
+    }
+  }
+}
