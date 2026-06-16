@@ -5,7 +5,7 @@ module GiavaScript
     INVALID_FOR_ERROR      = "Error: invalid for statement"
     INVALID_FUNCTION_ERROR = "Error: invalid function definition"
 
-    record ParsedFor, statement : ForStatement, end_index : Int32
+    record ParsedFor, statement : Statement, end_index : Int32
     record ParsedStatement, statement : Statement, end_index : Int32
 
     def initialize(@source : String)
@@ -23,20 +23,30 @@ module GiavaScript
       current = skip_whitespace(current)
       raise invalid_for_error unless @source[current]? == '('
 
-      header = parse_for_header(current)
-      current = skip_whitespace(header[:end_paren_index] + 1)
+      if for_of_header = try_parse_for_of_header(current)
+        current = skip_whitespace(for_of_header[:end_paren_index] + 1)
+        body = parse_statement(current)
 
-      body = parse_statement(current)
+        ParsedFor.new(
+          ForOfStatement.new(for_of_header[:var_name], for_of_header[:iterable], body.statement),
+          body.end_index
+        )
+      else
+        header = parse_for_header(current)
+        current = skip_whitespace(header[:end_paren_index] + 1)
 
-      ParsedFor.new(
-        ForStatement.new(
-          parse_optional_init_clause(header[:init_source]),
-          parse_optional_condition_clause(header[:condition_source]),
-          parse_optional_update_clause(header[:update_source]),
-          body.statement
-        ),
-        body.end_index
-      )
+        body = parse_statement(current)
+
+        ParsedFor.new(
+          ForStatement.new(
+            parse_optional_init_clause(header[:init_source]),
+            parse_optional_condition_clause(header[:condition_source]),
+            parse_optional_update_clause(header[:update_source]),
+            body.statement
+          ),
+          body.end_index
+        )
+      end
     end
 
     private def parse_optional_init_clause(source : String) : RawStatement?
@@ -129,6 +139,86 @@ module GiavaScript
         update_source:    segments[2],
         end_paren_index:  current,
       }
+    end
+
+    private def try_parse_for_of_header(index : Int32) : NamedTuple(var_name: String, iterable: Expr, end_paren_index: Int32)?
+      current = index + 1
+      current = skip_whitespace(current)
+
+      return nil unless starts_with_keyword?(current, "var")
+      current += "var".size
+      current = skip_whitespace(current)
+
+      return nil unless current < @source.size && identifier_start?(@source[current]?)
+      name_start = current
+      current += 1
+      while current < @source.size && identifier_continue?(@source[current])
+        current += 1
+      end
+      var_name = @source[name_start...current]
+
+      current = skip_whitespace(current)
+
+      return nil unless starts_with_keyword?(current, "of")
+      current += "of".size
+      current = skip_whitespace(current)
+
+      end_paren_index = find_for_of_iterable_end(current)
+      iterable_source = @source[current...end_paren_index].strip
+      raise invalid_for_error if iterable_source.empty?
+
+      iterable = begin
+        ExpressionParser.new(iterable_source).parse
+      rescue ExpressionError
+        raise invalid_for_error
+      end
+
+      {var_name: var_name, iterable: iterable, end_paren_index: end_paren_index}
+    end
+
+    private def find_for_of_iterable_end(index : Int32) : Int32
+      current = index
+      paren_depth = 0
+      bracket_depth = 0
+      string_delimiter = nil.as(Char?)
+      escaping = false
+
+      while current < @source.size
+        char = @source[current]
+
+        if delimiter = string_delimiter
+          if escaping
+            escaping = false
+          elsif char == '\\'
+            escaping = true
+          elsif char == delimiter
+            string_delimiter = nil
+          end
+
+          current += 1
+          next
+        end
+
+        case char
+        when '"', '\'', '`'
+          string_delimiter = char
+        when '('
+          paren_depth += 1
+        when ')'
+          if paren_depth == 0
+            return current
+          end
+          paren_depth -= 1
+        when '['
+          bracket_depth += 1
+        when ']'
+          bracket_depth -= 1 if bracket_depth > 0
+        end
+
+        current += 1
+      end
+
+      raise invalid_for_error
     end
 
     private def parse_statement(index : Int32) : ParsedStatement

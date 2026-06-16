@@ -515,7 +515,15 @@ module GiavaScript
         return ex.message || "Error: invalid for statement"
       end
 
-      eval_for_ast(parsed_for.statement, env, inside_function, inside_loop, inside_switch)
+      statement = parsed_for.statement
+      case statement
+      when ForStatement
+        eval_for_ast(statement, env, inside_function, inside_loop, inside_switch)
+      when ForOfStatement
+        eval_for_of_ast(statement, env, inside_function, inside_loop, inside_switch)
+      else
+        "Error: invalid for statement"
+      end
     end
 
     private def eval_for_ast(for_statement : ForStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
@@ -554,6 +562,49 @@ module GiavaScript
         nil
       rescue ex : ExpressionError
         ex.message || "Error: invalid for statement"
+      end
+    end
+
+    private def eval_for_of_ast(for_of : ForOfStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
+      begin
+        iterable_value = evaluate_expression(for_of.iterable, env)
+
+        case iterable_value
+        when Array(Value)
+          iterable_value.each do |element|
+            env[for_of.var_name] = element
+
+            begin
+              body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
+              if body_message && body_message.starts_with?("Error:")
+                return body_message
+              end
+            rescue ContinueSignal
+            rescue BreakSignal
+              break
+            end
+          end
+        when String
+          iterable_value.each_char do |ch|
+            env[for_of.var_name] = ch.to_s
+
+            begin
+              body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
+              if body_message && body_message.starts_with?("Error:")
+                return body_message
+              end
+            rescue ContinueSignal
+            rescue BreakSignal
+              break
+            end
+          end
+        else
+          return "Error: for...of requires an iterable (array or string)"
+        end
+
+        nil
+      rescue ex : ExpressionError
+        ex.message || "Error: invalid for...of statement"
       end
     end
 
@@ -751,6 +802,8 @@ module GiavaScript
         eval_if_ast(statement, env, inside_function, inside_loop, inside_switch)
       when ForStatement
         eval_for_ast(statement, env, inside_function, inside_loop, inside_switch)
+      when ForOfStatement
+        eval_for_of_ast(statement, env, inside_function, inside_loop, inside_switch)
       when WhileStatement
         eval_while_ast(statement, env, inside_function, inside_loop, inside_switch)
       when DoWhileStatement
