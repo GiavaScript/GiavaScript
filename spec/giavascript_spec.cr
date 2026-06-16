@@ -1486,6 +1486,50 @@ describe GiavaScript do
     interpreter.eval("seen;").should eq(["2"])
   end
 
+  it "supports for...of iteration over arrays" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("for (var x of [10, 20, 30]) console.log(x);").should eq([] of String)
+    output.to_s.should eq("10\n20\n30\n")
+  end
+
+  it "supports for...of iteration over strings" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("for (var ch of \"ab\") console.log(ch);").should eq([] of String)
+    output.to_s.should eq("a\nb\n")
+  end
+
+  it "supports break inside for...of" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var result = 0; for (var x of [1, 2, 3, 4]) { if (x == 3) break; result = result + x; }").should eq([] of String)
+    interpreter.eval("result;").should eq(["3"])
+  end
+
+  it "supports continue inside for...of" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("for (var x of [1, 2, 3, 4]) { if (x == 3) continue; console.log(x); }").should eq([] of String)
+    output.to_s.should eq("1\n2\n4\n")
+  end
+
+  it "supports empty array iteration in for...of" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var count = 0; for (var x of []) { count = count + 1; }").should eq([] of String)
+    interpreter.eval("count;").should eq(["0"])
+  end
+
+  it "returns error for for...of with non-iterable value" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var n = 42; for (var x of n) console.log(x);").should eq(["Error: for...of requires an iterable (array or string)"])
+  end
+
   it "supports while loops" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)
