@@ -965,6 +965,7 @@ module GiavaScript
       return right.is_a?(UserFunction) && left.object_id == right.object_id if left.is_a?(UserFunction)
       return right.is_a?(DateValue) && left.object_id == right.object_id if left.is_a?(DateValue)
       return right.is_a?(RegExpValue) && left.object_id == right.object_id if left.is_a?(RegExpValue)
+      return right.is_a?(ErrorValue) && left.object_id == right.object_id if left.is_a?(ErrorValue)
 
       false
     end
@@ -1048,6 +1049,8 @@ module GiavaScript
         end
       elsif value.is_a?(RegExpValue)
         value.to_s
+      elsif value.is_a?(ErrorValue)
+        value.to_s
       else
         value.to_s
       end
@@ -1126,7 +1129,7 @@ module GiavaScript
       case value
       when Nil
         io << "null"
-      when UndefinedValue, BuiltinFunction, UserFunction, RegExpValue
+      when UndefinedValue, BuiltinFunction, UserFunction, RegExpValue, ErrorValue
         io << "null"
       when Bool, Int32
         io << value.to_s
@@ -1150,7 +1153,7 @@ module GiavaScript
           io << '{'
           first = true
           value.each do |key, property_value|
-            next if property_value.is_a?(UndefinedValue) || property_value.is_a?(BuiltinFunction) || property_value.is_a?(UserFunction) || property_value.is_a?(RegExpValue)
+            next if property_value.is_a?(UndefinedValue) || property_value.is_a?(BuiltinFunction) || property_value.is_a?(UserFunction) || property_value.is_a?(RegExpValue) || property_value.is_a?(ErrorValue)
 
             io << ',' unless first
             first = false
@@ -1262,6 +1265,8 @@ module GiavaScript
         end
         "{#{properties.join(", ")}}"
       elsif value.is_a?(RegExpValue)
+        value.to_s
+      elsif value.is_a?(ErrorValue)
         value.to_s
       else
         value.to_s

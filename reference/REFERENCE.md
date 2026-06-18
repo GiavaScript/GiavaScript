@@ -262,6 +262,28 @@ Status of built-in methods and properties on GiavaScript runtime types.
 - In Node.js, `Date.prototype.toString()` usually prints a locale/timezone representation.
 - In GiavaScript, `Date.prototype.toString()` returns a UTC ISO-like string (`YYYY-MM-DDTHH:mm:ss.SSSZ`) by design.
 
+### Error
+
+| Member | Kind | Status |
+| --- | --- | --- |
+| `Error()` | Constructor | Available |
+| `message` | Instance property | Available |
+| `name` | Instance property | Available |
+| `stack` | Instance property | Available |
+| `toString()` | Instance method | Available |
+| `TypeError()` | Constructor | Available |
+| `ReferenceError()` | Constructor | Available |
+| `SyntaxError()` | Constructor | Available |
+
+#### Error notes
+
+- `new Error("message")` creates an error object with the given message.
+- `name` defaults to `"Error"`. Subtypes use their constructor name.
+- `stack` returns a string representation of the call stack.
+- `toString()` returns `"name: message"`.
+- Error objects can be thrown with `throw` and caught with `try/catch`.
+- Raw value throws continue to work alongside Error objects.
+
 ### Notes
 
 - This reflects the current behavior in the interpreter and specs.

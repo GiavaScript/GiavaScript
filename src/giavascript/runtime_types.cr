@@ -36,6 +36,18 @@ module GiavaScript
 
     @@callback_invoker : Proc(Value, Array(Value), Value)? = nil
 
+    ERROR_TYPE = TypeObject.new(
+      "Error",
+      {
+        "toString" => BuiltinMethodDefinition.new("Error.toString", ->(receiver : Value, args : Array(Value)) { error_to_string(receiver, args).as(Value) }),
+      } of String => BuiltinMethodDefinition,
+      {
+        "message" => ->(receiver : Value) { error_message(receiver).as(Value) },
+        "name"    => ->(receiver : Value) { error_name(receiver).as(Value) },
+        "stack"   => ->(receiver : Value) { error_stack(receiver).as(Value) },
+      } of String => BuiltinPropertyGetter
+    )
+
     STRING_TYPE = TypeObject.new(
       "String",
       {
@@ -182,6 +194,8 @@ module GiavaScript
         DATE_TYPE
       when RegExpValue
         REGEXP_TYPE
+      when ErrorValue
+        ERROR_TYPE
       else
         nil
       end
@@ -1209,6 +1223,10 @@ module GiavaScript
         return "{#{properties.join(", ")}}"
       end
 
+      if value.is_a?(ErrorValue)
+        return value.to_s
+      end
+
       value.to_s
     end
 
@@ -1405,6 +1423,10 @@ module GiavaScript
         return right.is_a?(RegExpValue) && left.object_id == right.object_id
       end
 
+      if left.is_a?(ErrorValue)
+        return right.is_a?(ErrorValue) && left.object_id == right.object_id
+      end
+
       false
     end
 
@@ -1468,6 +1490,29 @@ module GiavaScript
           char_index += 1
         end
       end
+    end
+
+    private def error_message(receiver : Value) : Value
+      receiver_error(receiver, "Error.message").message
+    end
+
+    private def error_name(receiver : Value) : Value
+      receiver_error(receiver, "Error.name").name
+    end
+
+    private def error_stack(receiver : Value) : Value
+      receiver_error(receiver, "Error.stack").stack
+    end
+
+    private def error_to_string(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Error.toString")
+      error_value = receiver_error(receiver, "Error.toString")
+      "#{error_value.name}: #{error_value.message}"
+    end
+
+    private def receiver_error(value : Value, method_name : String) : ErrorValue
+      return value if value.is_a?(ErrorValue)
+      raise ExpressionError.new("Error: #{method_name} receiver must be an Error")
     end
 
     private def assert_arity(args : Array(Value), expected : Int32, method_name : String)

@@ -88,7 +88,30 @@ module GiavaScript
     end
   end
 
-  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue | RegExpValue
+  class ErrorValue
+    getter message : String
+    getter name : String
+    getter stack : String
+
+    def initialize(@message : String, @name : String = "Error", stack : String? = nil)
+      @stack = stack || generate_stack
+    end
+
+    def to_s(io : IO)
+      io << @name << ": " << @message
+    end
+
+    private def generate_stack : String
+      String.build do |io|
+        io << @name << ": " << @message
+        caller.each do |frame|
+          io << '\n' << "    at " << frame
+        end
+      end
+    end
+  end
+
+  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue | RegExpValue | ErrorValue
 end
 
 require "./giavascript/string_literal_parser"

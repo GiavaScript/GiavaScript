@@ -1941,3 +1941,99 @@ describe "JSON.stringify with RegExp" do
     interpreter.eval("JSON.stringify(/abc/);").should eq(["\"null\""])
   end
 end
+
+describe "Error" do
+  it "constructs Error with message" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
+    interpreter.eval("e.message;").should eq(["\"test\""])
+  end
+
+  it "has name property set to Error" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
+    interpreter.eval("e.name;").should eq(["\"Error\""])
+  end
+
+  it "has a stack trace string" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
+    interpreter.eval("e.stack.startsWith(\"Error: test\");").should eq(["true"])
+  end
+
+  it "toString returns name: message" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
+    interpreter.eval("e.toString();").should eq(["\"Error: test\""])
+  end
+
+  it "constructs without message" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new Error();").should eq([] of String)
+    interpreter.eval("e.message;").should eq(["\"\""])
+  end
+
+  it "can be thrown and caught" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var caught = \"\";").should eq([] of String)
+    interpreter.eval("try { throw new Error(\"boom\"); } catch (err) { caught = err.message; }").should eq([] of String)
+    interpreter.eval("caught;").should eq(["\"boom\""])
+  end
+
+  it "raw values can still be thrown and caught" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("try { throw \"raw\"; } catch (err) { err + \"!\"; }").should eq(["\"raw!\""])
+  end
+
+  it "is typeof object" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("typeof new Error(\"test\");").should eq(["\"object\""])
+  end
+
+  it "is truthy" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
+    interpreter.eval("if (e) { \"yes\"; } else { \"no\"; }").should eq(["\"yes\""])
+  end
+end
+
+describe "TypeError" do
+  it "constructs with TypeError name" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new TypeError(\"wrong type\");").should eq([] of String)
+    interpreter.eval("e.name;").should eq(["\"TypeError\""])
+  end
+
+  it "can be thrown and caught" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("try { throw new TypeError(\"oops\"); } catch (err) { err.name + \": \" + err.message; }").should eq(["\"TypeError: oops\""])
+  end
+end
+
+describe "ReferenceError" do
+  it "constructs with ReferenceError name" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new ReferenceError(\"not found\");").should eq([] of String)
+    interpreter.eval("e.name;").should eq(["\"ReferenceError\""])
+  end
+end
+
+describe "SyntaxError" do
+  it "constructs with SyntaxError name" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var e = new SyntaxError(\"bad syntax\");").should eq([] of String)
+    interpreter.eval("e.name;").should eq(["\"SyntaxError\""])
+  end
+end
+
+describe "JSON.stringify with Error" do
+  it "serializes error as null via undefined return" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("typeof JSON.stringify(new Error(\"test\"));").should eq(["\"undefined\""])
+  end
+
+  it "omits error properties in objects" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("JSON.stringify({a: 1, e: new Error(\"oops\")});").should eq(["\"{\\\"a\\\":1}\""])
+  end
+end
