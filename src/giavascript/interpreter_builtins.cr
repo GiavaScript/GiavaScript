@@ -10,6 +10,10 @@ module GiavaScript
       env["Date"] = build_date_object
       env["String"] = build_string_object
       env["RegExp"] = build_regexp_object
+      env["Error"] = build_error("Error")
+      env["TypeError"] = build_error("TypeError")
+      env["ReferenceError"] = build_error("ReferenceError")
+      env["SyntaxError"] = build_error("SyntaxError")
       env["parseInt"] = build_parse_int_function
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
@@ -169,6 +173,19 @@ module GiavaScript
       regexp
     end
 
+    private def build_error(name : String) : Hash(String, Value)
+      error_obj = Hash(String, Value).new
+      error_name = name
+
+      error_obj["__construct"] = BuiltinFunction.new(name, ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, name)
+        message = args.empty? ? "" : to_primitive_string_for_globals(args[0])
+        ErrorValue.new(message, error_name).as(Value)
+      end)
+
+      error_obj
+    end
+
     private def build_parse_int_function : Value
       BuiltinFunction.new("parseInt", ->(_receiver : Value, args : Array(Value)) do
         assert_builtin_arity_between(args, 1, 2, "parseInt")
@@ -310,6 +327,10 @@ module GiavaScript
         return value.to_s
       end
 
+      if value.is_a?(ErrorValue)
+        return value.to_s
+      end
+
       value.to_s
     end
 
@@ -350,7 +371,7 @@ module GiavaScript
         assert_builtin_arity(args, 1, "JSON.stringify")
 
         value = args[0]
-        if value.is_a?(UndefinedValue) || value.is_a?(BuiltinFunction) || value.is_a?(UserFunction)
+        if value.is_a?(UndefinedValue) || value.is_a?(BuiltinFunction) || value.is_a?(UserFunction) || value.is_a?(ErrorValue)
           UNDEFINED.as(Value)
         else
           io = IO::Memory.new
@@ -902,6 +923,10 @@ module GiavaScript
         return value.to_s
       end
 
+      if value.is_a?(ErrorValue)
+        return value.to_s
+      end
+
       value.to_s
     end
 
@@ -929,6 +954,10 @@ module GiavaScript
       end
 
       if value.is_a?(RegExpValue)
+        return value.to_s
+      end
+
+      if value.is_a?(ErrorValue)
         return value.to_s
       end
 
