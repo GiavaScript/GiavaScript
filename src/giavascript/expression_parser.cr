@@ -228,6 +228,24 @@ module GiavaScript
         number_lexeme = @current.lexeme
         advance_token
         LiteralExpr.new(parse_number_value(number_lexeme))
+      when Tokenizer::TokenKind::Slash
+        regex_token = @tokenizer.parse_regex_literal
+        raise invalid_rhs_error unless regex_token
+
+        lexeme = regex_token.lexeme
+        last_slash = lexeme.rindex('/')
+        raise invalid_rhs_error unless last_slash
+        pattern = lexeme[1...last_slash]
+        flags = lexeme[last_slash + 1...lexeme.size]
+
+        begin
+          RegExpValue.new(pattern, flags)
+        rescue ex
+          raise invalid_rhs_error
+        end
+
+        advance_token
+        RegexLiteralExpr.new(pattern, flags)
       when Tokenizer::TokenKind::Identifier
         parsed_arrow = try_parse_identifier_arrow_function
         return parsed_arrow if parsed_arrow

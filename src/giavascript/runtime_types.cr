@@ -145,6 +145,24 @@ module GiavaScript
       {} of String => BuiltinPropertyGetter
     )
 
+    REGEXP_TYPE = TypeObject.new(
+      "RegExp",
+      {
+        "test"     => BuiltinMethodDefinition.new("RegExp.test", ->(receiver : Value, args : Array(Value)) { regexp_test(receiver, args).as(Value) }),
+        "exec"     => BuiltinMethodDefinition.new("RegExp.exec", ->(receiver : Value, args : Array(Value)) { regexp_exec(receiver, args).as(Value) }),
+        "toString" => BuiltinMethodDefinition.new("RegExp.toString", ->(receiver : Value, args : Array(Value)) { regexp_to_string(receiver, args).as(Value) }),
+      } of String => BuiltinMethodDefinition,
+      {
+        "source"     => ->(receiver : Value) { regexp_source(receiver).as(Value) },
+        "flags"      => ->(receiver : Value) { regexp_flags(receiver).as(Value) },
+        "global"     => ->(receiver : Value) { regexp_global(receiver).as(Value) },
+        "ignoreCase" => ->(receiver : Value) { regexp_ignore_case(receiver).as(Value) },
+        "multiline"  => ->(receiver : Value) { regexp_multiline(receiver).as(Value) },
+        "dotAll"     => ->(receiver : Value) { regexp_dot_all(receiver).as(Value) },
+        "unicode"    => ->(receiver : Value) { regexp_unicode(receiver).as(Value) },
+      } of String => BuiltinPropertyGetter
+    )
+
     def get_type(value : Value) : TypeObject?
       return nil if value.nil?
       return nil if value.is_a?(UndefinedValue)
@@ -162,6 +180,8 @@ module GiavaScript
         BOOL_TYPE
       when DateValue
         DATE_TYPE
+      when RegExpValue
+        REGEXP_TYPE
       else
         nil
       end
@@ -308,8 +328,32 @@ module GiavaScript
 
     private def string_match(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 1, "String.match")
-      pattern = string_argument(args[0], "String.match")
       string = receiver_string(receiver, "String.match")
+
+      if args[0].is_a?(RegExpValue)
+        regexp = args[0].as(RegExpValue)
+        if regexp.global?
+          result = [] of Value
+          compiled = regexp.compiled_regex
+          offset = 0
+          loop do
+            match = compiled.match(string, offset)
+            break unless match
+            result << match[0]
+            offset = match.end
+            break if match.begin == match.end
+          end
+          return result
+        else
+          match = regexp.compiled_regex.match(string)
+          return nil unless match
+          result = [match[0]] of Value
+          (1...match.size).each { |i| result << (match[i]? || "") }
+          return result
+        end
+      end
+
+      pattern = string_argument(args[0], "String.match")
 
       if pattern.empty?
         return [""] of Value
@@ -322,8 +366,26 @@ module GiavaScript
 
     private def string_match_all(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 1, "String.matchAll")
-      pattern = string_argument(args[0], "String.matchAll")
       string = receiver_string(receiver, "String.matchAll")
+
+      if args[0].is_a?(RegExpValue)
+        regexp = args[0].as(RegExpValue)
+        result = [] of Value
+        compiled = regexp.compiled_regex
+        offset = 0
+        loop do
+          match = compiled.match(string, offset)
+          break unless match
+          match_result = [match[0]] of Value
+          (1...match.size).each { |i| match_result << (match[i]? || "") }
+          result << match_result
+          offset = match.end
+          break if match.begin == match.end
+        end
+        return result
+      end
+
+      pattern = string_argument(args[0], "String.matchAll")
 
       if pattern.empty?
         result = Array(Value).new(string.size + 1)
@@ -396,7 +458,6 @@ module GiavaScript
 
     private def string_split(receiver : Value, args : Array(Value)) : Value
       assert_arity_between(args, 1, 2, "String.split")
-      separator = string_argument(args[0], "String.split")
       string = receiver_string(receiver, "String.split")
 
       limit = Int32::MAX
@@ -408,6 +469,29 @@ module GiavaScript
       end
 
       return [] of Value if limit == 0
+
+      if args[0].is_a?(RegExpValue)
+        regexp = args[0].as(RegExpValue)
+        compiled = regexp.compiled_regex
+        result = [] of Value
+        start_index = 0
+
+        while result.size < limit
+          match = compiled.match(string, start_index)
+          break unless match
+
+          result << string[start_index...match.begin]
+          start_index = match.end
+        end
+
+        if result.size < limit && start_index <= string.size
+          result << string[start_index...string.size]
+        end
+
+        return result
+      end
+
+      separator = string_argument(args[0], "String.split")
 
       if separator.empty?
         result = [] of Value
@@ -438,9 +522,19 @@ module GiavaScript
 
     private def string_replace(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 2, "String.replace")
-      search = string_argument(args[0], "String.replace")
       replacement = string_argument(args[1], "String.replace")
       string = receiver_string(receiver, "String.replace")
+
+      if args[0].is_a?(RegExpValue)
+        regexp = args[0].as(RegExpValue)
+        if regexp.global?
+          return string.gsub(regexp.compiled_regex, replacement)
+        else
+          return string.sub(regexp.compiled_regex, replacement)
+        end
+      end
+
+      search = string_argument(args[0], "String.replace")
 
       return "#{replacement}#{string}" if search.empty?
 
@@ -455,9 +549,15 @@ module GiavaScript
 
     private def string_replace_all(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 2, "String.replaceAll")
-      search = string_argument(args[0], "String.replaceAll")
       replacement = string_argument(args[1], "String.replaceAll")
       string = receiver_string(receiver, "String.replaceAll")
+
+      if args[0].is_a?(RegExpValue)
+        regexp = args[0].as(RegExpValue)
+        return string.gsub(regexp.compiled_regex, replacement)
+      end
+
+      search = string_argument(args[0], "String.replaceAll")
 
       if search.empty?
         result = String.build do |builder|
@@ -475,10 +575,17 @@ module GiavaScript
 
     private def string_search(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 1, "String.search")
-      pattern = string_argument(args[0], "String.search")
       string = receiver_string(receiver, "String.search")
-      index = string.index(pattern)
-      index ? index : -1
+
+      if args[0].is_a?(RegExpValue)
+        regexp = args[0].as(RegExpValue)
+        match = regexp.compiled_regex.match(string)
+        match ? match.begin : -1
+      else
+        pattern = string_argument(args[0], "String.search")
+        index = string.index(pattern)
+        index ? index : -1
+      end
     end
 
     private def string_slice(receiver : Value, args : Array(Value)) : Value
@@ -1003,6 +1110,81 @@ module GiavaScript
       Time.unix_ms(timestamp).to_s("%Y-%m-%dT%H:%M:%S.%3N") + "Z"
     end
 
+    private def regexp_test(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "RegExp.test")
+      regexp = receiver_regexp(receiver, "RegExp.test")
+      input = runtime_to_string(args[0])
+      regexp.compiled_regex.match(input) ? true : false
+    end
+
+    private def regexp_exec(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "RegExp.exec")
+      regexp = receiver_regexp(receiver, "RegExp.exec")
+      input = runtime_to_string(args[0])
+      match = regexp.compiled_regex.match(input)
+      return nil unless match
+
+      result = [match[0]] of Value
+      if match.size > 1
+        (1...match.size).each do |i|
+          result << (match[i]? || "")
+        end
+      end
+
+      match_index = match.begin
+      result_object = Hash(String, Value).new
+      result_object["index"] = match_index
+      result_object["input"] = input
+      result_object["length"] = result.size
+      result_object["0"] = result[0]
+      result.each_with_index do |element, idx|
+        result_object[idx.to_s] = element
+      end
+
+      result.as(Value)
+    end
+
+    private def regexp_to_string(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "RegExp.toString")
+      regexp = receiver_regexp(receiver, "RegExp.toString")
+      regexp.to_s
+    end
+
+    private def regexp_source(receiver : Value) : Value
+      regexp = receiver_regexp(receiver, "RegExp.source")
+      regexp.pattern
+    end
+
+    private def regexp_flags(receiver : Value) : Value
+      regexp = receiver_regexp(receiver, "RegExp.flags")
+      regexp.flags
+    end
+
+    private def regexp_global(receiver : Value) : Value
+      regexp = receiver_regexp(receiver, "RegExp.global")
+      regexp.global?
+    end
+
+    private def regexp_ignore_case(receiver : Value) : Value
+      regexp = receiver_regexp(receiver, "RegExp.ignoreCase")
+      regexp.ignore_case?
+    end
+
+    private def regexp_multiline(receiver : Value) : Value
+      regexp = receiver_regexp(receiver, "RegExp.multiline")
+      regexp.multiline?
+    end
+
+    private def regexp_dot_all(receiver : Value) : Value
+      regexp = receiver_regexp(receiver, "RegExp.dotAll")
+      regexp.dot_all?
+    end
+
+    private def regexp_unicode(receiver : Value) : Value
+      regexp = receiver_regexp(receiver, "RegExp.unicode")
+      regexp.unicode?
+    end
+
     private def runtime_to_string(value : Value) : String
       if value.nil?
         return "null"
@@ -1059,6 +1241,11 @@ module GiavaScript
     private def receiver_date(value : Value, method_name : String) : DateValue
       return value if value.is_a?(DateValue)
       raise ExpressionError.new("Error: #{method_name} receiver must be a date")
+    end
+
+    private def receiver_regexp(value : Value, method_name : String) : RegExpValue
+      return value if value.is_a?(RegExpValue)
+      raise ExpressionError.new("Error: #{method_name} receiver must be a RegExp")
     end
 
     private def callback_argument(value : Value, method_name : String) : Value
@@ -1212,6 +1399,10 @@ module GiavaScript
 
       if left.is_a?(DateValue)
         return right.is_a?(DateValue) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(RegExpValue)
+        return right.is_a?(RegExpValue) && left.object_id == right.object_id
       end
 
       false
