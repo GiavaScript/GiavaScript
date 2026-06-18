@@ -1730,3 +1730,214 @@ describe GiavaScript do
     interpreter.eval("missing;").should eq(["Error: variable 'missing' does not exist"])
   end
 end
+
+describe "RegExp literals" do
+  it "parses a simple regex literal" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var re = /hello/;\nre.source;").should eq(["\"hello\""])
+  end
+
+  it "parses a regex literal with flags" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var re = /hello/gi;\nre.flags;").should eq(["\"gi\""])
+  end
+
+  it "parses a regex literal with escaped slash" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var re = /a\\/b/;\nre.test('a/b');").should eq(["true"])
+  end
+
+  it "parses a regex literal with character class containing slash" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/[/]/.test('/');").should eq(["true"])
+  end
+
+  it "parses a non-empty regex enclosing nothing" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var re = /(?:)/;\nre.source;").should eq(["\"(?:)\""])
+  end
+
+  it "returns correct typeof for regex" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("typeof /abc/;").should eq(["\"object\""])
+  end
+end
+
+describe "RegExp.prototype.test" do
+  it "returns true for a matching string" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/.test('hello world');").should eq(["true"])
+  end
+
+  it "returns false for a non-matching string" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/.test('world');").should eq(["false"])
+  end
+
+  it "respects the i flag" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/i.test('HELLO');").should eq(["true"])
+  end
+
+  it "respects the m flag" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/^b/m.test('a\\nb');").should eq(["true"])
+  end
+end
+
+describe "RegExp.prototype.exec" do
+  it "returns array with matched string" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var r = /hello/;\nvar m = r.exec('hello world');\nm[0];").should eq(["\"hello\""])
+  end
+
+  it "returns capture groups" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var m = /he(.)l/.exec('hello');\nm[1];").should eq(["\"l\""])
+  end
+
+  it "returns null for no match" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/.exec('world');").should eq(["null"])
+  end
+end
+
+describe "RegExp constructor" do
+  it "creates regex from string pattern" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var re = new RegExp('hello');\nre.test('hello world');").should eq(["true"])
+  end
+
+  it "creates regex from string with flags" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var re = new RegExp('hello', 'i');\nre.ignoreCase;").should eq(["true"])
+  end
+
+  it "copies existing RegExp" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var r1 = /hello/gi;\nvar r2 = new RegExp(r1);\nr2.source;\nr2.flags;").should eq(["\"hello\"", "\"gi\""])
+  end
+
+  it "copies existing RegExp with new flags" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var r1 = /hello/g;\nvar r2 = new RegExp(r1, 'i');\nr2.ignoreCase;").should eq(["true"])
+  end
+end
+
+describe "RegExp properties" do
+  it "exposes source property" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/gi.source;").should eq(["\"hello\""])
+  end
+
+  it "exposes flags property" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/gim.flags;").should eq(["\"gim\""])
+  end
+
+  it "exposes global property" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/g.global;").should eq(["true"])
+  end
+
+  it "exposes ignoreCase property" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/i.ignoreCase;").should eq(["true"])
+  end
+
+  it "exposes multiline property" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/m.multiline;").should eq(["true"])
+  end
+
+  it "exposes dotAll property" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/s.dotAll;").should eq(["true"])
+  end
+
+  it "exposes unicode property" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/u.unicode;").should eq(["true"])
+  end
+end
+
+describe "RegExp.prototype.toString" do
+  it "returns the regex string representation" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("/hello/gi.toString();").should eq(["\"/hello/gi\""])
+  end
+end
+
+describe "String.prototype.match with RegExp" do
+  it "returns match array without global flag" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"hello\".match(/he(.)l/);").should eq(["[\"hell\", \"l\"]"])
+  end
+
+  it "returns all matches with global flag" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"hello world hello\".match(/hello/g);").should eq(["[\"hello\", \"hello\"]"])
+  end
+
+  it "returns null when no match with regex" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"hello\".match(/xyz/);").should eq(["null"])
+  end
+end
+
+describe "String.prototype.matchAll with RegExp" do
+  it "returns all matches" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var r = \"hello world hello\".matchAll(/hello/g);\nvar s = '';\nfor (var i = 0; i < r.length; i = i + 1) s = s + r[i][0] + ',';\ns;").should eq(["\"hello,hello,\""])
+  end
+end
+
+describe "String.prototype.replace with RegExp" do
+  it "replaces first match without global flag" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"hello world hello\".replace(/hello/, 'hi');").should eq(["\"hi world hello\""])
+  end
+
+  it "replaces all matches with global flag" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"hello world hello\".replace(/hello/g, 'hi');").should eq(["\"hi world hi\""])
+  end
+end
+
+describe "String.prototype.replaceAll with RegExp" do
+  it "replaces all matches" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"hello world hello\".replaceAll(/hello/g, 'hi');").should eq(["\"hi world hi\""])
+  end
+end
+
+describe "String.prototype.split with RegExp" do
+  it "splits by regex" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"a b  c\".split(/\\s+/);").should eq(["[\"a\", \"b\", \"c\"]"])
+  end
+
+  it "splits by regex with limit" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"a b c\".split(/\\s/, 2);").should eq(["[\"a\", \"b\"]"])
+  end
+end
+
+describe "String.prototype.search with RegExp" do
+  it "returns index of first match" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"hello world\".search(/world/);").should eq(["6"])
+  end
+
+  it "returns -1 when no match" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("\"hello\".search(/xyz/);").should eq(["-1"])
+  end
+end
+
+describe "JSON.stringify with RegExp" do
+  it "serializes regex as null" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("JSON.stringify(/abc/);").should eq(["\"null\""])
+  end
+end

@@ -90,6 +90,14 @@ module GiavaScript
     end
   end
 
+  class RegexLiteralExpr < Expr
+    getter pattern : String
+    getter flags : String
+
+    def initialize(@pattern : String, @flags : String)
+    end
+  end
+
   class IndexExpr < Expr
     getter target : Expr
     getter index : Expr

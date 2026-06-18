@@ -48,6 +48,8 @@ module GiavaScript
         values
       when ObjectLiteral
         evaluate_object_literal(expr)
+      when RegexLiteralExpr
+        RegExpValue.new(expr.pattern, expr.flags)
       when IndexExpr
         evaluate_index_expression(expr)
       when PropertyAccessExpr
@@ -123,6 +125,7 @@ module GiavaScript
       return "number" if value.is_a?(Int32) || value.is_a?(Float64)
       return "string" if value.is_a?(String)
       return "function" if value.is_a?(BuiltinFunction) || value.is_a?(UserFunction)
+      return "object" if value.is_a?(RegExpValue)
 
       "object"
     end
@@ -503,6 +506,7 @@ module GiavaScript
       return right.is_a?(Hash(String, Value)) && left.object_id == right.object_id if left.is_a?(Hash(String, Value))
       return right.is_a?(BuiltinFunction) && left.object_id == right.object_id if left.is_a?(BuiltinFunction)
       return right.is_a?(UserFunction) && left.object_id == right.object_id if left.is_a?(UserFunction)
+      return right.is_a?(RegExpValue) && left.object_id == right.object_id if left.is_a?(RegExpValue)
 
       false
     end
@@ -517,7 +521,7 @@ module GiavaScript
     end
 
     private def object_value_for_loose_equality?(value : Value) : Bool
-      value.is_a?(Array(Value)) || value.is_a?(Hash(String, Value)) || value.is_a?(BuiltinFunction) || value.is_a?(UserFunction)
+      value.is_a?(Array(Value)) || value.is_a?(Hash(String, Value)) || value.is_a?(BuiltinFunction) || value.is_a?(UserFunction) || value.is_a?(RegExpValue)
     end
 
     private def object_to_primitive_for_loose_equality(value : Value) : Value
@@ -535,6 +539,10 @@ module GiavaScript
 
       if value.is_a?(UserFunction)
         return "function"
+      end
+
+      if value.is_a?(RegExpValue)
+        return value.to_s
       end
 
       value
@@ -561,6 +569,10 @@ module GiavaScript
 
       if value.is_a?(UserFunction)
         return "function"
+      end
+
+      if value.is_a?(RegExpValue)
+        return value.to_s
       end
 
       if value.is_a?(Bool)
@@ -676,6 +688,10 @@ module GiavaScript
 
       if value.is_a?(UserFunction)
         return "function"
+      end
+
+      if value.is_a?(RegExpValue)
+        return value.to_s
       end
 
       value.to_s

@@ -9,6 +9,7 @@ module GiavaScript
       env["Object"] = build_object_object
       env["Date"] = build_date_object
       env["String"] = build_string_object
+      env["RegExp"] = build_regexp_object
       env["parseInt"] = build_parse_int_function
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
@@ -135,6 +136,37 @@ module GiavaScript
       end)
 
       string_object
+    end
+
+    private def build_regexp_object : Hash(String, Value)
+      regexp = Hash(String, Value).new
+
+      regexp["__construct"] = BuiltinFunction.new("RegExp", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "RegExp")
+        assert_builtin_arity_between(args, 1, 2, "RegExp")
+
+        pattern : String
+        flags : String = ""
+
+        if args[0].is_a?(RegExpValue)
+          source_regexp = args[0].as(RegExpValue)
+          pattern = source_regexp.pattern
+          flags = args.size >= 2 ? to_primitive_string_for_globals(args[1]) : source_regexp.flags
+        elsif args[0].is_a?(String)
+          pattern = args[0].as(String)
+          flags = args.size >= 2 ? to_primitive_string_for_globals(args[1]) : ""
+        else
+          raise ExpressionError.new("Error: RegExp argument 1 must be a string or RegExp")
+        end
+
+        begin
+          RegExpValue.new(pattern, flags).as(Value)
+        rescue ex
+          raise ExpressionError.new("Error: invalid RegExp pattern '#{pattern}'")
+        end
+      end)
+
+      regexp
     end
 
     private def build_parse_int_function : Value
@@ -272,6 +304,10 @@ module GiavaScript
           "\"#{console_value_to_s(key)}\": #{console_value_to_s(property_value)}"
         end
         return "{#{properties.join(", ")}}"
+      end
+
+      if value.is_a?(RegExpValue)
+        return value.to_s
       end
 
       value.to_s
@@ -862,6 +898,10 @@ module GiavaScript
         return "function"
       end
 
+      if value.is_a?(RegExpValue)
+        return value.to_s
+      end
+
       value.to_s
     end
 
@@ -886,6 +926,10 @@ module GiavaScript
 
       if value.is_a?(UserFunction)
         return "function"
+      end
+
+      if value.is_a?(RegExpValue)
+        return value.to_s
       end
 
       if value.is_a?(Bool)

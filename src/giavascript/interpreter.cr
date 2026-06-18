@@ -964,6 +964,7 @@ module GiavaScript
       return right.is_a?(BuiltinFunction) && left.object_id == right.object_id if left.is_a?(BuiltinFunction)
       return right.is_a?(UserFunction) && left.object_id == right.object_id if left.is_a?(UserFunction)
       return right.is_a?(DateValue) && left.object_id == right.object_id if left.is_a?(DateValue)
+      return right.is_a?(RegExpValue) && left.object_id == right.object_id if left.is_a?(RegExpValue)
 
       false
     end
@@ -1045,6 +1046,8 @@ module GiavaScript
           end
           io << '}'
         end
+      elsif value.is_a?(RegExpValue)
+        value.to_s
       else
         value.to_s
       end
@@ -1123,7 +1126,7 @@ module GiavaScript
       case value
       when Nil
         io << "null"
-      when UndefinedValue, BuiltinFunction, UserFunction
+      when UndefinedValue, BuiltinFunction, UserFunction, RegExpValue
         io << "null"
       when Bool, Int32
         io << value.to_s
@@ -1147,7 +1150,7 @@ module GiavaScript
           io << '{'
           first = true
           value.each do |key, property_value|
-            next if property_value.is_a?(UndefinedValue) || property_value.is_a?(BuiltinFunction) || property_value.is_a?(UserFunction)
+            next if property_value.is_a?(UndefinedValue) || property_value.is_a?(BuiltinFunction) || property_value.is_a?(UserFunction) || property_value.is_a?(RegExpValue)
 
             io << ',' unless first
             first = false
@@ -1258,6 +1261,8 @@ module GiavaScript
           "\"#{escape_string(key)}\": #{compound_value_to_string(property_value)}"
         end
         "{#{properties.join(", ")}}"
+      elsif value.is_a?(RegExpValue)
+        value.to_s
       else
         value.to_s
       end

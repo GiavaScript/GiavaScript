@@ -44,6 +44,7 @@ module GiavaScript
       Colon
       Comma
       Dot
+      RegexLiteral
     end
 
     record Token, kind : TokenKind, lexeme : String
@@ -313,6 +314,68 @@ module GiavaScript
     private def identifier_continue?(char : Char?) : Bool
       return false unless char
       char.ascii_letter? || char.ascii_number? || char == '_'
+    end
+
+    def parse_regex_literal : Token?
+      pattern_start = @index
+
+      current = @index
+      in_character_class = false
+      escaping = false
+
+      while current < @source.size
+        char = @source[current]
+
+        if escaping
+          escaping = false
+          current += 1
+          next
+        end
+
+        if char == '\\'
+          escaping = true
+          current += 1
+          next
+        end
+
+        if char == '['
+          in_character_class = true
+          current += 1
+          next
+        end
+
+        if char == ']' && in_character_class
+          in_character_class = false
+          current += 1
+          next
+        end
+
+        if char == '/' && !in_character_class
+          flags_start = current + 1
+
+          flags_end = flags_start
+          while flags_end < @source.size
+            flag_char = @source[flags_end]
+            break unless flag_char == 'g' || flag_char == 'i' || flag_char == 'm' || flag_char == 's' || flag_char == 'u'
+            flags_end += 1
+          end
+
+          flags = @source[flags_start...flags_end]
+
+          flag_set = Set(Char).new
+          flags.each_char do |f|
+            return nil unless flag_set.add?(f)
+          end
+
+          @index = flags_end
+          lexeme = @source[pattern_start - 1...flags_end]
+          return Token.new(TokenKind::RegexLiteral, lexeme)
+        end
+
+        current += 1
+      end
+
+      nil
     end
 
     private def invalid_rhs_error : ExpressionError

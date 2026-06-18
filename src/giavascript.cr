@@ -49,7 +49,46 @@ module GiavaScript
     end
   end
 
-  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue
+  class RegExpValue
+    getter pattern : String
+    getter flags : String
+    getter compiled_regex : Regex
+
+    def initialize(@pattern : String, @flags : String)
+      compile_options = Regex::CompileOptions::None
+      compile_options |= Regex::CompileOptions::IGNORE_CASE if @flags.includes?('i')
+      compile_options |= Regex::CompileOptions::MULTILINE if @flags.includes?('m')
+      compile_options |= Regex::CompileOptions::DOTALL if @flags.includes?('s')
+
+      @compiled_regex = Regex.new(@pattern, compile_options)
+    end
+
+    def global? : Bool
+      @flags.includes?('g')
+    end
+
+    def ignore_case? : Bool
+      @flags.includes?('i')
+    end
+
+    def multiline? : Bool
+      @flags.includes?('m')
+    end
+
+    def dot_all? : Bool
+      @flags.includes?('s')
+    end
+
+    def unicode? : Bool
+      @flags.includes?('u')
+    end
+
+    def to_s(io : IO)
+      io << "/" << @pattern << "/" << @flags
+    end
+  end
+
+  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue | RegExpValue
 end
 
 require "./giavascript/string_literal_parser"
