@@ -103,6 +103,33 @@ module GiavaScript
         values.as(Value)
       end)
 
+      array["from"] = BuiltinFunction.new("Array.from", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Array.from")
+        assert_builtin_arity_between(args, 1, 2, "Array.from")
+
+        array_like = args[0]
+        result = Array(Value).new
+
+        if array_like.is_a?(Array(Value))
+          array_like.each { |item| result << item }
+        elsif array_like.is_a?(String)
+          array_like.each_char { |char| result << char.to_s.as(Value) }
+        elsif array_like.is_a?(Hash(String, Value))
+          length = array_like["length"]?
+          if length.is_a?(Int32)
+            length.times do |index|
+              result << (array_like[index.to_s]? || UNDEFINED)
+            end
+          else
+            raise ExpressionError.new("Error: Array.from argument 1 does not have a valid length property")
+          end
+        else
+          raise ExpressionError.new("Error: Array.from argument 1 must be an array, string, or array-like object")
+        end
+
+        result.as(Value)
+      end)
+
       array
     end
 

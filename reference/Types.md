@@ -53,35 +53,35 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 | Member | Kind | Status |
 | --- | --- | --- |
-| `from()` | Static method | Not available |
+| `from()` | Static method | Available |
 | `fromAsync()` | Static method | Not available |
 | `isArray()` | Static method | Available |
 | `of()` | Static method | Available |
 | `length` | Instance property | Available |
 | `at()` | Instance method | Available |
 | `concat()` | Instance method | Available |
-| `copyWithin()` | Instance method | Not available |
-| `entries()` | Instance method | Not available |
+| `copyWithin()` | Instance method | Available |
+| `entries()` | Instance method | Available |
 | `every()` | Instance method | Available |
-| `fill()` | Instance method | Not available |
+| `fill()` | Instance method | Available |
 | `filter()` | Instance method | Available |
 | `find()` | Instance method | Available |
 | `findIndex()` | Instance method | Available |
-| `findLast()` | Instance method | Not available |
-| `findLastIndex()` | Instance method | Not available |
+| `findLast()` | Instance method | Available |
+| `findLastIndex()` | Instance method | Available |
 | `flat()` | Instance method | Available |
 | `flatMap()` | Instance method | Available |
 | `forEach()` | Instance method | Available |
 | `includes()` | Instance method | Available |
 | `indexOf()` | Instance method | Available |
 | `join()` | Instance method | Available |
-| `keys()` | Instance method | Not available |
+| `keys()` | Instance method | Available |
 | `lastIndexOf()` | Instance method | Available |
 | `map()` | Instance method | Available |
 | `pop()` | Instance method | Available |
 | `push()` | Instance method | Available |
 | `reduce()` | Instance method | Available |
-| `reduceRight()` | Instance method | Not available |
+| `reduceRight()` | Instance method | Available |
 | `reverse()` | Instance method | Available |
 | `shift()` | Instance method | Available |
 | `slice()` | Instance method | Available |
@@ -94,7 +94,7 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | `toSpliced()` | Instance method | Not available |
 | `toString()` | Instance method | Available |
 | `unshift()` | Instance method | Available |
-| `values()` | Instance method | Not available |
+| `values()` | Instance method | Available |
 | `with()` | Instance method | Not available |
 
 ### Array callback argument behavior
