@@ -101,31 +101,39 @@ module GiavaScript
     ARRAY_TYPE = TypeObject.new(
       "Array",
       {
-        "at"          => BuiltinMethodDefinition.new("Array.at", ->(receiver : Value, args : Array(Value)) { array_at(receiver, args).as(Value) }),
-        "concat"      => BuiltinMethodDefinition.new("Array.concat", ->(receiver : Value, args : Array(Value)) { array_concat(receiver, args).as(Value) }),
-        "every"       => BuiltinMethodDefinition.new("Array.every", ->(receiver : Value, args : Array(Value)) { array_every(receiver, args).as(Value) }),
-        "filter"      => BuiltinMethodDefinition.new("Array.filter", ->(receiver : Value, args : Array(Value)) { array_filter(receiver, args).as(Value) }),
-        "flat"        => BuiltinMethodDefinition.new("Array.flat", ->(receiver : Value, args : Array(Value)) { array_flat(receiver, args).as(Value) }),
-        "flatMap"     => BuiltinMethodDefinition.new("Array.flatMap", ->(receiver : Value, args : Array(Value)) { array_flat_map(receiver, args).as(Value) }),
-        "find"        => BuiltinMethodDefinition.new("Array.find", ->(receiver : Value, args : Array(Value)) { array_find(receiver, args).as(Value) }),
-        "findIndex"   => BuiltinMethodDefinition.new("Array.findIndex", ->(receiver : Value, args : Array(Value)) { array_find_index(receiver, args).as(Value) }),
-        "forEach"     => BuiltinMethodDefinition.new("Array.forEach", ->(receiver : Value, args : Array(Value)) { array_for_each(receiver, args).as(Value) }),
-        "includes"    => BuiltinMethodDefinition.new("Array.includes", ->(receiver : Value, args : Array(Value)) { array_includes(receiver, args).as(Value) }),
-        "indexOf"     => BuiltinMethodDefinition.new("Array.indexOf", ->(receiver : Value, args : Array(Value)) { array_index_of(receiver, args).as(Value) }),
-        "join"        => BuiltinMethodDefinition.new("Array.join", ->(receiver : Value, args : Array(Value)) { array_join(receiver, args).as(Value) }),
-        "lastIndexOf" => BuiltinMethodDefinition.new("Array.lastIndexOf", ->(receiver : Value, args : Array(Value)) { array_last_index_of(receiver, args).as(Value) }),
-        "map"         => BuiltinMethodDefinition.new("Array.map", ->(receiver : Value, args : Array(Value)) { array_map(receiver, args).as(Value) }),
-        "pop"         => BuiltinMethodDefinition.new("Array.pop", ->(receiver : Value, args : Array(Value)) { array_pop(receiver, args).as(Value) }),
-        "push"        => BuiltinMethodDefinition.new("Array.push", ->(receiver : Value, args : Array(Value)) { array_push(receiver, args).as(Value) }),
-        "reduce"      => BuiltinMethodDefinition.new("Array.reduce", ->(receiver : Value, args : Array(Value)) { array_reduce(receiver, args).as(Value) }),
-        "reverse"     => BuiltinMethodDefinition.new("Array.reverse", ->(receiver : Value, args : Array(Value)) { array_reverse(receiver, args).as(Value) }),
-        "shift"       => BuiltinMethodDefinition.new("Array.shift", ->(receiver : Value, args : Array(Value)) { array_shift(receiver, args).as(Value) }),
-        "slice"       => BuiltinMethodDefinition.new("Array.slice", ->(receiver : Value, args : Array(Value)) { array_slice(receiver, args).as(Value) }),
-        "some"        => BuiltinMethodDefinition.new("Array.some", ->(receiver : Value, args : Array(Value)) { array_some(receiver, args).as(Value) }),
-        "splice"      => BuiltinMethodDefinition.new("Array.splice", ->(receiver : Value, args : Array(Value)) { array_splice(receiver, args).as(Value) }),
-        "sort"        => BuiltinMethodDefinition.new("Array.sort", ->(receiver : Value, args : Array(Value)) { array_sort(receiver, args).as(Value) }),
-        "toString"    => BuiltinMethodDefinition.new("Array.toString", ->(receiver : Value, args : Array(Value)) { array_to_string(receiver, args).as(Value) }),
-        "unshift"     => BuiltinMethodDefinition.new("Array.unshift", ->(receiver : Value, args : Array(Value)) { array_unshift(receiver, args).as(Value) }),
+        "at"            => BuiltinMethodDefinition.new("Array.at", ->(receiver : Value, args : Array(Value)) { array_at(receiver, args).as(Value) }),
+        "concat"        => BuiltinMethodDefinition.new("Array.concat", ->(receiver : Value, args : Array(Value)) { array_concat(receiver, args).as(Value) }),
+        "copyWithin"    => BuiltinMethodDefinition.new("Array.copyWithin", ->(receiver : Value, args : Array(Value)) { array_copy_within(receiver, args).as(Value) }),
+        "entries"       => BuiltinMethodDefinition.new("Array.entries", ->(receiver : Value, args : Array(Value)) { array_entries(receiver, args).as(Value) }),
+        "every"         => BuiltinMethodDefinition.new("Array.every", ->(receiver : Value, args : Array(Value)) { array_every(receiver, args).as(Value) }),
+        "fill"          => BuiltinMethodDefinition.new("Array.fill", ->(receiver : Value, args : Array(Value)) { array_fill(receiver, args).as(Value) }),
+        "filter"        => BuiltinMethodDefinition.new("Array.filter", ->(receiver : Value, args : Array(Value)) { array_filter(receiver, args).as(Value) }),
+        "find"          => BuiltinMethodDefinition.new("Array.find", ->(receiver : Value, args : Array(Value)) { array_find(receiver, args).as(Value) }),
+        "findIndex"     => BuiltinMethodDefinition.new("Array.findIndex", ->(receiver : Value, args : Array(Value)) { array_find_index(receiver, args).as(Value) }),
+        "findLast"      => BuiltinMethodDefinition.new("Array.findLast", ->(receiver : Value, args : Array(Value)) { array_find_last(receiver, args).as(Value) }),
+        "findLastIndex" => BuiltinMethodDefinition.new("Array.findLastIndex", ->(receiver : Value, args : Array(Value)) { array_find_last_index(receiver, args).as(Value) }),
+        "flat"          => BuiltinMethodDefinition.new("Array.flat", ->(receiver : Value, args : Array(Value)) { array_flat(receiver, args).as(Value) }),
+        "flatMap"       => BuiltinMethodDefinition.new("Array.flatMap", ->(receiver : Value, args : Array(Value)) { array_flat_map(receiver, args).as(Value) }),
+        "forEach"       => BuiltinMethodDefinition.new("Array.forEach", ->(receiver : Value, args : Array(Value)) { array_for_each(receiver, args).as(Value) }),
+        "includes"      => BuiltinMethodDefinition.new("Array.includes", ->(receiver : Value, args : Array(Value)) { array_includes(receiver, args).as(Value) }),
+        "indexOf"       => BuiltinMethodDefinition.new("Array.indexOf", ->(receiver : Value, args : Array(Value)) { array_index_of(receiver, args).as(Value) }),
+        "join"          => BuiltinMethodDefinition.new("Array.join", ->(receiver : Value, args : Array(Value)) { array_join(receiver, args).as(Value) }),
+        "keys"          => BuiltinMethodDefinition.new("Array.keys", ->(receiver : Value, args : Array(Value)) { array_keys(receiver, args).as(Value) }),
+        "lastIndexOf"   => BuiltinMethodDefinition.new("Array.lastIndexOf", ->(receiver : Value, args : Array(Value)) { array_last_index_of(receiver, args).as(Value) }),
+        "map"           => BuiltinMethodDefinition.new("Array.map", ->(receiver : Value, args : Array(Value)) { array_map(receiver, args).as(Value) }),
+        "pop"           => BuiltinMethodDefinition.new("Array.pop", ->(receiver : Value, args : Array(Value)) { array_pop(receiver, args).as(Value) }),
+        "push"          => BuiltinMethodDefinition.new("Array.push", ->(receiver : Value, args : Array(Value)) { array_push(receiver, args).as(Value) }),
+        "reduce"        => BuiltinMethodDefinition.new("Array.reduce", ->(receiver : Value, args : Array(Value)) { array_reduce(receiver, args).as(Value) }),
+        "reduceRight"   => BuiltinMethodDefinition.new("Array.reduceRight", ->(receiver : Value, args : Array(Value)) { array_reduce_right(receiver, args).as(Value) }),
+        "reverse"       => BuiltinMethodDefinition.new("Array.reverse", ->(receiver : Value, args : Array(Value)) { array_reverse(receiver, args).as(Value) }),
+        "shift"         => BuiltinMethodDefinition.new("Array.shift", ->(receiver : Value, args : Array(Value)) { array_shift(receiver, args).as(Value) }),
+        "slice"         => BuiltinMethodDefinition.new("Array.slice", ->(receiver : Value, args : Array(Value)) { array_slice(receiver, args).as(Value) }),
+        "some"          => BuiltinMethodDefinition.new("Array.some", ->(receiver : Value, args : Array(Value)) { array_some(receiver, args).as(Value) }),
+        "sort"          => BuiltinMethodDefinition.new("Array.sort", ->(receiver : Value, args : Array(Value)) { array_sort(receiver, args).as(Value) }),
+        "splice"        => BuiltinMethodDefinition.new("Array.splice", ->(receiver : Value, args : Array(Value)) { array_splice(receiver, args).as(Value) }),
+        "toString"      => BuiltinMethodDefinition.new("Array.toString", ->(receiver : Value, args : Array(Value)) { array_to_string(receiver, args).as(Value) }),
+        "unshift"       => BuiltinMethodDefinition.new("Array.unshift", ->(receiver : Value, args : Array(Value)) { array_unshift(receiver, args).as(Value) }),
+        "values"        => BuiltinMethodDefinition.new("Array.values", ->(receiver : Value, args : Array(Value)) { array_values(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
       {
         "length" => ->(receiver : Value) { array_length(receiver).as(Value) },
@@ -1095,6 +1103,170 @@ module GiavaScript
       args.reverse_each { |arg| array_receiver.unshift(arg) }
 
       array_receiver.size
+    end
+
+    private def array_copy_within(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 2, 3, "Array.copyWithin")
+      array_receiver = receiver_array(receiver, "Array.copyWithin")
+      size = array_receiver.size
+      return array_receiver if size == 0
+
+      target = integer_argument(args[0], "Array.copyWithin")
+      start = integer_argument(args[1], "Array.copyWithin")
+      finish = args.size >= 3 ? integer_argument(args[2], "Array.copyWithin") : size
+
+      normalized_target = normalize_copy_within_index(target, size)
+      normalized_start = normalize_copy_within_index(start, size)
+      normalized_finish = normalize_copy_within_index(finish, size)
+
+      count = Math.min(normalized_finish - normalized_start, size - normalized_target)
+      count = 0 if count < 0
+
+      return array_receiver if count <= 0
+
+      if normalized_target < normalized_start
+        index = 0
+        while index < count
+          array_receiver[normalized_target + index] = array_receiver[normalized_start + index]
+          index += 1
+        end
+      else
+        index = count - 1
+        while index >= 0
+          array_receiver[normalized_target + index] = array_receiver[normalized_start + index]
+          index -= 1
+        end
+      end
+
+      array_receiver
+    end
+
+    private def array_entries(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Array.entries")
+      array_receiver = receiver_array(receiver, "Array.entries")
+      result = Array(Value).new(array_receiver.size)
+      array_receiver.each_with_index do |value, index|
+        result << [index, value] of Value
+      end
+      result
+    end
+
+    private def array_fill(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 3, "Array.fill")
+      value = args[0]
+      array_receiver = receiver_array(receiver, "Array.fill")
+      size = array_receiver.size
+
+      fill_start = args.size >= 2 ? integer_argument(args[1], "Array.fill") : 0
+      fill_end = args.size >= 3 ? integer_argument(args[2], "Array.fill") : size
+
+      normalized_start = normalize_slice_index(fill_start, size)
+      normalized_end = normalize_slice_index(fill_end, size)
+
+      index = normalized_start
+      while index < normalized_end
+        array_receiver[index] = value
+        index += 1
+      end
+
+      array_receiver
+    end
+
+    private def array_find_last(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.findLast")
+      callback = callback_argument(args[0], "Array.findLast")
+      array_receiver = receiver_array(receiver, "Array.findLast")
+
+      index = array_receiver.size - 1
+      while index >= 0
+        value = array_receiver[index]
+        predicate_result = invoke_callback(
+          callback,
+          [value, index, array_receiver] of Value,
+          "Array.findLast"
+        )
+        return value if runtime_truthy?(predicate_result)
+        index -= 1
+      end
+
+      UNDEFINED
+    end
+
+    private def array_find_last_index(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Array.findLastIndex")
+      callback = callback_argument(args[0], "Array.findLastIndex")
+      array_receiver = receiver_array(receiver, "Array.findLastIndex")
+
+      index = array_receiver.size - 1
+      while index >= 0
+        predicate_result = invoke_callback(
+          callback,
+          [array_receiver[index], index, array_receiver] of Value,
+          "Array.findLastIndex"
+        )
+        return index if runtime_truthy?(predicate_result)
+        index -= 1
+      end
+
+      -1
+    end
+
+    private def array_keys(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Array.keys")
+      array_receiver = receiver_array(receiver, "Array.keys")
+      result = Array(Value).new(array_receiver.size)
+      array_receiver.size.times do |index|
+        result << index
+      end
+      result
+    end
+
+    private def array_reduce_right(receiver : Value, args : Array(Value)) : Value
+      assert_arity_between(args, 1, 2, "Array.reduceRight")
+      callback = callback_argument(args[0], "Array.reduceRight")
+      array_receiver = receiver_array(receiver, "Array.reduceRight")
+      length = array_receiver.size
+
+      accumulator = if args.size == 2
+                      args[1]
+                    else
+                      if array_receiver.empty?
+                        raise ExpressionError.new("Error: Array.reduceRight cannot reduce an empty array without an initial value")
+                      end
+
+                      array_receiver[length - 1]
+                    end
+
+      index = args.size == 2 ? length - 1 : length - 2
+      while index >= 0
+        accumulator = invoke_callback(
+          callback,
+          [accumulator, array_receiver[index], index, array_receiver] of Value,
+          "Array.reduceRight"
+        )
+        index -= 1
+      end
+
+      accumulator
+    end
+
+    private def array_values(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Array.values")
+      array_receiver = receiver_array(receiver, "Array.values")
+      result = Array(Value).new(array_receiver.size)
+      array_receiver.each { |value| result << value }
+      result
+    end
+
+    private def normalize_copy_within_index(index : Int32, size : Int32) : Int32
+      if index < 0
+        normalized = size + index
+        return 0 if normalized < 0
+        return normalized
+      end
+
+      return size if index > size
+      index
     end
 
     private def object_to_string(receiver : Value, args : Array(Value)) : Value

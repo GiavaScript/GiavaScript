@@ -2037,3 +2037,161 @@ describe "JSON.stringify with Error" do
     interpreter.eval("JSON.stringify({a: 1, e: new Error(\"oops\")});").should eq(["\"{\\\"a\\\":1}\""])
   end
 end
+
+describe "Array.prototype.fill" do
+  it "fills entire array with a value" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3].fill(0);").should eq(["[0, 0, 0]"])
+  end
+
+  it "fills from start index" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 4, 5].fill(9, 2);").should eq(["[1, 2, 9, 9, 9]"])
+  end
+
+  it "fills from start to end index" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 4, 5].fill(9, 1, 3);").should eq(["[1, 9, 9, 4, 5]"])
+  end
+
+  it "handles negative start index" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 4, 5].fill(0, -2);").should eq(["[1, 2, 3, 0, 0]"])
+  end
+
+  it "returns the modified array" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var a = [1, 2]; a.fill(9) === a;").should eq(["true"])
+  end
+end
+
+describe "Array.prototype.findLast" do
+  it "finds last element matching predicate" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[2, 4, 6, 8].findLast(function(v) { return v < 6; });").should eq(["4"])
+  end
+
+  it "returns undefined when no match" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3].findLast(function(v) { return v > 9; });").should eq(["undefined"])
+  end
+
+  it "passes element, index, and array to callback" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[10, 20, 30].findLast(function(v, i, a) { return i == 1; });").should eq(["20"])
+  end
+end
+
+describe "Array.prototype.findLastIndex" do
+  it "finds last index matching predicate" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[2, 4, 6, 8].findLastIndex(function(v) { return v < 6; });").should eq(["1"])
+  end
+
+  it "returns -1 when no match" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3].findLastIndex(function(v) { return v > 9; });").should eq(["-1"])
+  end
+end
+
+describe "Array.prototype.entries" do
+  it "returns [index, value] pairs" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[\"a\", \"b\"].entries();").should eq(["[[0, \"a\"], [1, \"b\"]]"])
+  end
+
+  it "returns empty array for empty array" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[].entries();").should eq(["[]"])
+  end
+end
+
+describe "Array.prototype.keys" do
+  it "returns array of indices" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[\"a\", \"b\"].keys();").should eq(["[0, 1]"])
+  end
+
+  it "returns empty array for empty array" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[].keys();").should eq(["[]"])
+  end
+end
+
+describe "Array.prototype.values" do
+  it "returns copy of array values" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[\"a\", \"b\"].values();").should eq(["[\"a\", \"b\"]"])
+  end
+
+  it "returns empty array for empty array" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[].values();").should eq(["[]"])
+  end
+end
+
+describe "Array.prototype.copyWithin" do
+  it "copies elements within the array" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 4, 5].copyWithin(0, 3);").should eq(["[4, 5, 3, 4, 5]"])
+  end
+
+  it "handles negative indices" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 4, 5].copyWithin(-2, 0);").should eq(["[1, 2, 3, 1, 2]"])
+  end
+
+  it "respects end argument" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 4, 5].copyWithin(0, 0, 2);").should eq(["[1, 2, 3, 4, 5]"])
+  end
+
+  it "returns the modified array" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var a = [1, 2, 3]; a.copyWithin(0, 1) === a;").should eq(["true"])
+  end
+end
+
+describe "Array.prototype.reduceRight" do
+  it "reduces from right to left" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 4].reduceRight(function(acc, val) { return acc + val; }, 0);").should eq(["10"])
+  end
+
+  it "works without initial value" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[1, 2, 3, 4].reduceRight(function(acc, val) { return acc + val; });").should eq(["10"])
+  end
+
+  it "processes in reverse order" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[\"a\", \"b\", \"c\"].reduceRight(function(acc, val) { return acc + val; });").should eq(["\"cba\""])
+  end
+
+  it "throws on empty array without initial value" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("[].reduceRight(function(a, b) { return a + b; });").should eq(["Error: Array.reduceRight cannot reduce an empty array without an initial value"])
+  end
+end
+
+describe "Array.from" do
+  it "creates array from string" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("Array.from(\"abc\");").should eq(["[\"a\", \"b\", \"c\"]"])
+  end
+
+  it "creates array from existing array" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("Array.from([1, 2, 3]);").should eq(["[1, 2, 3]"])
+  end
+
+  it "creates array from array-like object" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("Array.from({length: 3, \"0\": \"a\", \"1\": \"b\", \"2\": \"c\"});").should eq(["[\"a\", \"b\", \"c\"]"])
+  end
+
+  it "handles empty string" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("Array.from(\"\");").should eq(["[]"])
+  end
+end
