@@ -17,6 +17,7 @@ module GiavaScript
       env["parseInt"] = build_parse_int_function
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
+      env["readLine"] = build_read_line_function
       env
     end
 
@@ -315,6 +316,14 @@ module GiavaScript
         assert_builtin_arity(args, 1, "isNaN")
         number = coerce_to_number_for_globals(args[0])
         (number.is_a?(Float64) && number.nan?).as(Value)
+      end)
+    end
+
+    private def build_read_line_function : Value
+      BuiltinFunction.new("readLine", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 0, "readLine")
+        input = STDIN.gets
+        input ? input.chomp.as(Value) : "".as(Value)
       end)
     end
 
