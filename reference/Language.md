@@ -54,7 +54,8 @@ Status of core JavaScript language features in GiavaScript.
 - `a && b`: evaluates `a` first; if `a` is falsy, returns `a` and does not evaluate `b`; otherwise evaluates and returns `b`.
 - `a || b`: evaluates `a` first; if `a` is truthy, returns `a` and does not evaluate `b`; otherwise evaluates and returns `b`.
 - `!a`: evaluates `a` and returns a boolean negation (`true`/`false`).
-- Precedence: `!` binds tighter than `&&`, and `&&` binds tighter than `||`.
+- `a ? b : c`: evaluates `a` first; if `a` is truthy, evaluates and returns `b`; otherwise evaluates and returns `c`.
+- Precedence: `!` binds tighter than `&&`, `&&` binds tighter than `||`, and `||` binds tighter than `? :`.
 
 ## Functions and control flow
 
@@ -73,6 +74,7 @@ Status of core JavaScript language features in GiavaScript.
 | `for...in` loops (iterate over object keys) | Available |
 | `break` / `continue` inside loops | Available |
 | `while` / `do...while` loops | Available |
+| Ternary operator (`a ? b : c`) | Available |
 | `switch` statements | Available |
 | `throw` statements | Available |
 | `try` / `catch` / `finally` | Available |

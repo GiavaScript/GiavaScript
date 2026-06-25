@@ -30,6 +30,8 @@ module GiavaScript
         end
       when UnaryExpr
         evaluate_unary(expr)
+      when TernaryExpr
+        truthy?(evaluate(expr.condition)) ? evaluate(expr.consequent) : evaluate(expr.alternate)
       when BinaryExpr
         evaluate_binary(expr)
       when FunctionCallExpr
