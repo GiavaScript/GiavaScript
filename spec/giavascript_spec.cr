@@ -1425,6 +1425,58 @@ describe GiavaScript do
     interpreter.eval("(true || false) && false;").should eq(["false"])
   end
 
+  it "supports a ? b : c expression" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("true ? 99 : 88;").should eq(["99"])
+    interpreter.eval("false ? 99 : 88;").should eq(["88"])
+  end
+
+  it "supports a ? b : c with truthy condition" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("1 ? 'hello' : 'world';").should eq(["\"hello\""])
+    interpreter.eval("'nonempty' ? 42 : 0;").should eq(["42"])
+  end
+
+  it "supports a ? b : c with falsey condition" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("0 ? 'yes' : 'no';").should eq(["\"no\""])
+    interpreter.eval("'' ? 'yes' : 'no';").should eq(["\"no\""])
+    interpreter.eval("null ? 'yes' : 'no';").should eq(["\"no\""])
+    interpreter.eval("undefined ? 'yes' : 'no';").should eq(["\"no\""])
+  end
+
+  it "supports nested a ? b : c ? d : e (right-associative)" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("true ? 1 : false ? 2 : 3;").should eq(["1"])
+    interpreter.eval("false ? 1 : false ? 2 : 3;").should eq(["3"])
+    interpreter.eval("true ? false ? 1 : 2 : 3;").should eq(["2"])
+  end
+
+  it "supports a ? b : c with complex expressions" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var score = 85; score > 80 ? 'high' : 'low';").should eq(["\"high\""])
+    interpreter.eval("var isMember = true; isMember ? 2 : 10;").should eq(["2"])
+  end
+
+  it "applies a ? b : c precedence lower than || and &&" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("false || true ? 1 : 2;").should eq(["1"])
+    interpreter.eval("false && false ? 1 : 2;").should eq(["2"])
+  end
+
+  it "supports a ? b : c in assignment" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var fee = true ? 2 : 10;").should eq([] of String)
+    interpreter.eval("fee;").should eq(["2"])
+  end
+
   it "supports ECMAScript-style for loop with all components" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)

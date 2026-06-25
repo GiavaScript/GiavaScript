@@ -98,6 +98,15 @@ module GiavaScript
     end
   end
 
+  class TernaryExpr < Expr
+    getter condition : Expr
+    getter consequent : Expr
+    getter alternate : Expr
+
+    def initialize(@condition : Expr, @consequent : Expr, @alternate : Expr)
+    end
+  end
+
   class IndexExpr < Expr
     getter target : Expr
     getter index : Expr

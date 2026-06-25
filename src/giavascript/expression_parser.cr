@@ -15,7 +15,23 @@ module GiavaScript
     end
 
     private def parse_expression : Expr
-      parse_logical_or
+      parse_ternary
+    end
+
+    private def parse_ternary : Expr
+      condition = parse_logical_or
+
+      return condition unless @current.kind == Tokenizer::TokenKind::Question
+
+      advance_token
+      consequent = parse_ternary
+
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Colon
+      advance_token
+
+      alternate = parse_ternary
+
+      TernaryExpr.new(condition, consequent, alternate)
     end
 
     private def parse_logical_or : Expr
