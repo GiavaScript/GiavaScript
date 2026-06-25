@@ -31,7 +31,10 @@ def run_file(path : String) : Int32
   has_errors ? 1 : 0
 end
 
-if ARGV.empty?
+if ARGV.size == 1 && (ARGV[0] == "--version" || ARGV[0] == "-v")
+  puts GiavaScript::VERSION
+  exit 0
+elsif ARGV.empty?
   GiavaScript::Interpreter.new.repl
 elsif ARGV.size == 1
   exit run_file(ARGV[0])
