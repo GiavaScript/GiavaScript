@@ -159,6 +159,16 @@ module GiavaScript
     end
   end
 
+  class ForInStatement < Statement
+    getter var_name : String
+    getter iterable : Expr
+    getter body : Statement
+    getter declare_var : Bool
+
+    def initialize(@var_name : String, @iterable : Expr, @body : Statement, @declare_var : Bool)
+    end
+  end
+
   class WhileStatement < Statement
     getter condition : Expr
     getter body : Statement
