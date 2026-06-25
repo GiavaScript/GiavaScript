@@ -31,6 +31,14 @@ module GiavaScript
           ForOfStatement.new(for_of_header[:var_name], for_of_header[:iterable], body.statement),
           body.end_index
         )
+      elsif for_in_header = try_parse_for_in_header(current)
+        current = skip_whitespace(for_in_header[:end_paren_index] + 1)
+        body = parse_statement(current)
+
+        ParsedFor.new(
+          ForInStatement.new(for_in_header[:var_name], for_in_header[:iterable], body.statement, for_in_header[:declare_var]),
+          body.end_index
+        )
       else
         header = parse_for_header(current)
         current = skip_whitespace(header[:end_paren_index] + 1)
@@ -174,6 +182,43 @@ module GiavaScript
       end
 
       {var_name: var_name, iterable: iterable, end_paren_index: end_paren_index}
+    end
+
+    private def try_parse_for_in_header(index : Int32) : NamedTuple(var_name: String, iterable: Expr, end_paren_index: Int32, declare_var: Bool)?
+      current = index + 1
+      current = skip_whitespace(current)
+
+      declare_var = starts_with_keyword?(current, "var")
+      if declare_var
+        current += "var".size
+        current = skip_whitespace(current)
+      end
+
+      return nil unless current < @source.size && identifier_start?(@source[current]?)
+      name_start = current
+      current += 1
+      while current < @source.size && identifier_continue?(@source[current])
+        current += 1
+      end
+      var_name = @source[name_start...current]
+
+      current = skip_whitespace(current)
+
+      return nil unless starts_with_keyword?(current, "in")
+      current += "in".size
+      current = skip_whitespace(current)
+
+      end_paren_index = find_for_of_iterable_end(current)
+      iterable_source = @source[current...end_paren_index].strip
+      raise invalid_for_error if iterable_source.empty?
+
+      iterable = begin
+        ExpressionParser.new(iterable_source).parse
+      rescue ExpressionError
+        raise invalid_for_error
+      end
+
+      {var_name: var_name, iterable: iterable, end_paren_index: end_paren_index, declare_var: declare_var}
     end
 
     private def find_for_of_iterable_end(index : Int32) : Int32

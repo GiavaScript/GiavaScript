@@ -93,6 +93,8 @@ Status of core JavaScript language features in GiavaScript.
 | First-class function values | Available |
 | `if`, `else if`, `else` | Available |
 | C-style `for` loops (`for (init; condition; update)`) | Available |
+| `for...of` loops (iterate over arrays and strings) | Available |
+| `for...in` loops (iterate over object keys) | Available |
 | `break` / `continue` inside loops | Available |
 | `while` / `do...while` loops | Available |
 | `switch` statements | Available |

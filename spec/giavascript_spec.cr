@@ -1530,6 +1530,59 @@ describe GiavaScript do
     interpreter.eval("var n = 42; for (var x of n) console.log(x);").should eq(["Error: for...of requires an iterable (array or string)"])
   end
 
+  it "supports for...in iteration over object keys" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var obj = {a: 1, b: 2, c: 3}; for (var key in obj) console.log(key, obj[key]);").should eq([] of String)
+    output.to_s.should eq("a 1\nb 2\nc 3\n")
+  end
+
+  it "supports for...in with existing variable" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var key; var obj = {x: 10, y: 20}; for (key in obj) console.log(key);").should eq([] of String)
+    output.to_s.should eq("x\ny\n")
+  end
+
+  it "supports break inside for...in" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var obj = {a: 1, b: 2, c: 3}; for (var key in obj) { if (key == 'b') break; console.log(key); }").should eq([] of String)
+    output.to_s.should eq("a\n")
+  end
+
+  it "supports continue inside for...in" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var obj = {a: 1, b: 2, c: 3}; for (var key in obj) { if (key == 'b') continue; console.log(key); }").should eq([] of String)
+    output.to_s.should eq("a\nc\n")
+  end
+
+  it "supports empty object iteration in for...in" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var count = 0; for (var key in {}) { count = count + 1; }").should eq([] of String)
+    interpreter.eval("count;").should eq(["0"])
+  end
+
+  it "returns error for for...in with non-object value" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var n = 42; for (var key in n) console.log(key);").should eq(["Error: for...in requires an object"])
+  end
+
+  it "supports for...in accessing object values" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var obj = {name: 'test', count: 5}; for (var key in obj) console.log(key, obj[key]);").should eq([] of String)
+    output.to_s.should eq("name test\ncount 5\n")
+  end
+
   it "supports while loops" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)
