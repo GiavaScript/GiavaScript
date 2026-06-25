@@ -2299,4 +2299,33 @@ describe "Array.from" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("Array.from(\"\");").should eq(["[]"])
   end
+
+  describe "VERSION" do
+    it "is a non-empty string" do
+      GiavaScript::VERSION.is_a?(String).should be_true
+      GiavaScript::VERSION.empty?.should be_false
+    end
+
+    it "matches shard.yml version" do
+      shard_yml = File.read(File.join(__DIR__, "..", "shard.yml"))
+      version_line = shard_yml.lines.find { |line| line.starts_with?("version:") }
+      version_line.should_not be_nil
+      expected_version = version_line.not_nil!.split(":", 2).last.strip
+      GiavaScript::VERSION.should eq(expected_version)
+    end
+  end
+
+  describe "CLI" do
+    it "recognizes --version flag" do
+      argv = ["--version"]
+      argv.size.should eq(1)
+      (argv[0] == "--version" || argv[0] == "-v").should be_true
+    end
+
+    it "recognizes -v flag" do
+      argv = ["-v"]
+      argv.size.should eq(1)
+      (argv[0] == "--version" || argv[0] == "-v").should be_true
+    end
+  end
 end
