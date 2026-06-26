@@ -8,6 +8,15 @@
 <h1 align="center">GiavaScript</h1>
 
 <p align="center">
+  <a href="https://crystal-lang.org/">
+    <img src="https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white" alt="Crystal" />
+  </a>
+  <a href="https://github.com/memburg/GiavaScript/releases">
+    <img src="https://img.shields.io/github/v/release/memburg/GiavaScript?include_prereleases" alt="Version" />
+  </a>
+</p>
+
+<p align="center">
   <a href="https://github.com/memburg/GiavaScript/actions/workflows/linux.yml">
     <img src="https://github.com/memburg/GiavaScript/actions/workflows/linux.yml/badge.svg" alt="Linux CI" />
   </a>
@@ -19,12 +28,6 @@
   </a>
   <a href="https://github.com/memburg/GiavaScript/actions/workflows/nightly.yml">
     <img src="https://github.com/memburg/GiavaScript/actions/workflows/nightly.yml/badge.svg" alt="Nightly Crystal CI" />
-  </a>
-  <a href="https://crystal-lang.org/">
-    <img src="https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white" alt="Crystal" />
-  </a>
-  <a href="https://github.com/memburg/GiavaScript/releases">
-    <img src="https://img.shields.io/github/v/release/memburg/GiavaScript?include_prereleases" alt="Version" />
   </a>
 </p>
 

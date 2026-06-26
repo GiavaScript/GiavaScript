@@ -98,6 +98,15 @@ module GiavaScript
     end
   end
 
+  class TernaryExpr < Expr
+    getter condition : Expr
+    getter consequent : Expr
+    getter alternate : Expr
+
+    def initialize(@condition : Expr, @consequent : Expr, @alternate : Expr)
+    end
+  end
+
   class IndexExpr < Expr
     getter target : Expr
     getter index : Expr
@@ -156,6 +165,16 @@ module GiavaScript
     getter body : Statement
 
     def initialize(@var_name : String, @iterable : Expr, @body : Statement)
+    end
+  end
+
+  class ForInStatement < Statement
+    getter var_name : String
+    getter iterable : Expr
+    getter body : Statement
+    getter declare_var : Bool
+
+    def initialize(@var_name : String, @iterable : Expr, @body : Statement, @declare_var : Bool)
     end
   end
 

@@ -24,6 +24,7 @@ module GiavaScript
       Slash
       Percent
       Caret
+      Question
       Less
       Greater
       LessEqual
@@ -75,6 +76,9 @@ module GiavaScript
       when '%'
         advance
         Token.new(TokenKind::Percent, "%")
+      when '?'
+        advance
+        Token.new(TokenKind::Question, "?")
       when '^'
         advance
         Token.new(TokenKind::Caret, "^")

@@ -78,7 +78,8 @@ Status of core JavaScript language features in GiavaScript.
 - `a && b`: evaluates `a` first; if `a` is falsy, returns `a` and does not evaluate `b`; otherwise evaluates and returns `b`.
 - `a || b`: evaluates `a` first; if `a` is truthy, returns `a` and does not evaluate `b`; otherwise evaluates and returns `b`.
 - `!a`: evaluates `a` and returns a boolean negation (`true`/`false`).
-- Precedence: `!` binds tighter than `&&`, and `&&` binds tighter than `||`.
+- `a ? b : c`: evaluates `a` first; if `a` is truthy, evaluates and returns `b`; otherwise evaluates and returns `c`.
+- Precedence: `!` binds tighter than `&&`, `&&` binds tighter than `||`, and `||` binds tighter than `? :`.
 
 ### Functions and control flow
 
@@ -93,8 +94,11 @@ Status of core JavaScript language features in GiavaScript.
 | First-class function values | Available |
 | `if`, `else if`, `else` | Available |
 | C-style `for` loops (`for (init; condition; update)`) | Available |
+| `for...of` loops (iterate over arrays and strings) | Available |
+| `for...in` loops (iterate over object keys) | Available |
 | `break` / `continue` inside loops | Available |
 | `while` / `do...while` loops | Available |
+| Ternary operator (`a ? b : c`) | Available |
 | `switch` statements | Available |
 | `throw` statements | Available |
 | `try` / `catch` / `finally` | Available |
@@ -117,9 +121,12 @@ Status of core JavaScript language features in GiavaScript.
 | `parseInt()` | Available |
 | `parseFloat()` | Available |
 | `isNaN()` | Available |
+| `readLine()` | Available |
 | `Date.now()` | Available |
 | `new Date()` | Available |
 | `console.log()` | Available |
+| `console.warn()` | Available |
+| `console.error()` | Available |
 
 ### Notes
 
@@ -177,6 +184,9 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 | Member | Kind | Status |
 | --- | --- | --- |
+| `isFinite()` | Static method | Available |
+| `isInteger()` | Static method | Available |
+| `isNaN()` | Static method | Available |
 | `toString()` | Instance method | Available |
 
 ### Array

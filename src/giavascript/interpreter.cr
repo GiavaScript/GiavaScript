@@ -521,6 +521,8 @@ module GiavaScript
         eval_for_ast(statement, env, inside_function, inside_loop, inside_switch)
       when ForOfStatement
         eval_for_of_ast(statement, env, inside_function, inside_loop, inside_switch)
+      when ForInStatement
+        eval_for_in_ast(statement, env, inside_function, inside_loop, inside_switch)
       else
         "Error: invalid for statement"
       end
@@ -605,6 +607,35 @@ module GiavaScript
         nil
       rescue ex : ExpressionError
         ex.message || "Error: invalid for...of statement"
+      end
+    end
+
+    private def eval_for_in_ast(for_in : ForInStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
+      begin
+        iterable_value = evaluate_expression(for_in.iterable, env)
+
+        case iterable_value
+        when Hash(String, Value)
+          iterable_value.each_key do |key|
+            env[for_in.var_name] = key
+
+            begin
+              body_message = eval_statement_node(for_in.body, env, inside_function, true, inside_switch)
+              if body_message && body_message.starts_with?("Error:")
+                return body_message
+              end
+            rescue ContinueSignal
+            rescue BreakSignal
+              break
+            end
+          end
+        else
+          return "Error: for...in requires an object"
+        end
+
+        nil
+      rescue ex : ExpressionError
+        ex.message || "Error: invalid for...in statement"
       end
     end
 
@@ -804,6 +835,8 @@ module GiavaScript
         eval_for_ast(statement, env, inside_function, inside_loop, inside_switch)
       when ForOfStatement
         eval_for_of_ast(statement, env, inside_function, inside_loop, inside_switch)
+      when ForInStatement
+        eval_for_in_ast(statement, env, inside_function, inside_loop, inside_switch)
       when WhileStatement
         eval_while_ast(statement, env, inside_function, inside_loop, inside_switch)
       when DoWhileStatement

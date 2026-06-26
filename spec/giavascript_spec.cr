@@ -514,6 +514,27 @@ describe GiavaScript do
     interpreter.eval("console.log();").should eq(["Error: value is not callable"])
   end
 
+  it "provides console.warn as a global built-in method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("console.warn(\"something\");").should eq(["undefined"])
+    interpreter.eval("typeof console.warn;").should eq(["\"function\""])
+  end
+
+  it "provides console.error as a global built-in method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("console.error(\"failure\");").should eq(["undefined"])
+    interpreter.eval("typeof console.error;").should eq(["\"function\""])
+  end
+
+  it "supports variadic arguments for console.warn and console.error" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("console.warn(\"a\", 1, true);").should eq(["undefined"])
+    interpreter.eval("console.error(\"x\", 2, false);").should eq(["undefined"])
+  end
+
   it "provides Math.sqrt and Math.abs as global built-in methods" do
     interpreter = GiavaScript::Interpreter.new
 
@@ -758,6 +779,42 @@ describe GiavaScript do
     interpreter.eval("isNaN(\"123\");").should eq(["false"])
     interpreter.eval("isNaN(undefined);").should eq(["true"])
     interpreter.eval("isNaN(null);").should eq(["false"])
+  end
+
+  it "provides Number.isInteger as a global static method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Number.isInteger(42);").should eq(["true"])
+    interpreter.eval("Number.isInteger(3.14);").should eq(["false"])
+    interpreter.eval("var nan = parseInt('foo'); Number.isInteger(nan);").should eq(["false"])
+    interpreter.eval("Number.isInteger(\"42\");").should eq(["false"])
+    interpreter.eval("Number.isInteger(null);").should eq(["false"])
+  end
+
+  it "provides Number.isFinite as a global static method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Number.isFinite(42);").should eq(["true"])
+    interpreter.eval("Number.isFinite(3.14);").should eq(["true"])
+    interpreter.eval("var nan = parseInt('foo'); Number.isFinite(nan);").should eq(["false"])
+    interpreter.eval("Number.isFinite(\"42\");").should eq(["false"])
+  end
+
+  it "provides Number.isNaN as a global static method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var nan = parseInt('foo'); Number.isNaN(nan);").should eq(["true"])
+    interpreter.eval("Number.isNaN(42);").should eq(["false"])
+    interpreter.eval("Number.isNaN(\"hello\");").should eq(["false"])
+    interpreter.eval("Number.isNaN(undefined);").should eq(["false"])
+  end
+
+  it "validates Number static method arity" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Number.isInteger();").should eq(["Error: Number.isInteger expects 1 arguments but got 0"])
+    interpreter.eval("Number.isFinite();").should eq(["Error: Number.isFinite expects 1 arguments but got 0"])
+    interpreter.eval("Number.isNaN();").should eq(["Error: Number.isNaN expects 1 arguments but got 0"])
   end
 
   it "provides String.fromCharCode as a global static method" do
@@ -1425,6 +1482,58 @@ describe GiavaScript do
     interpreter.eval("(true || false) && false;").should eq(["false"])
   end
 
+  it "supports a ? b : c expression" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("true ? 99 : 88;").should eq(["99"])
+    interpreter.eval("false ? 99 : 88;").should eq(["88"])
+  end
+
+  it "supports a ? b : c with truthy condition" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("1 ? 'hello' : 'world';").should eq(["\"hello\""])
+    interpreter.eval("'nonempty' ? 42 : 0;").should eq(["42"])
+  end
+
+  it "supports a ? b : c with falsey condition" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("0 ? 'yes' : 'no';").should eq(["\"no\""])
+    interpreter.eval("'' ? 'yes' : 'no';").should eq(["\"no\""])
+    interpreter.eval("null ? 'yes' : 'no';").should eq(["\"no\""])
+    interpreter.eval("undefined ? 'yes' : 'no';").should eq(["\"no\""])
+  end
+
+  it "supports nested a ? b : c ? d : e (right-associative)" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("true ? 1 : false ? 2 : 3;").should eq(["1"])
+    interpreter.eval("false ? 1 : false ? 2 : 3;").should eq(["3"])
+    interpreter.eval("true ? false ? 1 : 2 : 3;").should eq(["2"])
+  end
+
+  it "supports a ? b : c with complex expressions" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var score = 85; score > 80 ? 'high' : 'low';").should eq(["\"high\""])
+    interpreter.eval("var isMember = true; isMember ? 2 : 10;").should eq(["2"])
+  end
+
+  it "applies a ? b : c precedence lower than || and &&" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("false || true ? 1 : 2;").should eq(["1"])
+    interpreter.eval("false && false ? 1 : 2;").should eq(["2"])
+  end
+
+  it "supports a ? b : c in assignment" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var fee = true ? 2 : 10;").should eq([] of String)
+    interpreter.eval("fee;").should eq(["2"])
+  end
+
   it "supports ECMAScript-style for loop with all components" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)
@@ -1528,6 +1637,59 @@ describe GiavaScript do
     interpreter = GiavaScript::Interpreter.new
 
     interpreter.eval("var n = 42; for (var x of n) console.log(x);").should eq(["Error: for...of requires an iterable (array or string)"])
+  end
+
+  it "supports for...in iteration over object keys" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var obj = {a: 1, b: 2, c: 3}; for (var key in obj) console.log(key, obj[key]);").should eq([] of String)
+    output.to_s.should eq("a 1\nb 2\nc 3\n")
+  end
+
+  it "supports for...in with existing variable" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var key; var obj = {x: 10, y: 20}; for (key in obj) console.log(key);").should eq([] of String)
+    output.to_s.should eq("x\ny\n")
+  end
+
+  it "supports break inside for...in" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var obj = {a: 1, b: 2, c: 3}; for (var key in obj) { if (key == 'b') break; console.log(key); }").should eq([] of String)
+    output.to_s.should eq("a\n")
+  end
+
+  it "supports continue inside for...in" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var obj = {a: 1, b: 2, c: 3}; for (var key in obj) { if (key == 'b') continue; console.log(key); }").should eq([] of String)
+    output.to_s.should eq("a\nc\n")
+  end
+
+  it "supports empty object iteration in for...in" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var count = 0; for (var key in {}) { count = count + 1; }").should eq([] of String)
+    interpreter.eval("count;").should eq(["0"])
+  end
+
+  it "returns error for for...in with non-object value" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var n = 42; for (var key in n) console.log(key);").should eq(["Error: for...in requires an object"])
+  end
+
+  it "supports for...in accessing object values" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+
+    interpreter.eval("var obj = {name: 'test', count: 5}; for (var key in obj) console.log(key, obj[key]);").should eq([] of String)
+    output.to_s.should eq("name test\ncount 5\n")
   end
 
   it "supports while loops" do
@@ -2193,5 +2355,34 @@ describe "Array.from" do
   it "handles empty string" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("Array.from(\"\");").should eq(["[]"])
+  end
+
+  describe "VERSION" do
+    it "is a non-empty string" do
+      GiavaScript::VERSION.is_a?(String).should be_true
+      GiavaScript::VERSION.empty?.should be_false
+    end
+
+    it "matches shard.yml version" do
+      shard_yml = File.read(File.join(__DIR__, "..", "shard.yml"))
+      version_line = shard_yml.lines.find { |line| line.starts_with?("version:") }
+      version_line.should_not be_nil
+      expected_version = version_line.not_nil!.split(":", 2).last.strip
+      GiavaScript::VERSION.should eq(expected_version)
+    end
+  end
+
+  describe "CLI" do
+    it "recognizes --version flag" do
+      argv = ["--version"]
+      argv.size.should eq(1)
+      (argv[0] == "--version" || argv[0] == "-v").should be_true
+    end
+
+    it "recognizes -v flag" do
+      argv = ["-v"]
+      argv.size.should eq(1)
+      (argv[0] == "--version" || argv[0] == "-v").should be_true
+    end
   end
 end
