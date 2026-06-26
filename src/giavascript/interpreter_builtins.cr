@@ -372,6 +372,24 @@ module GiavaScript
         UNDEFINED.as(Value)
       end)
 
+      console["warn"] = BuiltinFunction.new("console.warn", ->(receiver : Value, args : Array(Value)) do
+        unless receiver.is_a?(Hash(String, Value))
+          raise ExpressionError.new("Error: console.warn receiver must be an object")
+        end
+
+        STDERR.puts(args.map { |arg| console_value_to_s(arg) }.join(" "))
+        UNDEFINED.as(Value)
+      end)
+
+      console["error"] = BuiltinFunction.new("console.error", ->(receiver : Value, args : Array(Value)) do
+        unless receiver.is_a?(Hash(String, Value))
+          raise ExpressionError.new("Error: console.error receiver must be an object")
+        end
+
+        STDERR.puts(args.map { |arg| console_value_to_s(arg) }.join(" "))
+        UNDEFINED.as(Value)
+      end)
+
       console
     end
 

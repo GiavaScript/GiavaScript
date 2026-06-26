@@ -514,6 +514,27 @@ describe GiavaScript do
     interpreter.eval("console.log();").should eq(["Error: value is not callable"])
   end
 
+  it "provides console.warn as a global built-in method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("console.warn(\"something\");").should eq(["undefined"])
+    interpreter.eval("typeof console.warn;").should eq(["\"function\""])
+  end
+
+  it "provides console.error as a global built-in method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("console.error(\"failure\");").should eq(["undefined"])
+    interpreter.eval("typeof console.error;").should eq(["\"function\""])
+  end
+
+  it "supports variadic arguments for console.warn and console.error" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("console.warn(\"a\", 1, true);").should eq(["undefined"])
+    interpreter.eval("console.error(\"x\", 2, false);").should eq(["undefined"])
+  end
+
   it "provides Math.sqrt and Math.abs as global built-in methods" do
     interpreter = GiavaScript::Interpreter.new
 
