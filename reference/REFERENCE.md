@@ -182,6 +182,9 @@ Status of built-in methods and properties on GiavaScript runtime types.
 
 | Member | Kind | Status |
 | --- | --- | --- |
+| `isFinite()` | Static method | Available |
+| `isInteger()` | Static method | Available |
+| `isNaN()` | Static method | Available |
 | `toString()` | Instance method | Available |
 
 ### Array
