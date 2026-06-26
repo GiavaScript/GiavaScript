@@ -101,6 +101,8 @@ Status of core JavaScript language features in GiavaScript.
 | `Date.now()` | Available |
 | `new Date()` | Available |
 | `console.log()` | Available |
+| `console.warn()` | Available |
+| `console.error()` | Available |
 
 ## Notes
 
