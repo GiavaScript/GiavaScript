@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-06-26
 
 ### Added
 - `readLine()` built-in for synchronous terminal input
@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Number.isInteger()`, `Number.isFinite()`, `Number.isNaN()` static methods
 - `console.warn()` and `console.error()` writing to STDERR
 
-## [0.2.0] - 2025-06-18
+## [0.2.0] - 2026-06-18
 
 ### Added
 - `for...of` iteration over arrays and strings
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Code quality improvements: style, performance, and documentation
 
-## [0.1.0] - 2025-06-12
+## [0.1.0] - 2026-06-12
 
 ### Added
 - JavaScript runtime implemented in Crystal
