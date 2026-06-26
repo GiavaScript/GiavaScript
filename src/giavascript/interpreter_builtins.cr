@@ -10,6 +10,7 @@ module GiavaScript
       env["Date"] = build_date_object
       env["String"] = build_string_object
       env["RegExp"] = build_regexp_object
+      env["Number"] = build_number_object
       env["Error"] = build_error("Error")
       env["TypeError"] = build_error("TypeError")
       env["ReferenceError"] = build_error("ReferenceError")
@@ -132,6 +133,38 @@ module GiavaScript
       end)
 
       array
+    end
+
+    private def build_number_object : Hash(String, Value)
+      number = Hash(String, Value).new
+
+      number["isInteger"] = BuiltinFunction.new("Number.isInteger", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Number.isInteger")
+        assert_builtin_arity(args, 1, "Number.isInteger")
+        args[0].is_a?(Int32).as(Value)
+      end)
+
+      number["isFinite"] = BuiltinFunction.new("Number.isFinite", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Number.isFinite")
+        assert_builtin_arity(args, 1, "Number.isFinite")
+        value = args[0]
+        if value.is_a?(Int32)
+          true.as(Value)
+        elsif value.is_a?(Float64)
+          value.finite?.as(Value)
+        else
+          false.as(Value)
+        end
+      end)
+
+      number["isNaN"] = BuiltinFunction.new("Number.isNaN", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Number.isNaN")
+        assert_builtin_arity(args, 1, "Number.isNaN")
+        value = args[0]
+        (value.is_a?(Float64) && value.nan?).as(Value)
+      end)
+
+      number
     end
 
     private def build_date_object : Hash(String, Value)

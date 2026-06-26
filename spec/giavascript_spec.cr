@@ -760,6 +760,42 @@ describe GiavaScript do
     interpreter.eval("isNaN(null);").should eq(["false"])
   end
 
+  it "provides Number.isInteger as a global static method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Number.isInteger(42);").should eq(["true"])
+    interpreter.eval("Number.isInteger(3.14);").should eq(["false"])
+    interpreter.eval("var nan = parseInt('foo'); Number.isInteger(nan);").should eq(["false"])
+    interpreter.eval("Number.isInteger(\"42\");").should eq(["false"])
+    interpreter.eval("Number.isInteger(null);").should eq(["false"])
+  end
+
+  it "provides Number.isFinite as a global static method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Number.isFinite(42);").should eq(["true"])
+    interpreter.eval("Number.isFinite(3.14);").should eq(["true"])
+    interpreter.eval("var nan = parseInt('foo'); Number.isFinite(nan);").should eq(["false"])
+    interpreter.eval("Number.isFinite(\"42\");").should eq(["false"])
+  end
+
+  it "provides Number.isNaN as a global static method" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var nan = parseInt('foo'); Number.isNaN(nan);").should eq(["true"])
+    interpreter.eval("Number.isNaN(42);").should eq(["false"])
+    interpreter.eval("Number.isNaN(\"hello\");").should eq(["false"])
+    interpreter.eval("Number.isNaN(undefined);").should eq(["false"])
+  end
+
+  it "validates Number static method arity" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("Number.isInteger();").should eq(["Error: Number.isInteger expects 1 arguments but got 0"])
+    interpreter.eval("Number.isFinite();").should eq(["Error: Number.isFinite expects 1 arguments but got 0"])
+    interpreter.eval("Number.isNaN();").should eq(["Error: Number.isNaN expects 1 arguments but got 0"])
+  end
+
   it "provides String.fromCharCode as a global static method" do
     interpreter = GiavaScript::Interpreter.new
 
