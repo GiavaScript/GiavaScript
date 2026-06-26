@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `readLine()` built-in for synchronous terminal input
 - `for...in` loops for iterating over object keys
 - Ternary conditional operator (`condition ? consequent : alternate`)
 - `--version` / `-v` CLI flag to print the GiavaScript version
