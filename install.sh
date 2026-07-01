@@ -4,6 +4,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BINARY_NAME="giavascript"
+SHORTCUT_NAME="gs"
 BUILD_OUTPUT="$PROJECT_ROOT/bin/$BINARY_NAME"
 
 # Default install directory can be overridden:
@@ -35,11 +36,14 @@ fi
 if [ ! -w "$INSTALL_DIR" ]; then
   printf "No write access to %s. Trying with sudo...\n" "$INSTALL_DIR"
   sudo install -m 755 "$BUILD_OUTPUT" "$TARGET_PATH"
+  sudo ln -sf "$TARGET_PATH" "$INSTALL_DIR/$SHORTCUT_NAME"
 else
   install -m 755 "$BUILD_OUTPUT" "$TARGET_PATH"
+  ln -sf "$TARGET_PATH" "$INSTALL_DIR/$SHORTCUT_NAME"
 fi
 
 printf "Installed to %s\n" "$TARGET_PATH"
+printf "Shortcut: %s -> %s\n" "$SHORTCUT_NAME" "$BINARY_NAME"
 
 if ! command -v "$BINARY_NAME" >/dev/null 2>&1; then
   printf "Warning: '%s' is not currently in your PATH.\n" "$INSTALL_DIR" >&2
@@ -48,5 +52,5 @@ if ! command -v "$BINARY_NAME" >/dev/null 2>&1; then
 fi
 
 printf "Done. Run:\n"
-printf "  %s\n" "$BINARY_NAME"
-printf "  %s path/to/file.js\n" "$BINARY_NAME"
+printf "  %s\n" "$SHORTCUT_NAME"
+printf "  %s path/to/file.js\n" "$SHORTCUT_NAME"
