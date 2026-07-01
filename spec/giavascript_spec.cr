@@ -847,6 +847,40 @@ describe GiavaScript do
     interpreter.eval("parseInt(\"10\");").should eq(["Error: value is not callable"])
   end
 
+  it "provides File.read and File.readLines as global built-in methods" do
+    interpreter = GiavaScript::Interpreter.new
+
+    content = interpreter.eval("File.read(\"spec/fixtures/sample.txt\");")[0]
+    content.should eq("\"hello giava\\nline two\\n\"")
+
+    lines = interpreter.eval("File.readLines(\"spec/fixtures/sample.txt\");")[0]
+    lines.should eq("[\"hello giava\", \"line two\", \"\"]")
+  end
+
+  it "validates File builtin arity and argument types" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("File.read();").should eq(["Error: File.read expects 1 arguments but got 0"])
+    interpreter.eval("File.read(1, 2);").should eq(["Error: File.read expects 1 arguments but got 2"])
+    interpreter.eval("File.read(5);").should eq(["Error: File.read argument 1 must be a string"])
+    interpreter.eval("File.readLines();").should eq(["Error: File.readLines expects 1 arguments but got 0"])
+    interpreter.eval("File.readLines(true);").should eq(["Error: File.readLines argument 1 must be a string"])
+  end
+
+  it "raises error for non-existent file path on File.read" do
+    interpreter = GiavaScript::Interpreter.new
+
+    result = interpreter.eval("File.read(\"nonexistent_file.txt\");")
+    result[0].should start_with("Error: ")
+  end
+
+  it "raises runtime error when File method is overwritten with non-callable" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("File.read = 5;").should eq([] of String)
+    interpreter.eval("File.read(\"foo\");").should eq(["Error: value is not callable"])
+  end
+
   it "prints error when len is not defined" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
