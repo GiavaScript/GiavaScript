@@ -1060,9 +1060,15 @@ module GiavaScript
     end
 
     private def invoke_user_function(function_value : UserFunction, args : Array(Value)) : Value
-      if args.size != function_value.parameters.size
-        display_name = function_value.name || "anonymous"
-        raise ExpressionError.new("Error: function '#{display_name}' expects #{function_value.parameters.size} arguments but got #{args.size}")
+      min_args = function_value.parameters.size
+      display_name = function_value.name || "anonymous"
+
+      if args.size < min_args
+        raise ExpressionError.new("Error: function '#{display_name}' expects at least #{min_args} arguments but got #{args.size}")
+      end
+
+      if function_value.rest_parameter.nil? && args.size != min_args
+        raise ExpressionError.new("Error: function '#{display_name}' expects #{min_args} arguments but got #{args.size}")
       end
 
       local_env = Environment.new(function_value.closure)
@@ -1072,6 +1078,12 @@ module GiavaScript
 
       function_value.parameters.each_with_index do |param, index|
         local_env[param] = args[index]
+      end
+
+      if rest_param = function_value.rest_parameter
+        extra_count = args.size - min_args
+        rest_values = extra_count > 0 ? args[min_args, extra_count] : Array(Value).new
+        local_env[rest_param] = rest_values
       end
 
       statements = StatementSplitter.new(function_value.body_source).split

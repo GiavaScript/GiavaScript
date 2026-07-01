@@ -39,13 +39,20 @@ module GiavaScript
       when NewExpr
         evaluate_new_expression(expr)
       when FunctionExpr
-        UserFunction.new(expr.name, expr.parameters, expr.body_source, @env)
+        UserFunction.new(expr.name, expr.parameters, expr.body_source, @env, expr.rest_parameter)
       when ArrowFunctionExpr
-        UserFunction.new(nil, expr.parameters, expr.body_source, @env)
+        UserFunction.new(nil, expr.parameters, expr.body_source, @env, expr.rest_parameter)
       when ArrayLiteral
         values = Array(Value).new(expr.elements.size)
         expr.elements.each do |element|
-          values << evaluate(element)
+          if element.is_a?(SpreadElement)
+            spread_value = evaluate(element.expr)
+            if spread_value.is_a?(Array(Value))
+              spread_value.each { |item| values << item }
+            end
+          else
+            values << evaluate(element)
+          end
         end
         values
       when ObjectLiteral
@@ -64,7 +71,16 @@ module GiavaScript
     private def evaluate_object_literal(expr : ObjectLiteral) : Value
       object = Hash(String, Value).new
       expr.properties.each do |property|
-        object[property.key] = evaluate(property.value)
+        if property.spread
+          spread_value = evaluate(property.value)
+          if spread_value.is_a?(Hash(String, Value))
+            spread_value.each do |key, value|
+              object[key] = value
+            end
+          end
+        else
+          object[property.key] = evaluate(property.value)
+        end
       end
       object
     end
@@ -151,10 +167,7 @@ module GiavaScript
     private def evaluate_function_call(expr : FunctionCallExpr) : Value
       callee_with_receiver = evaluate_callee_with_receiver(expr.callee)
 
-      args = Array(Value).new(expr.args.size)
-      expr.args.each do |arg|
-        args << evaluate(arg)
-      end
+      args = flatten_call_args(expr.args)
 
       invoke_callable(callee_with_receiver[:callable], callee_with_receiver[:receiver], args)
     end
@@ -162,10 +175,7 @@ module GiavaScript
     private def evaluate_new_expression(expr : NewExpr) : Value
       callee = evaluate(expr.callee)
 
-      args = Array(Value).new(expr.args.size)
-      expr.args.each do |arg|
-        args << evaluate(arg)
-      end
+      args = flatten_call_args(expr.args)
 
       if callee.is_a?(Hash(String, Value))
         constructor = callee["__construct"]?
@@ -191,6 +201,21 @@ module GiavaScript
       end
 
       raise ExpressionError.new("Error: indexing is only supported on arrays and objects")
+    end
+
+    private def flatten_call_args(args : Array(Expr)) : Array(Value)
+      result = Array(Value).new(args.size)
+      args.each do |arg|
+        if arg.is_a?(SpreadCallArg)
+          spread_value = evaluate(arg.expr)
+          if spread_value.is_a?(Array(Value))
+            spread_value.each { |item| result << item }
+          end
+        else
+          result << evaluate(arg)
+        end
+      end
+      result
     end
 
     private def evaluate_property_access(expr : PropertyAccessExpr) : Value

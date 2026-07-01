@@ -82,6 +82,16 @@ Status of core JavaScript language features in GiavaScript.
 - `a ? b : c`: evaluates `a` first; if `a` is truthy, evaluates and returns `b`; otherwise evaluates and returns `c`.
 - Precedence: `!` binds tighter than `&&`, `&&` binds tighter than `||`, and `||` binds tighter than `? :`.
 
+#### Spread and rest parameter semantics
+
+- Rest parameter (`...name`) must be the last formal parameter; otherwise an error is raised.
+- Rest parameters are supported in function declarations, function expressions, and arrow functions.
+- Rest parameter gathers exceeding arguments into an array. If there are no exceeding arguments, the rest array is empty (`[]`).
+- Spread in arrays (`[...arr]`) creates a shallow copy by iterating elements into a new array. Non-array spread values are silently ignored.
+- Spread in objects (`{...obj}`) copies own properties into a new object. Later keys override earlier ones. Non-object spread values are silently ignored.
+- Spread in function call arguments (`fn(...arr)`) expands an array into individual arguments. Non-array spread values are silently ignored.
+- Duplicate parameter names (including rest) are rejected.
+
 ### Functions and control flow
 
 | Feature | Status |
@@ -91,6 +101,8 @@ Status of core JavaScript language features in GiavaScript.
 | Named function expressions (`var f = function name(...) { ... }`) | Available |
 | Arrow functions (`() => expr`, `x => expr`, `() => { ... }`) | Available |
 | Function calls | Available |
+| Spread in call arguments (`fn(...arr)`) | Available |
+| Rest parameters (`function f(a, ...rest)`, arrow functions) | Available |
 | Returning values with `return` | Available |
 | First-class function values | Available |
 | `if`, `else if`, `else` | Available |
@@ -111,7 +123,9 @@ Status of core JavaScript language features in GiavaScript.
 | `null` | Available |
 | `undefined` | Available |
 | Array literals and indexing | Available |
+| Spread in arrays (`[...arr]`) | Available |
 | Object literals | Available |
+| Spread in objects (`{...obj}`) | Available |
 | Dot and bracket property access | Available |
 | Template literals | Available |
 

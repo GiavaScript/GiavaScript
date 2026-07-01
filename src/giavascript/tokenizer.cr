@@ -45,6 +45,7 @@ module GiavaScript
       Colon
       Comma
       Dot
+      Spread
       RegexLiteral
     end
 
@@ -172,6 +173,9 @@ module GiavaScript
       when '.'
         if digit?(peek_char)
           parse_number_token
+        elsif peek_char == '.' && (@source[@index + 2]?) == '.'
+          @index += 3
+          Token.new(TokenKind::Spread, "...")
         else
           advance
           Token.new(TokenKind::Dot, ".")

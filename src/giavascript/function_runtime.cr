@@ -2,7 +2,7 @@ module GiavaScript
   class FunctionRuntime
     IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/
 
-    record FunctionDefinition, parameters : Array(String), statements : Array(String)
+    record FunctionDefinition, parameters : Array(String), statements : Array(String), rest_parameter : String?
 
     class ReturnSignal < Exception
       getter value : Value
@@ -26,9 +26,11 @@ module GiavaScript
 
       raise ExpressionError.new("Error: invalid function name '#{function_name}'") unless function_name.matches?(IDENTIFIER_REGEX)
 
-      parameters = parse_function_parameters(param_list)
+      result = parse_function_parameters(param_list)
+      parameters = result[:parameters]
+      rest_parameter = result[:rest_parameter]
       statements = StatementSplitter.new(body).split
-      @functions[function_name] = FunctionDefinition.new(parameters, statements)
+      @functions[function_name] = FunctionDefinition.new(parameters, statements, rest_parameter)
     end
 
     def function_defined?(name : String) : Bool
@@ -43,14 +45,25 @@ module GiavaScript
       function = @functions[name]?
       raise ExpressionError.new("Error: function '#{name}' does not exist") unless function
 
-      if args.size != function.parameters.size
-        raise ExpressionError.new("Error: function '#{name}' expects #{function.parameters.size} arguments but got #{args.size}")
+      min_args = function.parameters.size
+      if args.size < min_args
+        raise ExpressionError.new("Error: function '#{name}' expects at least #{min_args} arguments but got #{args.size}")
+      end
+
+      if function.rest_parameter.nil? && args.size != min_args
+        raise ExpressionError.new("Error: function '#{name}' expects #{min_args} arguments but got #{args.size}")
       end
 
       local_env = Environment.new(outer_env)
 
       function.parameters.each_with_index do |param, index|
         local_env[param] = args[index]
+      end
+
+      if rest_param = function.rest_parameter
+        extra_count = args.size - min_args
+        rest_values = extra_count > 0 ? args[min_args, extra_count] : Array(Value).new
+        local_env[rest_param] = rest_values
       end
 
       begin
@@ -64,25 +77,32 @@ module GiavaScript
       UNDEFINED
     end
 
-    private def parse_function_parameters(param_list : String) : Array(String)
-      return [] of String if param_list.empty?
-
-      params = param_list.split(',').map(&.strip)
+    private def parse_function_parameters(param_list : String) : NamedTuple(parameters: Array(String), rest_parameter: String?)
+      params = param_list.empty? ? [] of String : param_list.split(',').map(&.strip)
       parsed = [] of String
+      rest_parameter = nil.as(String?)
 
       params.each do |param|
-        unless param.matches?(IDENTIFIER_REGEX)
-          raise ExpressionError.new("Error: invalid parameter '#{param}'")
+        if param.starts_with?("...")
+          rest_param = param[3..].strip
+          raise ExpressionError.new("Error: invalid parameter '#{param}'") unless rest_param.matches?(IDENTIFIER_REGEX)
+          raise ExpressionError.new("Error: rest parameter must be last") if rest_parameter
+          rest_parameter = rest_param
+        else
+          raise ExpressionError.new("Error: rest parameter must be last") if rest_parameter
+          unless param.matches?(IDENTIFIER_REGEX)
+            raise ExpressionError.new("Error: invalid parameter '#{param}'")
+          end
+          parsed << param
         end
-
-        parsed << param
       end
 
-      if parsed.uniq.size != parsed.size
+      all_params = parsed + (rest_parameter ? [rest_parameter] : [] of String)
+      if all_params.uniq.size != all_params.size
         raise ExpressionError.new("Error: duplicate function parameters are not allowed")
       end
 
-      parsed
+      {parameters: parsed, rest_parameter: rest_parameter}
     end
   end
 end
