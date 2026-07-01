@@ -916,6 +916,54 @@ describe GiavaScript do
     interpreter.eval("import value from \"mod\";").should eq(["Error: invalid import statement — expected import \"file.js\""])
   end
 
+  it "supports spread in array literals" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var a = [3, 4];").should eq([] of String)
+    interpreter.eval("[1, 2, ...a, 5];").should eq(["[1, 2, 3, 4, 5]"])
+    interpreter.eval("var copy = [...a]; copy;").should eq(["[3, 4]"])
+    interpreter.eval("[...[], 1, ...[]];").should eq(["[1]"])
+  end
+
+  it "supports spread in object literals" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var obj = {\"a\": 1, \"b\": 2};").should eq([] of String)
+    interpreter.eval("var merged = {\"c\": 3, ...obj, \"d\": 4}; merged;").should eq(["{\"c\": 3, \"a\": 1, \"b\": 2, \"d\": 4}"])
+    interpreter.eval("var clone = {...obj}; clone;").should eq(["{\"a\": 1, \"b\": 2}"])
+  end
+
+  it "supports rest parameters in named functions" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function collect(first, ...rest) { return rest; }")
+    interpreter.eval("collect(1, 2, 3, 4);").should eq(["[2, 3, 4]"])
+    interpreter.eval("collect(42);").should eq(["[]"])
+  end
+
+  it "supports rest parameters in arrow functions" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var arrow = (a, b, ...rest) => rest;")
+    interpreter.eval("arrow(1, 2, 3, 4);").should eq(["[3, 4]"])
+    interpreter.eval("arrow(1, 2);").should eq(["[]"])
+  end
+
+  it "supports spread in function call arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function sum(a, b, c) { return a + b + c; }")
+    interpreter.eval("var nums = [10, 20, 30];")
+    interpreter.eval("sum(...nums);").should eq(["60"])
+  end
+
+  it "validates rest parameter must be last" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function bad(...a, b) { }").should eq(["Error: rest parameter must be last"])
+    interpreter.eval("function bad2(a, ...b, c) { }").should eq(["Error: rest parameter must be last"])
+  end
+
   it "prints error when len is not defined" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])

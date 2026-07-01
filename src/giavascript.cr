@@ -27,10 +27,11 @@ module GiavaScript
   class UserFunction
     getter name : String?
     getter parameters : Array(String)
+    getter rest_parameter : String?
     getter body_source : String
     getter closure : Environment
 
-    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @closure : Environment)
+    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @closure : Environment, @rest_parameter : String? = nil)
     end
 
     def to_s(io : IO)
