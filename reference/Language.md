@@ -11,6 +11,7 @@ Status of core JavaScript language features in GiavaScript.
 | Reassignment with `=` | Available |
 | Compound assignment (`+=`, `-=`, `*=`, `/=`) | Available |
 | Postfix increment and decrement (`++`, `--`) | Available |
+| `import "file.js"` | Available |
 | `let` | Not available |
 | `const` | Not available |
 

@@ -881,6 +881,41 @@ describe GiavaScript do
     interpreter.eval("File.read(\"foo\");").should eq(["Error: value is not callable"])
   end
 
+  it "supports import statement to include another file" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("import \"spec/fixtures/import_lib.js\";")
+    interpreter.eval("libVar;").should eq(["\"hello from lib\""])
+    interpreter.eval("libCount;").should eq(["42"])
+    interpreter.eval("libFunction();").should eq(["\"called libFunction\""])
+  end
+
+  it "supports import inside a function to share scope" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function testImport() { import \"spec/fixtures/import_lib.js\"; return libVar; }")
+    interpreter.eval("testImport();").should eq(["\"hello from lib\""])
+  end
+
+  it "raises error for non-existent import file" do
+    interpreter = GiavaScript::Interpreter.new
+
+    result = interpreter.eval("import \"nonexistent.js\";")
+    result[0].should start_with("Error: Error opening file")
+  end
+
+  it "raises error for non-string import path" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("import 42;").should eq(["Error: invalid import statement — expected import \"file.js\""])
+  end
+
+  it "rejects ES module import syntax" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("import value from \"mod\";").should eq(["Error: invalid import statement — expected import \"file.js\""])
+  end
+
   it "prints error when len is not defined" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
@@ -1880,7 +1915,7 @@ describe GiavaScript do
   it "rejects module import and export statements" do
     interpreter = GiavaScript::Interpreter.new
 
-    interpreter.eval("import value from \"mod\";").should eq(["Error: invalid right-hand side 'import value from \"mod\"'"])
+    interpreter.eval("import value from \"mod\";").should eq(["Error: invalid import statement — expected import \"file.js\""])
     interpreter.eval("export default 1;").should eq(["Error: invalid right-hand side 'export default 1'"])
   end
 
