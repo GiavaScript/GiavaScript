@@ -166,6 +166,10 @@ module GiavaScript
         return eval_try_statement(stmt, env, inside_function, inside_loop, inside_switch)
       end
 
+      if starts_with_keyword?(stmt, "import")
+        return eval_import_statement(stmt, env, inside_function, inside_loop, inside_switch)
+      end
+
       if match = stmt.match(/^throw(?:\s+([\s\S]+))?$/)
         throw_source = match[1]?
         value = throw_source ? eval_rhs(throw_source.strip, env) : UNDEFINED
@@ -815,6 +819,38 @@ module GiavaScript
       ex.message || "Error: invalid try statement"
     end
 
+    private def eval_import_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+      match = stmt.match(/^import\s+(\"[^\"]*\"|\'[^\']*\')$/)
+      unless match
+        return "Error: invalid import statement — expected import \"file.js\""
+      end
+
+      path = eval_rhs(match[1].strip, env)
+      unless path.is_a?(String)
+        return "Error: import path must be a string"
+      end
+
+      source = begin
+        ::File.read(path)
+      rescue ex : ::File::Error
+        return "Error: #{ex.message}"
+      end
+
+      statements = StatementSplitter.new(CommentStripper.strip(source)).split
+      last_message = nil.as(String?)
+
+      statements.each do |inner_stmt|
+        begin
+          message = eval_statement(inner_stmt, env, inside_function, inside_loop, inside_switch)
+          last_message = message if message
+        rescue ex : ThrowSignal
+          return "Error: uncaught #{value_to_s(ex.value)}"
+        end
+      end
+
+      last_message
+    end
+
     private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       case statement
       when RawStatement
@@ -922,7 +958,7 @@ module GiavaScript
 
       compiled = if key.starts_with?("function ") || starts_with_keyword?(key, "if") || starts_with_keyword?(key, "for") ||
                     starts_with_keyword?(key, "while") || starts_with_keyword?(key, "do") || starts_with_keyword?(key, "switch") ||
-                    starts_with_keyword?(key, "try") || starts_with_keyword?(key, "throw") ||
+                    starts_with_keyword?(key, "try") || starts_with_keyword?(key, "throw") || starts_with_keyword?(key, "import") ||
                     key == "break" || key == "continue" || key.starts_with?("return")
                    FallbackRawStatement.new(source)
                  elsif match = key.match(/^(.+?)\s*(\+\+|--)$/)
@@ -1024,9 +1060,15 @@ module GiavaScript
     end
 
     private def invoke_user_function(function_value : UserFunction, args : Array(Value)) : Value
-      if args.size != function_value.parameters.size
-        display_name = function_value.name || "anonymous"
-        raise ExpressionError.new("Error: function '#{display_name}' expects #{function_value.parameters.size} arguments but got #{args.size}")
+      min_args = function_value.parameters.size
+      display_name = function_value.name || "anonymous"
+
+      if args.size < min_args
+        raise ExpressionError.new("Error: function '#{display_name}' expects at least #{min_args} arguments but got #{args.size}")
+      end
+
+      if function_value.rest_parameter.nil? && args.size != min_args
+        raise ExpressionError.new("Error: function '#{display_name}' expects #{min_args} arguments but got #{args.size}")
       end
 
       local_env = Environment.new(function_value.closure)
@@ -1036,6 +1078,12 @@ module GiavaScript
 
       function_value.parameters.each_with_index do |param, index|
         local_env[param] = args[index]
+      end
+
+      if rest_param = function_value.rest_parameter
+        extra_count = args.size - min_args
+        rest_values = extra_count > 0 ? args[min_args, extra_count] : Array(Value).new
+        local_env[rest_param] = rest_values
       end
 
       statements = StatementSplitter.new(function_value.body_source).split

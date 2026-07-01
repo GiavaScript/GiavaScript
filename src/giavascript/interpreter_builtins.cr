@@ -19,6 +19,7 @@ module GiavaScript
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
       env["readLine"] = build_read_line_function
+      env["File"] = build_file_object
       env
     end
 
@@ -358,6 +359,47 @@ module GiavaScript
         input = STDIN.gets
         input ? input.chomp.as(Value) : "".as(Value)
       end)
+    end
+
+    private def build_file_object : Hash(String, Value)
+      file = Hash(String, Value).new
+
+      file["read"] = BuiltinFunction.new("File.read", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.read")
+        assert_builtin_arity(args, 1, "File.read")
+
+        path = args[0]
+        unless path.is_a?(String)
+          raise ExpressionError.new("Error: File.read argument 1 must be a string")
+        end
+
+        begin
+          ::File.read(path).as(Value)
+        rescue ex : ::File::Error
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file["readLines"] = BuiltinFunction.new("File.readLines", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.readLines")
+        assert_builtin_arity(args, 1, "File.readLines")
+
+        path = args[0]
+        unless path.is_a?(String)
+          raise ExpressionError.new("Error: File.readLines argument 1 must be a string")
+        end
+
+        begin
+          content = ::File.read(path).gsub("\r\n", "\n")
+          lines = Array(Value).new
+          content.split('\n').each { |line| lines << line.as(Value) }
+          lines.as(Value)
+        rescue ex : ::File::Error
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file
     end
 
     private def build_console_object : Hash(String, Value)

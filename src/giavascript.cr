@@ -3,7 +3,7 @@ require "set"
 require "time"
 
 module GiavaScript
-  VERSION = "0.3.0"
+  VERSION = "0.4.0"
 
   class ExpressionError < Exception
   end
@@ -27,10 +27,11 @@ module GiavaScript
   class UserFunction
     getter name : String?
     getter parameters : Array(String)
+    getter rest_parameter : String?
     getter body_source : String
     getter closure : Environment
 
-    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @closure : Environment)
+    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @closure : Environment, @rest_parameter : String? = nil)
     end
 
     def to_s(io : IO)

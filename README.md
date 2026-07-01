@@ -50,7 +50,7 @@ cd GiavaScript
 ./install.sh
 ```
 
-This installs the `giavascript` binary to `/usr/local/bin` by default.
+This installs the `giavascript` binary and a `gs` shortcut (symlink) to `/usr/local/bin` by default. Both commands work interchangeably.
 
 Install to a user-local path instead of `/usr/local/bin`:
 
@@ -65,7 +65,7 @@ Make sure your install directory is on `PATH`.
 ### Start the REPL
 
 ```bash
-giavascript
+gs
 ```
 
 REPL commands:
@@ -75,7 +75,7 @@ REPL commands:
 ### Run a file
 
 ```bash
-giavascript path/to/program.js
+gs path/to/program.js
 ```
 
 Behavior to expect:
@@ -131,7 +131,7 @@ Sample programs are in `examples/`:
 Run any example with:
 
 ```bash
-giavascript examples/templateLiterals.js
+gs examples/templateLiterals.js
 ```
 
 ## Contributing

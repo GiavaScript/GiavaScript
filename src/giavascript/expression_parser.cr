@@ -279,7 +279,12 @@ module GiavaScript
 
       unless @current.kind == Tokenizer::TokenKind::RBracket
         loop do
-          elements << parse_expression
+          if @current.kind == Tokenizer::TokenKind::Spread
+            advance_token
+            elements << SpreadElement.new(parse_expression)
+          else
+            elements << parse_expression
+          end
 
           if @current.kind == Tokenizer::TokenKind::Comma
             advance_token
@@ -304,12 +309,18 @@ module GiavaScript
 
       unless @current.kind == Tokenizer::TokenKind::RBrace
         loop do
-          key = parse_object_key
-          raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Colon
-          advance_token
+          if @current.kind == Tokenizer::TokenKind::Spread
+            advance_token
+            value = parse_expression
+            properties << ObjectProperty.new("", value, spread: true)
+          else
+            key = parse_object_key
+            raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Colon
+            advance_token
 
-          value = parse_expression
-          properties << ObjectProperty.new(key, value)
+            value = parse_expression
+            properties << ObjectProperty.new(key, value)
+          end
 
           if @current.kind == Tokenizer::TokenKind::Comma
             advance_token
@@ -356,17 +367,28 @@ module GiavaScript
       advance_token
 
       parameters = [] of String
+      rest_parameter = nil.as(String?)
       param_set = Set(String).new
       unless @current.kind == Tokenizer::TokenKind::RParen
         loop do
-          raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
-          parameter = @current.lexeme
-          raise invalid_rhs_error unless param_set.add?(parameter)
-          parameters << parameter
-          advance_token
+          if @current.kind == Tokenizer::TokenKind::Spread
+            advance_token
+            raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
+            parameter = @current.lexeme
+            raise invalid_rhs_error unless param_set.add?(parameter)
+            rest_parameter = parameter
+            advance_token
+          else
+            raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
+            parameter = @current.lexeme
+            raise invalid_rhs_error unless param_set.add?(parameter)
+            parameters << parameter
+            advance_token
+          end
 
           if @current.kind == Tokenizer::TokenKind::Comma
             advance_token
+            raise invalid_rhs_error if rest_parameter
             next
           end
 
@@ -385,7 +407,7 @@ module GiavaScript
       @tokenizer.cursor = body_end + 1
       advance_token
 
-      FunctionExpr.new(function_name, parameters, body_source)
+      FunctionExpr.new(function_name, parameters, body_source, rest_parameter)
     end
 
     private def try_parse_paren_arrow_function : ArrowFunctionExpr?
@@ -397,24 +419,36 @@ module GiavaScript
       advance_token
 
       parameters = [] of String
+      rest_parameter = nil.as(String?)
       param_set = Set(String).new
 
       if @current.kind == Tokenizer::TokenKind::RParen
         advance_token
         if @current.kind == Tokenizer::TokenKind::Arrow
           advance_token
-          return parse_arrow_body(parameters)
+          return parse_arrow_body(parameters, rest_parameter)
         end
-      elsif @current.kind == Tokenizer::TokenKind::Identifier
+      elsif @current.kind == Tokenizer::TokenKind::Identifier || @current.kind == Tokenizer::TokenKind::Spread
         loop do
-          param = @current.lexeme
-          return restore_and_nil(saved_cursor, saved_token) unless param_set.add?(param)
-          parameters << param
-          advance_token
+          if @current.kind == Tokenizer::TokenKind::Spread
+            advance_token
+            return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Identifier
+            param = @current.lexeme
+            return restore_and_nil(saved_cursor, saved_token) unless param_set.add?(param)
+            rest_parameter = param
+            advance_token
+          else
+            return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Identifier
+            param = @current.lexeme
+            return restore_and_nil(saved_cursor, saved_token) unless param_set.add?(param)
+            parameters << param
+            advance_token
+          end
 
           if @current.kind == Tokenizer::TokenKind::Comma
             advance_token
-            return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Identifier
+            return restore_and_nil(saved_cursor, saved_token) if rest_parameter
+            return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Identifier || @current.kind == Tokenizer::TokenKind::Spread
             next
           end
 
@@ -425,7 +459,7 @@ module GiavaScript
           advance_token
           if @current.kind == Tokenizer::TokenKind::Arrow
             advance_token
-            return parse_arrow_body(parameters)
+            return parse_arrow_body(parameters, rest_parameter)
           end
         end
       end
@@ -460,7 +494,7 @@ module GiavaScript
       nil
     end
 
-    private def parse_arrow_body(parameters : Array(String)) : ArrowFunctionExpr
+    private def parse_arrow_body(parameters : Array(String), rest_parameter : String? = nil) : ArrowFunctionExpr
       if @current.kind == Tokenizer::TokenKind::LBrace
         body_start = @tokenizer.cursor
         body_end = find_matching_brace_end_index(body_start)
@@ -469,14 +503,14 @@ module GiavaScript
         @tokenizer.cursor = body_end + 1
         advance_token
 
-        return ArrowFunctionExpr.new(parameters, body_source)
+        return ArrowFunctionExpr.new(parameters, body_source, rest_parameter)
       end
 
       body_start = @tokenizer.cursor - @current.lexeme.size
       parse_expression
       body_end = @tokenizer.cursor - @current.lexeme.size
       body_source = "return " + @source[body_start...body_end].strip + ";"
-      ArrowFunctionExpr.new(parameters, body_source)
+      ArrowFunctionExpr.new(parameters, body_source, rest_parameter)
     end
 
     private def parse_identifier_expression : Expr
@@ -674,7 +708,12 @@ module GiavaScript
 
       unless @current.kind == Tokenizer::TokenKind::RParen
         loop do
-          args << parse_expression
+          if @current.kind == Tokenizer::TokenKind::Spread
+            advance_token
+            args << SpreadCallArg.new(parse_expression)
+          else
+            args << parse_expression
+          end
 
           if @current.kind == Tokenizer::TokenKind::Comma
             advance_token

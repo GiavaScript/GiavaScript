@@ -847,6 +847,123 @@ describe GiavaScript do
     interpreter.eval("parseInt(\"10\");").should eq(["Error: value is not callable"])
   end
 
+  it "provides File.read and File.readLines as global built-in methods" do
+    interpreter = GiavaScript::Interpreter.new
+
+    content = interpreter.eval("File.read(\"spec/fixtures/sample.txt\");")[0]
+    content.should eq("\"hello giava\\nline two\\n\"")
+
+    lines = interpreter.eval("File.readLines(\"spec/fixtures/sample.txt\");")[0]
+    lines.should eq("[\"hello giava\", \"line two\", \"\"]")
+  end
+
+  it "validates File builtin arity and argument types" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("File.read();").should eq(["Error: File.read expects 1 arguments but got 0"])
+    interpreter.eval("File.read(1, 2);").should eq(["Error: File.read expects 1 arguments but got 2"])
+    interpreter.eval("File.read(5);").should eq(["Error: File.read argument 1 must be a string"])
+    interpreter.eval("File.readLines();").should eq(["Error: File.readLines expects 1 arguments but got 0"])
+    interpreter.eval("File.readLines(true);").should eq(["Error: File.readLines argument 1 must be a string"])
+  end
+
+  it "raises error for non-existent file path on File.read" do
+    interpreter = GiavaScript::Interpreter.new
+
+    result = interpreter.eval("File.read(\"nonexistent_file.txt\");")
+    result[0].should start_with("Error: ")
+  end
+
+  it "raises runtime error when File method is overwritten with non-callable" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("File.read = 5;").should eq([] of String)
+    interpreter.eval("File.read(\"foo\");").should eq(["Error: value is not callable"])
+  end
+
+  it "supports import statement to include another file" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("import \"spec/fixtures/import_lib.js\";")
+    interpreter.eval("libVar;").should eq(["\"hello from lib\""])
+    interpreter.eval("libCount;").should eq(["42"])
+    interpreter.eval("libFunction();").should eq(["\"called libFunction\""])
+  end
+
+  it "supports import inside a function to share scope" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function testImport() { import \"spec/fixtures/import_lib.js\"; return libVar; }")
+    interpreter.eval("testImport();").should eq(["\"hello from lib\""])
+  end
+
+  it "raises error for non-existent import file" do
+    interpreter = GiavaScript::Interpreter.new
+
+    result = interpreter.eval("import \"nonexistent.js\";")
+    result[0].should start_with("Error: Error opening file")
+  end
+
+  it "raises error for non-string import path" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("import 42;").should eq(["Error: invalid import statement — expected import \"file.js\""])
+  end
+
+  it "rejects ES module import syntax" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("import value from \"mod\";").should eq(["Error: invalid import statement — expected import \"file.js\""])
+  end
+
+  it "supports spread in array literals" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var a = [3, 4];").should eq([] of String)
+    interpreter.eval("[1, 2, ...a, 5];").should eq(["[1, 2, 3, 4, 5]"])
+    interpreter.eval("var copy = [...a]; copy;").should eq(["[3, 4]"])
+    interpreter.eval("[...[], 1, ...[]];").should eq(["[1]"])
+  end
+
+  it "supports spread in object literals" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var obj = {\"a\": 1, \"b\": 2};").should eq([] of String)
+    interpreter.eval("var merged = {\"c\": 3, ...obj, \"d\": 4}; merged;").should eq(["{\"c\": 3, \"a\": 1, \"b\": 2, \"d\": 4}"])
+    interpreter.eval("var clone = {...obj}; clone;").should eq(["{\"a\": 1, \"b\": 2}"])
+  end
+
+  it "supports rest parameters in named functions" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function collect(first, ...rest) { return rest; }")
+    interpreter.eval("collect(1, 2, 3, 4);").should eq(["[2, 3, 4]"])
+    interpreter.eval("collect(42);").should eq(["[]"])
+  end
+
+  it "supports rest parameters in arrow functions" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var arrow = (a, b, ...rest) => rest;")
+    interpreter.eval("arrow(1, 2, 3, 4);").should eq(["[3, 4]"])
+    interpreter.eval("arrow(1, 2);").should eq(["[]"])
+  end
+
+  it "supports spread in function call arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function sum(a, b, c) { return a + b + c; }")
+    interpreter.eval("var nums = [10, 20, 30];")
+    interpreter.eval("sum(...nums);").should eq(["60"])
+  end
+
+  it "validates rest parameter must be last" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("function bad(...a, b) { }").should eq(["Error: rest parameter must be last"])
+    interpreter.eval("function bad2(a, ...b, c) { }").should eq(["Error: rest parameter must be last"])
+  end
+
   it "prints error when len is not defined" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
@@ -1846,7 +1963,7 @@ describe GiavaScript do
   it "rejects module import and export statements" do
     interpreter = GiavaScript::Interpreter.new
 
-    interpreter.eval("import value from \"mod\";").should eq(["Error: invalid right-hand side 'import value from \"mod\"'"])
+    interpreter.eval("import value from \"mod\";").should eq(["Error: invalid import statement — expected import \"file.js\""])
     interpreter.eval("export default 1;").should eq(["Error: invalid right-hand side 'export default 1'"])
   end
 

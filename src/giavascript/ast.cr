@@ -60,17 +60,19 @@ module GiavaScript
   class FunctionExpr < Expr
     getter name : String?
     getter parameters : Array(String)
+    getter rest_parameter : String?
     getter body_source : String
 
-    def initialize(@name : String?, @parameters : Array(String), @body_source : String)
+    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @rest_parameter : String? = nil)
     end
   end
 
   class ArrowFunctionExpr < Expr
     getter parameters : Array(String)
+    getter rest_parameter : String?
     getter body_source : String
 
-    def initialize(@parameters : Array(String), @body_source : String)
+    def initialize(@parameters : Array(String), @body_source : String, @rest_parameter : String? = nil)
     end
   end
 
@@ -81,12 +83,26 @@ module GiavaScript
     end
   end
 
-  record ObjectProperty, key : String, value : Expr
+  class SpreadElement < Expr
+    getter expr : Expr
+
+    def initialize(@expr : Expr)
+    end
+  end
+
+  record ObjectProperty, key : String, value : Expr, spread : Bool = false
 
   class ObjectLiteral < Expr
     getter properties : Array(ObjectProperty)
 
     def initialize(@properties : Array(ObjectProperty))
+    end
+  end
+
+  class SpreadCallArg < Expr
+    getter expr : Expr
+
+    def initialize(@expr : Expr)
     end
   end
 
