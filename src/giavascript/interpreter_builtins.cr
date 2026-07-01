@@ -390,7 +390,7 @@ module GiavaScript
         end
 
         begin
-          content = ::File.read(path)
+          content = ::File.read(path).gsub("\r\n", "\n")
           lines = Array(Value).new
           content.split('\n').each { |line| lines << line.as(Value) }
           lines.as(Value)
