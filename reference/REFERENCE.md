@@ -145,6 +145,7 @@ Status of core JavaScript language features in GiavaScript.
 | `File.read()` | Available |
 | `File.readLines()` | Available |
 | `File.write()` | Available |
+| `File.append()` | Available |
 
 ### Notes
 
