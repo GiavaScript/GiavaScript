@@ -3,7 +3,7 @@ require "set"
 require "time"
 
 module GiavaScript
-  VERSION = "0.4.0"
+  VERSION = "0.5.1"
 
   class ExpressionError < Exception
   end
