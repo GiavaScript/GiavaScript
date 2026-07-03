@@ -98,3 +98,11 @@ Release checklist: bump both locations, update `CHANGELOG.md`, then
 - Changes to the interpreter must pass all existing spec tests
 - Keep the runtime logic and formatting changes separate
 - The `CONTRIBUTING.md` file has the full contribution workflow
+
+## Git conventions
+
+- Every commit message must include the co-author trailer:
+  ```
+  Co-authored-by: Linus Torvalds <torvalds@linux-foundation.org>
+  ```
+  This applies to all commits in this repository — never omit it.
