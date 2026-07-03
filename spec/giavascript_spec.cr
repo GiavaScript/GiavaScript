@@ -899,6 +899,25 @@ describe GiavaScript do
     interpreter.eval("File.write(\"f\", 5);").should eq(["Error: File.write argument 2 must be a string"])
   end
 
+  it "provides File.append as a global built-in method" do
+    interpreter = GiavaScript::Interpreter.new
+    test_path = "spec/fixtures/append_test.txt"
+
+    interpreter.eval("File.append(\"#{test_path}\", \"line one\\n\");").should eq(["undefined"])
+    interpreter.eval("File.append(\"#{test_path}\", \"line two\\n\");").should eq(["undefined"])
+    interpreter.eval("File.read(\"#{test_path}\");").should eq(["\"line one\\nline two\\n\""])
+    ::File.delete(test_path) if ::File.exists?(test_path)
+  end
+
+  it "validates File.append arity and argument types" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("File.append();").should eq(["Error: File.append expects 2 arguments but got 0"])
+    interpreter.eval("File.append(\"f\");").should eq(["Error: File.append expects 2 arguments but got 1"])
+    interpreter.eval("File.append(5, \"c\");").should eq(["Error: File.append argument 1 must be a string"])
+    interpreter.eval("File.append(\"f\", 5);").should eq(["Error: File.append argument 2 must be a string"])
+  end
+
   it "supports import statement to include another file" do
     interpreter = GiavaScript::Interpreter.new
 

@@ -421,6 +421,28 @@ module GiavaScript
         end
       end)
 
+      file["append"] = BuiltinFunction.new("File.append", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.append")
+        assert_builtin_arity(args, 2, "File.append")
+
+        path = args[0]
+        unless path.is_a?(String)
+          raise ExpressionError.new("Error: File.append argument 1 must be a string")
+        end
+
+        content = args[1]
+        unless content.is_a?(String)
+          raise ExpressionError.new("Error: File.append argument 2 must be a string")
+        end
+
+        begin
+          ::File.open(path, mode: "a") { |f| f << content }
+          UNDEFINED.as(Value)
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
       file
     end
 
