@@ -120,6 +120,7 @@ Status of core JavaScript language features in GiavaScript.
 | `console.error()` | Available |
 | `File.read()` | Available |
 | `File.readLines()` | Available |
+| `File.write()` | Available |
 
 ## Notes
 
