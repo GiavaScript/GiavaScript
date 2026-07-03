@@ -1,1 +1,2 @@
 spec/fixtures/*.txt text eol=lf
+reference/*.md text eol=lf
