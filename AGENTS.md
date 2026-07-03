@@ -57,7 +57,7 @@ evaluators (1024 entries), JSON stringify depth limit (1000).
 | Run tests | `crystal spec` |
 | Run a JS file | `crystal run src/giavascript_cli.cr -- <path/to/file.js>` |
 | Build & install binary | `./install.sh` |
-| Regenerate reference docs | `python3 scripts/generate_reference.py` |
+| Regenerate reference docs | `crystal run src/giavascript_cli.cr -- scripts/generate_reference.js` |
 | Smoke test examples | `python3 scripts/run_examples_smoke.py` |
 | Format a single file | `crystal tool format <path>` |
 
@@ -65,7 +65,7 @@ evaluators (1024 entries), JSON stringify depth limit (1000).
 
 1. Run `crystal spec` — all tests must pass
 2. If you changed reference source files (`reference/Language.md`, `Types.md`,
-   `Math.md`, `JSON.md`), run `python3 scripts/generate_reference.py`
+   `Math.md`, `JSON.md`), run `crystal run src/giavascript_cli.cr -- scripts/generate_reference.js`
 3. Verify `git diff -- reference/REFERENCE.md` shows only intended changes
 
 ## Code conventions
