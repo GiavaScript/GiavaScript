@@ -375,7 +375,7 @@ module GiavaScript
 
         begin
           ::File.read(path).as(Value)
-        rescue ex : ::File::Error
+        rescue ex : Exception
           raise ExpressionError.new("Error: #{ex.message}")
         end
       end)
@@ -394,7 +394,29 @@ module GiavaScript
           lines = Array(Value).new
           content.split('\n').each { |line| lines << line.as(Value) }
           lines.as(Value)
-        rescue ex : ::File::Error
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file["write"] = BuiltinFunction.new("File.write", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.write")
+        assert_builtin_arity(args, 2, "File.write")
+
+        path = args[0]
+        unless path.is_a?(String)
+          raise ExpressionError.new("Error: File.write argument 1 must be a string")
+        end
+
+        content = args[1]
+        unless content.is_a?(String)
+          raise ExpressionError.new("Error: File.write argument 2 must be a string")
+        end
+
+        begin
+          ::File.write(path, content)
+          UNDEFINED.as(Value)
+        rescue ex : Exception
           raise ExpressionError.new("Error: #{ex.message}")
         end
       end)
