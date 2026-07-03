@@ -31,7 +31,7 @@ jobs:
 
       - name: Verify reference docs are up to date
         run: |
-          python scripts/generate_reference.py
+          crystal run src/giavascript_cli.cr -- scripts/generate_reference.js
           git diff --exit-code -- reference/REFERENCE.md
 
       - name: Run tests
