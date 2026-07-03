@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-07-03
+
+### Fixed
+- Fix Windows CI failure where regenerated `REFERENCE.md` differed from committed version
+
+## [0.5.0] - 2026-07-03
+
+### Added
+- `File.write()` global builtin for synchronous file writing (#77)
+- `File.append()` global builtin for appending to files (#78)
+- JavaScript-based reference generator replaces Python script (`scripts/generate_reference.js`) (#79)
+- Broaden File method error handling from `File::Error` to `Exception` for robustness
+
 ## [0.4.0] - 2026-07-01
 
 ### Added
