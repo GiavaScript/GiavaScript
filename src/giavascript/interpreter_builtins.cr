@@ -19,6 +19,7 @@ module GiavaScript
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
       env["readLine"] = build_read_line_function
+      env["fetch"] = build_fetch_function
       env["File"] = build_file_object
       env
     end
@@ -358,6 +359,79 @@ module GiavaScript
         assert_builtin_arity(args, 0, "readLine")
         input = STDIN.gets
         input ? input.chomp.as(Value) : "".as(Value)
+      end)
+    end
+
+    private def build_fetch_function : Value
+      BuiltinFunction.new("fetch", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity_between(args, 1, 2, "fetch")
+
+        url = args[0]
+        raise ExpressionError.new("Error: fetch argument 1 must be a string") unless url.is_a?(String)
+
+        method = "GET"
+        request_headers = HTTP::Headers.new
+        request_body : String? = nil
+
+        if args.size >= 2 && args[1].is_a?(Hash(String, Value))
+          options = args[1].as(Hash(String, Value))
+          if method_val = options["method"]?
+            method = method_val.to_s.upcase if method_val.is_a?(String)
+          end
+          if headers_val = options["headers"]?
+            if headers_val.is_a?(Hash(String, Value))
+              headers_val.each { |k, v| request_headers[k] = v.to_s }
+            end
+          end
+          if body_val = options["body"]?
+            request_body = body_val.to_s
+          end
+        end
+
+        response = begin
+          uri = URI.parse(url)
+          client = HTTP::Client.new(uri)
+          begin
+            client.exec(method, uri.request_target, request_headers, request_body)
+          ensure
+            client.close
+          end
+        rescue ex
+          raise ExpressionError.new("Error: fetch failed - #{ex.message}")
+        end
+
+        status = response.status_code
+        ok = status >= 200 && status < 300
+
+        response_headers = Hash(String, Value).new
+        response.headers.each do |key, values|
+          response_headers[key] = values.join(", ")
+        end
+
+        body = response.body || ""
+
+        response_obj = Hash(String, Value).new
+        response_obj["status"] = status
+        response_obj["ok"] = ok
+        response_obj["headers"] = response_headers
+
+        response_obj["text"] = BuiltinFunction.new("Response.text", ->(text_receiver : Value, text_args : Array(Value)) do
+          assert_builtin_receiver_object(text_receiver, "Response.text")
+          assert_builtin_arity(text_args, 0, "Response.text")
+          body.as(Value)
+        end)
+
+        response_obj["json"] = BuiltinFunction.new("Response.json", ->(json_receiver : Value, json_args : Array(Value)) do
+          assert_builtin_receiver_object(json_receiver, "Response.json")
+          assert_builtin_arity(json_args, 0, "Response.json")
+          begin
+            json_any_to_value(::JSON.parse(body)).as(Value)
+          rescue ::JSON::ParseException
+            raise ExpressionError.new("Error: Response.json - body is not valid JSON")
+          end
+        end)
+
+        response_obj.as(Value)
       end)
     end
 

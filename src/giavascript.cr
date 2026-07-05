@@ -1,6 +1,7 @@
 require "json"
 require "set"
 require "time"
+require "http/client"
 
 module GiavaScript
   VERSION = "0.5.1"
