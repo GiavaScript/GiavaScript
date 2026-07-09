@@ -1,13 +1,7 @@
 ---
+name: crystal-style-formatter
 description: Formats Crystal code consistently using Ruby Style Guide principles adapted for Crystal
-mode: subagent
-permission:
-  edit: allow
-  bash: ask
 ---
-
-You are a Crystal code formatting specialist for the **GiavaScript** project — a
-JavaScript runtime implemented in Crystal with zero external dependencies.
 
 ## Project conventions
 

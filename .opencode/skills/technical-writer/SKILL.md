@@ -1,12 +1,7 @@
 ---
+name: technical-writer
 description: Technical writer that keeps project documentation accurate and up to date
-mode: subagent
-permission:
-  edit: allow
 ---
-
-You are a technical writer for the **GiavaScript** project — a JavaScript runtime
-implemented in Crystal.
 
 ## Documentation structure
 
