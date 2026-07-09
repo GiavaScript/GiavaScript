@@ -113,6 +113,9 @@ module GiavaScript
       when Tokenizer::TokenKind::Void
         evaluate(expr.operand)
         UNDEFINED
+      when Tokenizer::TokenKind::BitwiseNot
+        number = number_operand(evaluate(expr.operand), "~")
+        ~number.to_i32
       else
         raise ExpressionError.new("Error: invalid expression")
       end
@@ -410,14 +413,29 @@ module GiavaScript
         else
           left_number.to_f64 % right_number.to_f64
         end
-      when Tokenizer::TokenKind::Caret
-        left_number = number_operand(left, "^")
-        right_number = number_operand(right, "^")
+      when Tokenizer::TokenKind::Caret,
+           Tokenizer::TokenKind::BitwiseAnd,
+           Tokenizer::TokenKind::BitwiseOr,
+           Tokenizer::TokenKind::ShiftLeft,
+           Tokenizer::TokenKind::ShiftRight
+        left_number = number_operand(left, operator_lexeme(operator))
+        right_number = number_operand(right, operator_lexeme(operator))
+        left_int = left_number.to_i32
+        right_int = right_number.to_i32
 
-        if left_number.is_a?(Int32) && right_number.is_a?(Int32) && right_number >= 0
-          pow_int(left_number, right_number)
+        case operator
+        when Tokenizer::TokenKind::Caret
+          left_int ^ right_int
+        when Tokenizer::TokenKind::BitwiseAnd
+          left_int & right_int
+        when Tokenizer::TokenKind::BitwiseOr
+          left_int | right_int
+        when Tokenizer::TokenKind::ShiftLeft
+          left_int << right_int
+        when Tokenizer::TokenKind::ShiftRight
+          left_int >> right_int
         else
-          left_number.to_f64 ** right_number.to_f64
+          raise ExpressionError.new("Error: invalid expression")
         end
       when Tokenizer::TokenKind::Less,
            Tokenizer::TokenKind::Greater,
@@ -737,23 +755,6 @@ module GiavaScript
       value.to_s
     end
 
-    private def pow_int(base : Int32, exponent : Int32) : Int32
-      result = 1
-      current_base = base
-      current_exponent = exponent
-
-      while current_exponent > 0
-        if (current_exponent & 1) == 1
-          result *= current_base
-        end
-
-        current_exponent >>= 1
-        current_base *= current_base if current_exponent > 0
-      end
-
-      result
-    end
-
     private def negate(value : Value) : Number
       number = number_operand(value, "-")
 
@@ -798,6 +799,14 @@ module GiavaScript
         "%"
       when Tokenizer::TokenKind::Caret
         "^"
+      when Tokenizer::TokenKind::BitwiseAnd
+        "&"
+      when Tokenizer::TokenKind::BitwiseOr
+        "|"
+      when Tokenizer::TokenKind::ShiftLeft
+        "<<"
+      when Tokenizer::TokenKind::ShiftRight
+        ">>"
       when Tokenizer::TokenKind::Less
         "<"
       when Tokenizer::TokenKind::Greater
