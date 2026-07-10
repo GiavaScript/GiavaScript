@@ -460,27 +460,39 @@ module GiavaScript
           previous_previous_char = current > 1 ? stmt[current - 2] : nil
           next_char = stmt[current + 1]?
 
-          if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0 &&
-             previous_char != '!' && previous_char != '<' && previous_char != '>' && previous_char != '=' &&
-             next_char != '='
-            operator = "="
+          if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
+            operator = nil
             lhs_end = current
 
-            if previous_char == '+' || previous_char == '-' || previous_char == '*' || previous_char == '/'
-              operator = "#{previous_char}="
-              lhs_end = current - 1
+            if previous_char == '<' && previous_previous_char == '<' && next_char != '='
+              operator = "<<="
+              lhs_end = current - 2
+            elsif previous_char == '>' && previous_previous_char == '>' && next_char != '='
+              operator = ">>="
+              lhs_end = current - 2
+            elsif previous_char != '!' && previous_char != '<' && previous_char != '>' && previous_char != '=' &&
+                  next_char != '='
+              operator = "="
 
-              if previous_previous_char == previous_char
-                current += 1
-                next
+              if previous_char == '+' || previous_char == '-' || previous_char == '*' || previous_char == '/' ||
+                 previous_char == '&' || previous_char == '|' || previous_char == '^'
+                operator = "#{previous_char}="
+                lhs_end = current - 1
+
+                if previous_previous_char == previous_char
+                  current += 1
+                  next
+                end
               end
             end
 
-            lhs = stmt[0...lhs_end].strip
-            rhs = stmt[current + 1...stmt.size].strip
-            return nil if lhs.empty? || rhs.empty?
+            if operator
+              lhs = stmt[0...lhs_end].strip
+              rhs = stmt[current + 1...stmt.size].strip
+              return nil if lhs.empty? || rhs.empty?
 
-            return {lhs: lhs, rhs: rhs, operator: operator}
+              return {lhs: lhs, rhs: rhs, operator: operator}
+            end
           end
         end
 
@@ -1315,6 +1327,26 @@ module GiavaScript
         end
 
         left_number.to_f64 / right_number.to_f64
+      when "&="
+        left_number = compound_number_operand(left, "&")
+        right_number = compound_number_operand(right, "&")
+        left_number.to_i32 & right_number.to_i32
+      when "|="
+        left_number = compound_number_operand(left, "|")
+        right_number = compound_number_operand(right, "|")
+        left_number.to_i32 | right_number.to_i32
+      when "^="
+        left_number = compound_number_operand(left, "^")
+        right_number = compound_number_operand(right, "^")
+        left_number.to_i32 ^ right_number.to_i32
+      when "<<="
+        left_number = compound_number_operand(left, "<<")
+        right_number = compound_number_operand(right, "<<")
+        left_number.to_i32 << right_number.to_i32
+      when ">>="
+        left_number = compound_number_operand(left, ">>")
+        right_number = compound_number_operand(right, ">>")
+        left_number.to_i32 >> right_number.to_i32
       else
         raise ExpressionError.new("Error: invalid assignment operator '#{operator}'")
       end

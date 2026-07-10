@@ -49,14 +49,56 @@ module GiavaScript
     end
 
     private def parse_logical_and : Expr
-      left = parse_equality
+      left = parse_bitwise_or
 
       loop do
         break unless @current.kind == Tokenizer::TokenKind::AndAnd
 
         advance_token
-        right = parse_equality
+        right = parse_bitwise_or
         left = BinaryExpr.new(left, Tokenizer::TokenKind::AndAnd, right)
+      end
+
+      left
+    end
+
+    private def parse_bitwise_or : Expr
+      left = parse_bitwise_xor
+
+      loop do
+        break unless @current.kind == Tokenizer::TokenKind::BitwiseOr
+
+        advance_token
+        right = parse_bitwise_xor
+        left = BinaryExpr.new(left, Tokenizer::TokenKind::BitwiseOr, right)
+      end
+
+      left
+    end
+
+    private def parse_bitwise_xor : Expr
+      left = parse_bitwise_and
+
+      loop do
+        break unless @current.kind == Tokenizer::TokenKind::Caret
+
+        advance_token
+        right = parse_bitwise_and
+        left = BinaryExpr.new(left, Tokenizer::TokenKind::Caret, right)
+      end
+
+      left
+    end
+
+    private def parse_bitwise_and : Expr
+      left = parse_equality
+
+      loop do
+        break unless @current.kind == Tokenizer::TokenKind::BitwiseAnd
+
+        advance_token
+        right = parse_equality
+        left = BinaryExpr.new(left, Tokenizer::TokenKind::BitwiseAnd, right)
       end
 
       left
@@ -78,11 +120,26 @@ module GiavaScript
     end
 
     private def parse_comparison : Expr
-      left = parse_addition
+      left = parse_shift
 
       loop do
         operator = @current.kind
         break unless comparison_operator?(operator)
+
+        advance_token
+        right = parse_shift
+        left = BinaryExpr.new(left, operator, right)
+      end
+
+      left
+    end
+
+    private def parse_shift : Expr
+      left = parse_addition
+
+      loop do
+        operator = @current.kind
+        break unless operator == Tokenizer::TokenKind::ShiftLeft || operator == Tokenizer::TokenKind::ShiftRight
 
         advance_token
         right = parse_addition
@@ -108,27 +165,15 @@ module GiavaScript
     end
 
     private def parse_term : Expr
-      left = parse_power
+      left = parse_factor
 
       loop do
         operator = @current.kind
         break unless operator == Tokenizer::TokenKind::Star || operator == Tokenizer::TokenKind::Slash || operator == Tokenizer::TokenKind::Percent
 
         advance_token
-        right = parse_power
+        right = parse_factor
         left = BinaryExpr.new(left, operator, right)
-      end
-
-      left
-    end
-
-    private def parse_power : Expr
-      left = parse_factor
-
-      if @current.kind == Tokenizer::TokenKind::Caret
-        advance_token
-        right = parse_power
-        return BinaryExpr.new(left, Tokenizer::TokenKind::Caret, right)
       end
 
       left
@@ -163,6 +208,12 @@ module GiavaScript
         advance_token
         value = parse_factor
         return UnaryExpr.new(Tokenizer::TokenKind::Void, value)
+      end
+
+      if @current.kind == Tokenizer::TokenKind::BitwiseNot
+        advance_token
+        value = parse_factor
+        return UnaryExpr.new(Tokenizer::TokenKind::BitwiseNot, value)
       end
 
       if @current.kind == Tokenizer::TokenKind::New
