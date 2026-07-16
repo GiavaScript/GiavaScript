@@ -420,6 +420,7 @@ module GiavaScript
       parameters = [] of String
       rest_parameter = nil.as(String?)
       param_set = Set(String).new
+      defaults = {} of String => String
       unless @current.kind == Tokenizer::TokenKind::RParen
         loop do
           if @current.kind == Tokenizer::TokenKind::Spread
@@ -435,6 +436,13 @@ module GiavaScript
             raise invalid_rhs_error unless param_set.add?(parameter)
             parameters << parameter
             advance_token
+
+            if @current.kind == Tokenizer::TokenKind::Equals
+              advance_token
+              default_source = extract_default_source
+              raise invalid_rhs_error if default_source.empty?
+              defaults[parameter] = default_source
+            end
           end
 
           if @current.kind == Tokenizer::TokenKind::Comma
@@ -458,7 +466,7 @@ module GiavaScript
       @tokenizer.cursor = body_end + 1
       advance_token
 
-      FunctionExpr.new(function_name, parameters, body_source, rest_parameter)
+      FunctionExpr.new(function_name, parameters, body_source, rest_parameter, defaults)
     end
 
     private def try_parse_paren_arrow_function : ArrowFunctionExpr?
@@ -472,12 +480,13 @@ module GiavaScript
       parameters = [] of String
       rest_parameter = nil.as(String?)
       param_set = Set(String).new
+      defaults = {} of String => String
 
       if @current.kind == Tokenizer::TokenKind::RParen
         advance_token
         if @current.kind == Tokenizer::TokenKind::Arrow
           advance_token
-          return parse_arrow_body(parameters, rest_parameter)
+          return parse_arrow_body(parameters, rest_parameter, defaults)
         end
       elsif @current.kind == Tokenizer::TokenKind::Identifier || @current.kind == Tokenizer::TokenKind::Spread
         loop do
@@ -494,6 +503,13 @@ module GiavaScript
             return restore_and_nil(saved_cursor, saved_token) unless param_set.add?(param)
             parameters << param
             advance_token
+
+            if @current.kind == Tokenizer::TokenKind::Equals
+              advance_token
+              default_source = extract_default_source
+              return restore_and_nil(saved_cursor, saved_token) if default_source.empty?
+              defaults[param] = default_source
+            end
           end
 
           if @current.kind == Tokenizer::TokenKind::Comma
@@ -510,7 +526,7 @@ module GiavaScript
           advance_token
           if @current.kind == Tokenizer::TokenKind::Arrow
             advance_token
-            return parse_arrow_body(parameters, rest_parameter)
+            return parse_arrow_body(parameters, rest_parameter, defaults)
           end
         end
       end
@@ -545,7 +561,69 @@ module GiavaScript
       nil
     end
 
-    private def parse_arrow_body(parameters : Array(String), rest_parameter : String? = nil) : ArrowFunctionExpr
+    private def extract_default_source : String
+      default_start = @tokenizer.cursor - @current.lexeme.size
+      paren_depth = 0
+      bracket_depth = 0
+      brace_depth = 0
+      string_delimiter = nil.as(Char?)
+      escaping = false
+      current = @tokenizer.cursor
+
+      while current < @source.size
+        char = @source[current]
+
+        if delimiter = string_delimiter
+          if escaping
+            escaping = false
+          elsif char == '\\'
+            escaping = true
+          elsif char == delimiter
+            string_delimiter = nil
+          end
+          current += 1
+          next
+        end
+
+        case char
+        when '"', '\'', '`'
+          string_delimiter = char
+        when '('
+          paren_depth += 1
+        when ')'
+          if paren_depth > 0
+            paren_depth -= 1
+          else
+            break
+          end
+        when '['
+          bracket_depth += 1
+        when ']'
+          if bracket_depth > 0
+            bracket_depth -= 1
+          end
+        when '{'
+          brace_depth += 1
+        when '}'
+          if brace_depth > 0
+            brace_depth -= 1
+          end
+        when ','
+          if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
+            break
+          end
+        end
+
+        current += 1
+      end
+
+      default_source = @source[default_start...current].strip
+      @tokenizer.cursor = current
+      advance_token
+      default_source
+    end
+
+    private def parse_arrow_body(parameters : Array(String), rest_parameter : String? = nil, defaults : Hash(String, String) = {} of String => String) : ArrowFunctionExpr
       if @current.kind == Tokenizer::TokenKind::LBrace
         body_start = @tokenizer.cursor
         body_end = find_matching_brace_end_index(body_start)
@@ -554,14 +632,14 @@ module GiavaScript
         @tokenizer.cursor = body_end + 1
         advance_token
 
-        return ArrowFunctionExpr.new(parameters, body_source, rest_parameter)
+        return ArrowFunctionExpr.new(parameters, body_source, rest_parameter, defaults)
       end
 
       body_start = @tokenizer.cursor - @current.lexeme.size
       parse_expression
       body_end = @tokenizer.cursor - @current.lexeme.size
       body_source = "return " + @source[body_start...body_end].strip + ";"
-      ArrowFunctionExpr.new(parameters, body_source, rest_parameter)
+      ArrowFunctionExpr.new(parameters, body_source, rest_parameter, defaults)
     end
 
     private def parse_identifier_expression : Expr

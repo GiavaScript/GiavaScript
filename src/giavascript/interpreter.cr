@@ -1066,7 +1066,8 @@ module GiavaScript
     end
 
     private def call_function(name : String, args : Array(Value), env : Environment) : Value
-      @function_runtime.invoke_function(name, args, env) do |stmt, local_env, inside_function, inside_loop|
+      eval_expr = ->(source : String, expr_env : Environment) : Value { eval_rhs(source, expr_env) }
+      @function_runtime.invoke_function(name, args, env, eval_expr) do |stmt, local_env, inside_function, inside_loop|
         eval_statement(stmt, local_env, inside_function, inside_loop)
       end
     end
@@ -1075,12 +1076,21 @@ module GiavaScript
       min_args = function_value.parameters.size
       display_name = function_value.name || "anonymous"
 
-      if args.size < min_args
-        raise ExpressionError.new("Error: function '#{display_name}' expects at least #{min_args} arguments but got #{args.size}")
-      end
-
-      if function_value.rest_parameter.nil? && args.size != min_args
-        raise ExpressionError.new("Error: function '#{display_name}' expects #{min_args} arguments but got #{args.size}")
+      if function_value.rest_parameter.nil? && function_value.parameter_defaults.empty?
+        if args.size < min_args
+          raise ExpressionError.new("Error: function '#{display_name}' expects at least #{min_args} arguments but got #{args.size}")
+        end
+        if args.size != min_args
+          raise ExpressionError.new("Error: function '#{display_name}' expects #{min_args} arguments but got #{args.size}")
+        end
+      else
+        required_count = min_args - function_value.parameter_defaults.size
+        if args.size < required_count
+          raise ExpressionError.new("Error: function '#{display_name}' expects at least #{required_count} arguments but got #{args.size}")
+        end
+        if function_value.rest_parameter.nil? && args.size > min_args
+          raise ExpressionError.new("Error: function '#{display_name}' expects #{min_args} arguments but got #{args.size}")
+        end
       end
 
       local_env = Environment.new(function_value.closure)
@@ -1089,7 +1099,20 @@ module GiavaScript
       end
 
       function_value.parameters.each_with_index do |param, index|
-        local_env[param] = args[index]
+        if index < args.size
+          arg = args[index]
+          if arg.is_a?(UndefinedValue) && function_value.parameter_defaults.has_key?(param)
+            default_source = function_value.parameter_defaults[param]
+            local_env[param] = eval_rhs(default_source, local_env)
+          else
+            local_env[param] = arg
+          end
+        elsif function_value.parameter_defaults.has_key?(param)
+          default_source = function_value.parameter_defaults[param]
+          local_env[param] = eval_rhs(default_source, local_env)
+        else
+          raise ExpressionError.new("Error: missing argument for parameter '#{param}'")
+        end
       end
 
       if rest_param = function_value.rest_parameter
