@@ -31,8 +31,9 @@ module GiavaScript
     getter rest_parameter : String?
     getter body_source : String
     getter closure : Environment
+    getter parameter_defaults : Hash(String, String)
 
-    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @closure : Environment, @rest_parameter : String? = nil)
+    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @closure : Environment, @rest_parameter : String? = nil, @parameter_defaults : Hash(String, String) = {} of String => String)
     end
 
     def to_s(io : IO)

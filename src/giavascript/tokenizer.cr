@@ -52,6 +52,7 @@ module GiavaScript
       Dot
       Spread
       RegexLiteral
+      Equals
     end
 
     record Token, kind : TokenKind, lexeme : String
@@ -126,7 +127,7 @@ module GiavaScript
             Token.new(TokenKind::EqualEqual, "==")
           end
         else
-          raise invalid_rhs_error
+          Token.new(TokenKind::Equals, "=")
         end
       when '!'
         advance

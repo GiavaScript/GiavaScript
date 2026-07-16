@@ -39,9 +39,9 @@ module GiavaScript
       when NewExpr
         evaluate_new_expression(expr)
       when FunctionExpr
-        UserFunction.new(expr.name, expr.parameters, expr.body_source, @env, expr.rest_parameter)
+        UserFunction.new(expr.name, expr.parameters, expr.body_source, @env, expr.rest_parameter, expr.parameter_defaults)
       when ArrowFunctionExpr
-        UserFunction.new(nil, expr.parameters, expr.body_source, @env, expr.rest_parameter)
+        UserFunction.new(nil, expr.parameters, expr.body_source, @env, expr.rest_parameter, expr.parameter_defaults)
       when ArrayLiteral
         values = Array(Value).new(expr.elements.size)
         expr.elements.each do |element|
