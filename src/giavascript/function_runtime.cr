@@ -122,15 +122,7 @@ module GiavaScript
       @functions[name]?.try(&.parameters.size)
     end
 
-    def invoke_function(name : String, args : Array(Value), outer_env : Environment, &evaluate_statement : String, Environment, Bool, Bool -> String?) : Value
-      invoke_function_with_defaults(name, args, outer_env, nil, &evaluate_statement)
-    end
-
-    def invoke_function(name : String, args : Array(Value), outer_env : Environment, evaluate_expression : Proc(String, Environment, Value)?, &evaluate_statement : String, Environment, Bool, Bool -> String?) : Value
-      invoke_function_with_defaults(name, args, outer_env, evaluate_expression, &evaluate_statement)
-    end
-
-    private def invoke_function_with_defaults(name : String, args : Array(Value), outer_env : Environment, evaluate_expression : Proc(String, Environment, Value)?, &evaluate_statement : String, Environment, Bool, Bool -> String?) : Value
+    def invoke_function(name : String, args : Array(Value), outer_env : Environment, evaluate_expression : Proc(String, Environment, Value)? = nil, &evaluate_statement : String, Environment, Bool, Bool -> String?) : Value
       function = @functions[name]?
       raise ExpressionError.new("Error: function '#{name}' does not exist") unless function
 

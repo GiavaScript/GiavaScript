@@ -565,7 +565,6 @@ module GiavaScript
       default_start = @tokenizer.cursor - @current.lexeme.size
       paren_depth = 0
       bracket_depth = 0
-      brace_depth = 0
       string_delimiter = nil.as(Char?)
       escaping = false
       current = @tokenizer.cursor
@@ -602,14 +601,8 @@ module GiavaScript
           if bracket_depth > 0
             bracket_depth -= 1
           end
-        when '{'
-          brace_depth += 1
-        when '}'
-          if brace_depth > 0
-            brace_depth -= 1
-          end
         when ','
-          if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
+          if paren_depth == 0 && bracket_depth == 0
             break
           end
         end
