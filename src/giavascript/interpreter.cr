@@ -92,7 +92,7 @@ module GiavaScript
       end
     end
 
-    def initialize(@console_output : IO = STDOUT)
+    def initialize(@console_output : IO = STDOUT, @argv : Array(String) = ARGV)
       @env = build_global_env
       @function_runtime = FunctionRuntime.new
       @expression_cache = Hash(String, Expr).new

@@ -511,6 +511,30 @@ describe GiavaScript do
     output.to_s.should eq("hello\n")
   end
 
+  it "provides process arguments, environment, and exit" do
+    key = "GIAVASCRIPT_PROCESS_ENV_SPEC"
+    previous = ENV[key]?
+    ENV[key] = "host"
+
+    begin
+      interpreter = GiavaScript::Interpreter.new(argv: ["script.js", "one"])
+
+      interpreter.eval("process.argv;").should eq(["[\"script.js\", \"one\"]"])
+      interpreter.eval("process.env[\"#{key}\"];").should eq(["\"host\""])
+      interpreter.eval("process.env[\"#{key}\"] = \"script\";").should eq([] of String)
+      ENV[key].should eq("host")
+      interpreter.eval("typeof process.exit;").should eq(["\"function\""])
+      interpreter.eval("process.exit(1, 2);").should eq(["Error: process.exit expects between 0 and 1 arguments but got 2"])
+      interpreter.eval("process.exit(\"1\");").should eq(["Error: process.exit argument 1 must be a number"])
+    ensure
+      if previous
+        ENV[key] = previous
+      else
+        ENV.delete(key)
+      end
+    end
+  end
+
   it "prints all console.log arguments in readable format" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)

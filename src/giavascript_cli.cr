@@ -1,6 +1,6 @@
 require "./giavascript"
 
-def run_file(path : String) : Int32
+def run_file(path : String, argv : Array(String)) : Int32
   source = begin
     File.read(path)
   rescue ex : File::NotFoundError
@@ -16,7 +16,7 @@ def run_file(path : String) : Int32
     return 1
   end
 
-  interpreter = GiavaScript::Interpreter.new
+  interpreter = GiavaScript::Interpreter.new(argv: argv)
   messages = interpreter.eval(source)
 
   messages.each do |message|
@@ -36,9 +36,6 @@ if ARGV.size == 1 && (ARGV[0] == "--version" || ARGV[0] == "-v")
   exit 0
 elsif ARGV.empty?
   GiavaScript::Interpreter.new.repl
-elsif ARGV.size == 1
-  exit run_file(ARGV[0])
 else
-  STDERR.puts "Usage: crystal run src/giavascript_cli.cr -- [path/to/file.js]"
-  exit 1
+  exit run_file(ARGV[0], ARGV)
 end

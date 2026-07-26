@@ -21,6 +21,7 @@ module GiavaScript
       env["readLine"] = build_read_line_function
       env["fetch"] = build_fetch_function
       env["File"] = build_file_object
+      env["process"] = build_process_object
       env
     end
 
@@ -89,6 +90,23 @@ module GiavaScript
       end)
 
       object
+    end
+
+    private def build_process_object : Hash(String, Value)
+      process = Hash(String, Value).new
+      argv = Array(Value).new(@argv.size)
+      @argv.each { |arg| argv << arg }
+      environment = Hash(String, Value).new
+      ENV.each { |key, value| environment[key] = value }
+
+      process["argv"] = argv
+      process["env"] = environment
+      process["exit"] = BuiltinFunction.new("process.exit", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "process.exit")
+        assert_builtin_arity_between(args, 0, 1, "process.exit")
+        Process.exit(args.empty? ? 0 : number_argument(args[0], "process.exit", 0).to_i32)
+      end)
+      process
     end
 
     private def build_array_object : Hash(String, Value)
