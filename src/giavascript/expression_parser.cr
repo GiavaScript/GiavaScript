@@ -417,46 +417,7 @@ module GiavaScript
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LParen
       advance_token
 
-      parameters = [] of String
-      rest_parameter = nil.as(String?)
-      param_set = Set(String).new
-      defaults = {} of String => String
-      unless @current.kind == Tokenizer::TokenKind::RParen
-        loop do
-          if @current.kind == Tokenizer::TokenKind::Spread
-            advance_token
-            raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
-            parameter = @current.lexeme
-            raise invalid_rhs_error unless param_set.add?(parameter)
-            rest_parameter = parameter
-            advance_token
-          else
-            raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
-            parameter = @current.lexeme
-            raise invalid_rhs_error unless param_set.add?(parameter)
-            parameters << parameter
-            advance_token
-
-            if @current.kind == Tokenizer::TokenKind::Equals
-              advance_token
-              default_source = extract_default_source
-              raise invalid_rhs_error if default_source.empty?
-              defaults[parameter] = default_source
-            end
-          end
-
-          if @current.kind == Tokenizer::TokenKind::Comma
-            advance_token
-            raise invalid_rhs_error if rest_parameter
-            next
-          end
-
-          break
-        end
-      end
-
-      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RParen
-      advance_token
+      parsed_parameters = parse_parameter_list
 
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LBrace
       body_start = @tokenizer.cursor
@@ -466,7 +427,13 @@ module GiavaScript
       @tokenizer.cursor = body_end + 1
       advance_token
 
-      FunctionExpr.new(function_name, parameters, body_source, rest_parameter, defaults)
+      FunctionExpr.new(
+        function_name,
+        parsed_parameters[:parameters],
+        body_source,
+        parsed_parameters[:rest_parameter],
+        parsed_parameters[:defaults]
+      )
     end
 
     private def try_parse_paren_arrow_function : ArrowFunctionExpr?
@@ -477,63 +444,19 @@ module GiavaScript
 
       advance_token
 
-      parameters = [] of String
-      rest_parameter = nil.as(String?)
-      param_set = Set(String).new
-      defaults = {} of String => String
+      begin
+        parsed_parameters = parse_parameter_list
+        return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Arrow
 
-      if @current.kind == Tokenizer::TokenKind::RParen
         advance_token
-        if @current.kind == Tokenizer::TokenKind::Arrow
-          advance_token
-          return parse_arrow_body(parameters, rest_parameter, defaults)
-        end
-      elsif @current.kind == Tokenizer::TokenKind::Identifier || @current.kind == Tokenizer::TokenKind::Spread
-        loop do
-          if @current.kind == Tokenizer::TokenKind::Spread
-            advance_token
-            return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Identifier
-            param = @current.lexeme
-            return restore_and_nil(saved_cursor, saved_token) unless param_set.add?(param)
-            rest_parameter = param
-            advance_token
-          else
-            return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Identifier
-            param = @current.lexeme
-            return restore_and_nil(saved_cursor, saved_token) unless param_set.add?(param)
-            parameters << param
-            advance_token
-
-            if @current.kind == Tokenizer::TokenKind::Equals
-              advance_token
-              default_source = extract_default_source
-              return restore_and_nil(saved_cursor, saved_token) if default_source.empty?
-              defaults[param] = default_source
-            end
-          end
-
-          if @current.kind == Tokenizer::TokenKind::Comma
-            advance_token
-            return restore_and_nil(saved_cursor, saved_token) if rest_parameter
-            return restore_and_nil(saved_cursor, saved_token) unless @current.kind == Tokenizer::TokenKind::Identifier || @current.kind == Tokenizer::TokenKind::Spread
-            next
-          end
-
-          break
-        end
-
-        if @current.kind == Tokenizer::TokenKind::RParen
-          advance_token
-          if @current.kind == Tokenizer::TokenKind::Arrow
-            advance_token
-            return parse_arrow_body(parameters, rest_parameter, defaults)
-          end
-        end
+        return parse_arrow_body(
+          parsed_parameters[:parameters],
+          parsed_parameters[:rest_parameter],
+          parsed_parameters[:defaults]
+        )
+      rescue ExpressionError
+        return restore_and_nil(saved_cursor, saved_token)
       end
-
-      @tokenizer.cursor = saved_cursor
-      @current = saved_token
-      nil
     end
 
     private def try_parse_identifier_arrow_function : ArrowFunctionExpr?
@@ -561,13 +484,59 @@ module GiavaScript
       nil
     end
 
-    private def extract_default_source : String
-      default_start = @tokenizer.cursor - @current.lexeme.size
+    private def parse_parameter_list : NamedTuple(parameters: Array(String), rest_parameter: String?, defaults: Hash(String, String))
+      parameters = [] of String
+      rest_parameter = nil.as(String?)
+      parameter_names = Set(String).new
+      defaults = {} of String => String
+
+      unless @current.kind == Tokenizer::TokenKind::RParen
+        loop do
+          is_rest = @current.kind == Tokenizer::TokenKind::Spread
+          advance_token if is_rest
+          raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
+
+          parameter = @current.lexeme
+          unless parameter_names.add?(parameter)
+            raise ExpressionError.new("Error: duplicate function parameters are not allowed")
+          end
+          advance_token
+
+          if is_rest
+            rest_parameter = parameter
+          else
+            parameters << parameter
+            if @current.kind == Tokenizer::TokenKind::Equals
+              default_start = @tokenizer.cursor
+              advance_token
+              default_source = extract_default_source(default_start)
+              raise invalid_rhs_error if default_source.empty?
+              defaults[parameter] = default_source
+            end
+          end
+
+          if @current.kind == Tokenizer::TokenKind::Comma
+            raise ExpressionError.new("Error: rest parameter must be last") if rest_parameter
+            advance_token
+            break if @current.kind == Tokenizer::TokenKind::RParen
+            next
+          end
+
+          break
+        end
+      end
+
+      raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RParen
+      advance_token
+      {parameters: parameters, rest_parameter: rest_parameter, defaults: defaults}
+    end
+
+    private def extract_default_source(default_start : Int32) : String
       paren_depth = 0
       bracket_depth = 0
       string_delimiter = nil.as(Char?)
       escaping = false
-      current = @tokenizer.cursor
+      current = default_start
 
       while current < @source.size
         char = @source[current]

@@ -17,14 +17,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/memburg/GiavaScript/actions/workflows/linux.yml">
-    <img src="https://github.com/memburg/GiavaScript/actions/workflows/linux.yml/badge.svg" alt="Linux CI" />
-  </a>
-  <a href="https://github.com/memburg/GiavaScript/actions/workflows/macos.yml">
-    <img src="https://github.com/memburg/GiavaScript/actions/workflows/macos.yml/badge.svg" alt="macOS CI" />
-  </a>
-  <a href="https://github.com/memburg/GiavaScript/actions/workflows/windows.yml">
-    <img src="https://github.com/memburg/GiavaScript/actions/workflows/windows.yml/badge.svg" alt="Windows CI" />
+  <a href="https://github.com/memburg/GiavaScript/actions/workflows/ci.yml">
+    <img src="https://github.com/memburg/GiavaScript/actions/workflows/ci.yml/badge.svg" alt="CI" />
   </a>
   <a href="https://github.com/memburg/GiavaScript/actions/workflows/nightly.yml">
     <img src="https://github.com/memburg/GiavaScript/actions/workflows/nightly.yml/badge.svg" alt="Nightly Crystal CI" />
@@ -40,7 +34,7 @@ It intentionally does not aim for full ECMAScript compliance. Check the referenc
 ### Prerequisites
 
 - [Crystal](https://crystal-lang.org/) 1.19.1 or later
-- Python 3 (only needed to regenerate `reference/REFERENCE.md`)
+- Python 3 (for the example smoke tests)
 
 ### Install the CLI
 
@@ -92,24 +86,14 @@ crystal run src/giavascript_cli.cr -- examples/templateLiterals.js
 
 ## Development workflow
 
-Install dependencies and run tests:
+Run the tests:
 
 ```bash
-shards install
 crystal spec
 ```
 
-Regenerate consolidated reference docs after editing files under `reference/`:
-
-```bash
-python3 scripts/generate_reference.py
-```
-
-CI verifies that `reference/REFERENCE.md` matches generated output.
-
 ## JavaScript feature reference
 
-- [Consolidated reference](reference/REFERENCE.md)
 - [Language features](reference/Language.md)
 - [Type methods and properties](reference/Types.md)
 - [Math](reference/Math.md)

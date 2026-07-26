@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-07-26
+
+### Fixed
+- Add missing 0.6.0 release notes and correct project version metadata (#98)
+
+## [0.6.0] - 2026-07-26
+
+### Added
+- Synchronous `fetch()` builtin for HTTP requests (#88)
+- Bitwise and shift operators, with `^` replacing non-standard exponentiation (#93)
+- Default parameter values for functions (#94)
+- `process` global object with arguments, environment variables, and process exit (#92)
+
 ## [0.5.1] - 2026-07-03
 
 ### Fixed

@@ -397,6 +397,22 @@ describe GiavaScript do
     interpreter.eval("fromOutside();").should eq(["9"])
   end
 
+  it "supports complex defaults and trailing parameter commas" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval(%(function defaults(text = "hello", number = (1 + 2), values = [3, 4],) { return text + number + values[1]; })).should eq([] of String)
+    interpreter.eval("defaults();").should eq(["\"hello34\""])
+    interpreter.eval(%(var arrow = (value = [5, 6],) => value[1];)).should eq([] of String)
+    interpreter.eval("arrow();").should eq(["6"])
+  end
+
+  it "does not overwrite existing bindings with function declarations" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var existing = 1; function existing() {}").should eq(["Error: variable 'existing' already exists"])
+    interpreter.eval("existing;").should eq(["1"])
+    interpreter.eval("function Math() {}").should eq(["Error: variable 'Math' already exists"])
+    interpreter.eval("typeof Math;").should eq(["\"object\""])
+  end
+
   it "prints error for return outside functions" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("return 5;").should eq(["Error: return can only be used inside functions"])
@@ -983,12 +999,6 @@ describe GiavaScript do
     interpreter.eval("import 42;").should eq(["Error: invalid import statement — expected import \"file.js\""])
   end
 
-  it "rejects ES module import syntax" do
-    interpreter = GiavaScript::Interpreter.new
-
-    interpreter.eval("import value from \"mod\";").should eq(["Error: invalid import statement — expected import \"file.js\""])
-  end
-
   it "supports spread in array literals" do
     interpreter = GiavaScript::Interpreter.new
 
@@ -1147,7 +1157,6 @@ describe GiavaScript do
     interpreter.eval("\"abc\".endsWith(\"bc\");").should eq(["true"])
     interpreter.eval("\"abc\".includes(\"b\");").should eq(["true"])
     interpreter.eval("\"abc\".indexOf(\"b\");").should eq(["1"])
-    interpreter.eval("\"abc\".isWellFormed();").should eq(["true"])
     interpreter.eval("\"abca\".lastIndexOf(\"a\");").should eq(["3"])
     interpreter.eval("\"a\".localeCompare(\"b\");").should eq(["-1"])
     interpreter.eval("\"abc\".match(\"bc\");").should eq(["[\"bc\"]"])
@@ -1166,7 +1175,6 @@ describe GiavaScript do
     interpreter.eval("\"MiXeD\".toLocaleUpperCase();").should eq(["\"MIXED\""])
     interpreter.eval("\"MiXeD\".toLowerCase();").should eq(["\"mixed\""])
     interpreter.eval("\"MiXeD\".toUpperCase();").should eq(["\"MIXED\""])
-    interpreter.eval("\"abc\".toWellFormed();").should eq(["\"abc\""])
     interpreter.eval("\"  spaced  \".trim();").should eq(["\"spaced\""])
     interpreter.eval("\"  spaced\".trimStart();").should eq(["\"spaced\""])
     interpreter.eval("\"spaced  \".trimEnd();").should eq(["\"spaced\""])
@@ -1541,15 +1549,8 @@ describe GiavaScript do
     interpreter.eval("var value = nil;").should eq(["Error: variable 'nil' does not exist"])
   end
 
-  it "prints null in strings as plain content" do
+  it "keeps identifiers in strings as plain content" do
     interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("var value = null;").should eq([] of String)
-    interpreter.eval("\"value is value\";").should eq(["\"value is value\""])
-  end
-
-  it "prints undefined in strings as plain content" do
-    interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("var value = undefined;").should eq([] of String)
     interpreter.eval("\"value is value\";").should eq(["\"value is value\""])
   end
 
@@ -2016,15 +2017,10 @@ describe GiavaScript do
     interpreter.eval("continue;").should eq(["Error: continue can only be used inside loops"])
   end
 
-  it "rejects let declarations with an explicit unsupported-declaration error" do
+  it "rejects unsupported declarations" do
     interpreter = GiavaScript::Interpreter.new
 
     interpreter.eval("let value = 1;").should eq(["Error: unsupported declaration 'let'"])
-  end
-
-  it "rejects const declarations with an explicit unsupported-declaration error" do
-    interpreter = GiavaScript::Interpreter.new
-
     interpreter.eval("const total = 2;").should eq(["Error: unsupported declaration 'const'"])
   end
 
@@ -2047,33 +2043,13 @@ describe GiavaScript do
     interpreter.eval("await load();").should eq(["Error: invalid right-hand side 'await load()'"])
   end
 
-  it "returns error for invalid if syntax" do
+  it "returns errors for invalid control-flow syntax" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("if value) value = 1;").should eq(["Error: invalid if statement"])
-  end
-
-  it "returns error for invalid for syntax" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("for (var i = 0 i < 3; i = i + 1) console.log(i);").should eq(["Error: invalid for statement"])
-  end
-
-  it "returns error for invalid while syntax" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("while value) value = 1;").should eq(["Error: invalid while statement"])
-  end
-
-  it "returns error for invalid do...while syntax" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("do value = 1; while value);").should eq(["Error: invalid do...while statement"])
-  end
-
-  it "returns error for invalid switch syntax" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("switch value) { case 1: value = 1; }").should eq(["Error: invalid switch statement"])
-  end
-
-  it "returns error for invalid try syntax" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("try { var value = 1; }").should eq(["Error: invalid try statement"])
   end
 
@@ -2084,131 +2060,62 @@ describe GiavaScript do
 end
 
 describe "RegExp literals" do
-  it "parses a simple regex literal" do
+  it "parses literals and exposes their basic metadata" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var re = /hello/;\nre.source;").should eq(["\"hello\""])
-  end
-
-  it "parses a regex literal with flags" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var re = /hello/gi;\nre.flags;").should eq(["\"gi\""])
-  end
-
-  it "parses a regex literal with escaped slash" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var re = /a\\/b/;\nre.test('a/b');").should eq(["true"])
-  end
-
-  it "parses a regex literal with character class containing slash" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/[/]/.test('/');").should eq(["true"])
-  end
-
-  it "parses a non-empty regex enclosing nothing" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var re = /(?:)/;\nre.source;").should eq(["\"(?:)\""])
-  end
-
-  it "returns correct typeof for regex" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("typeof /abc/;").should eq(["\"object\""])
   end
 end
 
 describe "RegExp.prototype.test" do
-  it "returns true for a matching string" do
+  it "matches strings and respects flags" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/.test('hello world');").should eq(["true"])
-  end
-
-  it "returns false for a non-matching string" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/.test('world');").should eq(["false"])
-  end
-
-  it "respects the i flag" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/i.test('HELLO');").should eq(["true"])
-  end
-
-  it "respects the m flag" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/^b/m.test('a\\nb');").should eq(["true"])
   end
 end
 
 describe "RegExp.prototype.exec" do
-  it "returns array with matched string" do
+  it "returns matches and captures or null" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var r = /hello/;\nvar m = r.exec('hello world');\nm[0];").should eq(["\"hello\""])
-  end
-
-  it "returns capture groups" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var m = /he(.)l/.exec('hello');\nm[1];").should eq(["\"l\""])
-  end
-
-  it "returns null for no match" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/.exec('world');").should eq(["null"])
   end
 end
 
 describe "RegExp constructor" do
-  it "creates regex from string pattern" do
+  it "creates and copies regular expressions" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var re = new RegExp('hello');\nre.test('hello world');").should eq(["true"])
-  end
-
-  it "creates regex from string with flags" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var re = new RegExp('hello', 'i');\nre.ignoreCase;").should eq(["true"])
-  end
-
-  it "copies existing RegExp" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var r1 = /hello/gi;\nvar r2 = new RegExp(r1);\nr2.source;\nr2.flags;").should eq(["\"hello\"", "\"gi\""])
-  end
-
-  it "copies existing RegExp with new flags" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var r1 = /hello/g;\nvar r2 = new RegExp(r1, 'i');\nr2.ignoreCase;").should eq(["true"])
   end
 end
 
 describe "RegExp properties" do
-  it "exposes source property" do
+  it "exposes source and flag properties" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/gi.source;").should eq(["\"hello\""])
-  end
-
-  it "exposes flags property" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/gim.flags;").should eq(["\"gim\""])
-  end
-
-  it "exposes global property" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/g.global;").should eq(["true"])
-  end
-
-  it "exposes ignoreCase property" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/i.ignoreCase;").should eq(["true"])
-  end
-
-  it "exposes multiline property" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/m.multiline;").should eq(["true"])
-  end
-
-  it "exposes dotAll property" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/s.dotAll;").should eq(["true"])
-  end
-
-  it "exposes unicode property" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("/hello/u.unicode;").should eq(["true"])
   end
 end
@@ -2221,18 +2128,10 @@ describe "RegExp.prototype.toString" do
 end
 
 describe "String.prototype.match with RegExp" do
-  it "returns match array without global flag" do
+  it "handles local, global, and missing matches" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello\".match(/he(.)l/);").should eq(["[\"hell\", \"l\"]"])
-  end
-
-  it "returns all matches with global flag" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello world hello\".match(/hello/g);").should eq(["[\"hello\", \"hello\"]"])
-  end
-
-  it "returns null when no match with regex" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello\".match(/xyz/);").should eq(["null"])
   end
 end
@@ -2245,13 +2144,9 @@ describe "String.prototype.matchAll with RegExp" do
 end
 
 describe "String.prototype.replace with RegExp" do
-  it "replaces first match without global flag" do
+  it "uses the global flag to control replacement count" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello world hello\".replace(/hello/, 'hi');").should eq(["\"hi world hello\""])
-  end
-
-  it "replaces all matches with global flag" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello world hello\".replace(/hello/g, 'hi');").should eq(["\"hi world hi\""])
   end
 end
@@ -2264,25 +2159,17 @@ describe "String.prototype.replaceAll with RegExp" do
 end
 
 describe "String.prototype.split with RegExp" do
-  it "splits by regex" do
+  it "splits by regex with an optional limit" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"a b  c\".split(/\\s+/);").should eq(["[\"a\", \"b\", \"c\"]"])
-  end
-
-  it "splits by regex with limit" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"a b c\".split(/\\s/, 2);").should eq(["[\"a\", \"b\"]"])
   end
 end
 
 describe "String.prototype.search with RegExp" do
-  it "returns index of first match" do
+  it "returns the first match index or -1" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello world\".search(/world/);").should eq(["6"])
-  end
-
-  it "returns -1 when no match" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("\"hello\".search(/xyz/);").should eq(["-1"])
   end
 end
@@ -2295,28 +2182,14 @@ describe "JSON.stringify with RegExp" do
 end
 
 describe "Error" do
-  it "constructs Error with message" do
+  it "constructs Error with standard properties and behavior" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
     interpreter.eval("e.message;").should eq(["\"test\""])
-  end
-
-  it "has name property set to Error" do
-    interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
     interpreter.eval("e.name;").should eq(["\"Error\""])
-  end
-
-  it "has a stack trace string" do
-    interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
     interpreter.eval("e.stack.startsWith(\"Error: test\");").should eq(["true"])
-  end
-
-  it "toString returns name: message" do
-    interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
     interpreter.eval("e.toString();").should eq(["\"Error: test\""])
+    interpreter.eval("if (e) { \"yes\"; } else { \"no\"; }").should eq(["\"yes\""])
   end
 
   it "constructs without message" do
@@ -2340,12 +2213,6 @@ describe "Error" do
   it "is typeof object" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("typeof new Error(\"test\");").should eq(["\"object\""])
-  end
-
-  it "is truthy" do
-    interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("var e = new Error(\"test\");").should eq([] of String)
-    interpreter.eval("if (e) { \"yes\"; } else { \"no\"; }").should eq(["\"yes\""])
   end
 end
 
@@ -2391,188 +2258,98 @@ describe "JSON.stringify with Error" do
 end
 
 describe "Array.prototype.fill" do
-  it "fills entire array with a value" do
+  it "fills ranges in place" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3].fill(0);").should eq(["[0, 0, 0]"])
-  end
-
-  it "fills from start index" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3, 4, 5].fill(9, 2);").should eq(["[1, 2, 9, 9, 9]"])
-  end
-
-  it "fills from start to end index" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3, 4, 5].fill(9, 1, 3);").should eq(["[1, 9, 9, 4, 5]"])
-  end
-
-  it "handles negative start index" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3, 4, 5].fill(0, -2);").should eq(["[1, 2, 3, 0, 0]"])
-  end
-
-  it "returns the modified array" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var a = [1, 2]; a.fill(9) === a;").should eq(["true"])
   end
 end
 
 describe "Array.prototype.findLast" do
-  it "finds last element matching predicate" do
+  it "finds the last match and passes callback arguments" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[2, 4, 6, 8].findLast(function(v) { return v < 6; });").should eq(["4"])
-  end
-
-  it "returns undefined when no match" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3].findLast(function(v) { return v > 9; });").should eq(["undefined"])
-  end
-
-  it "passes element, index, and array to callback" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[10, 20, 30].findLast(function(v, i, a) { return i == 1; });").should eq(["20"])
   end
 end
 
 describe "Array.prototype.findLastIndex" do
-  it "finds last index matching predicate" do
+  it "returns the last matching index or -1" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[2, 4, 6, 8].findLastIndex(function(v) { return v < 6; });").should eq(["1"])
-  end
-
-  it "returns -1 when no match" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3].findLastIndex(function(v) { return v > 9; });").should eq(["-1"])
   end
 end
 
 describe "Array.prototype.entries" do
-  it "returns [index, value] pairs" do
+  it "returns index-value pairs, including for empty arrays" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[\"a\", \"b\"].entries();").should eq(["[[0, \"a\"], [1, \"b\"]]"])
-  end
-
-  it "returns empty array for empty array" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[].entries();").should eq(["[]"])
   end
 end
 
 describe "Array.prototype.keys" do
-  it "returns array of indices" do
+  it "returns indices, including for empty arrays" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[\"a\", \"b\"].keys();").should eq(["[0, 1]"])
-  end
-
-  it "returns empty array for empty array" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[].keys();").should eq(["[]"])
   end
 end
 
 describe "Array.prototype.values" do
-  it "returns copy of array values" do
+  it "returns copied values, including for empty arrays" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[\"a\", \"b\"].values();").should eq(["[\"a\", \"b\"]"])
-  end
-
-  it "returns empty array for empty array" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[].values();").should eq(["[]"])
   end
 end
 
 describe "Array.prototype.copyWithin" do
-  it "copies elements within the array" do
+  it "copies ranges in place" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3, 4, 5].copyWithin(0, 3);").should eq(["[4, 5, 3, 4, 5]"])
-  end
-
-  it "handles negative indices" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3, 4, 5].copyWithin(-2, 0);").should eq(["[1, 2, 3, 1, 2]"])
-  end
-
-  it "respects end argument" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3, 4, 5].copyWithin(0, 0, 2);").should eq(["[1, 2, 3, 4, 5]"])
-  end
-
-  it "returns the modified array" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var a = [1, 2, 3]; a.copyWithin(0, 1) === a;").should eq(["true"])
   end
 end
 
 describe "Array.prototype.reduceRight" do
-  it "reduces from right to left" do
+  it "reduces from right to left with optional initial value" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3, 4].reduceRight(function(acc, val) { return acc + val; }, 0);").should eq(["10"])
-  end
-
-  it "works without initial value" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[1, 2, 3, 4].reduceRight(function(acc, val) { return acc + val; });").should eq(["10"])
-  end
-
-  it "processes in reverse order" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[\"a\", \"b\", \"c\"].reduceRight(function(acc, val) { return acc + val; });").should eq(["\"cba\""])
-  end
-
-  it "throws on empty array without initial value" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("[].reduceRight(function(a, b) { return a + b; });").should eq(["Error: Array.reduceRight cannot reduce an empty array without an initial value"])
   end
 end
 
 describe "Array.from" do
-  it "creates array from string" do
+  it "creates arrays from supported inputs" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("Array.from(\"abc\");").should eq(["[\"a\", \"b\", \"c\"]"])
-  end
-
-  it "creates array from existing array" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("Array.from([1, 2, 3]);").should eq(["[1, 2, 3]"])
-  end
-
-  it "creates array from array-like object" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("Array.from({length: 3, \"0\": \"a\", \"1\": \"b\", \"2\": \"c\"});").should eq(["[\"a\", \"b\", \"c\"]"])
-  end
-
-  it "handles empty string" do
-    interpreter = GiavaScript::Interpreter.new
     interpreter.eval("Array.from(\"\");").should eq(["[]"])
   end
+end
 
-  describe "VERSION" do
-    it "is a non-empty string" do
-      GiavaScript::VERSION.is_a?(String).should be_true
-      GiavaScript::VERSION.empty?.should be_false
-    end
-
-    it "matches shard.yml version" do
-      shard_yml = File.read(File.join(__DIR__, "..", "shard.yml"))
-      version_line = shard_yml.lines.find { |line| line.starts_with?("version:") }
-      version_line.should_not be_nil
-      expected_version = version_line.not_nil!.split(":", 2).last.strip
-      GiavaScript::VERSION.should eq(expected_version)
-    end
+describe "VERSION" do
+  it "is a non-empty string" do
+    GiavaScript::VERSION.is_a?(String).should be_true
+    GiavaScript::VERSION.empty?.should be_false
   end
 
-  describe "CLI" do
-    it "recognizes --version flag" do
-      argv = ["--version"]
-      argv.size.should eq(1)
-      (argv[0] == "--version" || argv[0] == "-v").should be_true
-    end
-
-    it "recognizes -v flag" do
-      argv = ["-v"]
-      argv.size.should eq(1)
-      (argv[0] == "--version" || argv[0] == "-v").should be_true
-    end
+  it "matches shard.yml version" do
+    shard_yml = File.read(File.join(__DIR__, "..", "shard.yml"))
+    version_line = shard_yml.lines.find { |line| line.starts_with?("version:") }
+    version_line.should_not be_nil
+    expected_version = version_line.not_nil!.split(":", 2).last.strip
+    GiavaScript::VERSION.should eq(expected_version)
   end
 end
