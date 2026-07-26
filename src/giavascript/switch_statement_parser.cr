@@ -67,7 +67,7 @@ module GiavaScript
           next_clause_index = find_next_clause_index(source, body_start)
           body_source = source[body_start...next_clause_index]
 
-          clauses << SwitchClause.new(test, parse_clause_statements(body_source))
+          clauses << SwitchClause.new(test, parse_block_statements(body_source))
           current = next_clause_index
           next
         end
@@ -83,7 +83,7 @@ module GiavaScript
           next_clause_index = find_next_clause_index(source, body_start)
           body_source = source[body_start...next_clause_index]
 
-          clauses << SwitchClause.new(nil, parse_clause_statements(body_source))
+          clauses << SwitchClause.new(nil, parse_block_statements(body_source))
           current = next_clause_index
           next
         end
@@ -92,10 +92,6 @@ module GiavaScript
       end
 
       clauses
-    end
-
-    private def parse_clause_statements(body_source : String) : Array(Statement)
-      parse_block_statements(body_source)
     end
 
     private def find_case_colon_index(source : String, index : Int32) : Int32

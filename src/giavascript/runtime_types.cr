@@ -3,7 +3,7 @@ module GiavaScript
   alias BuiltinPropertyGetter = Proc(Value, Value)
 
   record BuiltinMethodDefinition, name : String, body : BuiltinMethodBody
-  record TypeObject, name : String, methods : Hash(String, BuiltinMethodDefinition), properties : Hash(String, BuiltinPropertyGetter)
+  record TypeObject, methods : Hash(String, BuiltinMethodDefinition), properties : Hash(String, BuiltinPropertyGetter)
 
   class BuiltinFunction
     getter name : String
@@ -37,7 +37,6 @@ module GiavaScript
     @@callback_invoker : Proc(Value, Array(Value), Value)? = nil
 
     ERROR_TYPE = TypeObject.new(
-      "Error",
       {
         "toString" => BuiltinMethodDefinition.new("Error.toString", ->(receiver : Value, args : Array(Value)) { error_to_string(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
@@ -49,7 +48,6 @@ module GiavaScript
     )
 
     STRING_TYPE = TypeObject.new(
-      "String",
       {
         "at"                => BuiltinMethodDefinition.new("String.at", ->(receiver : Value, args : Array(Value)) { string_at(receiver, args).as(Value) }),
         "charAt"            => BuiltinMethodDefinition.new("String.charAt", ->(receiver : Value, args : Array(Value)) { string_char_at(receiver, args).as(Value) }),
@@ -91,7 +89,6 @@ module GiavaScript
     )
 
     NUMBER_TYPE = TypeObject.new(
-      "Number",
       {
         "toString" => BuiltinMethodDefinition.new("Number.toString", ->(receiver : Value, args : Array(Value)) { number_to_string(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
@@ -99,7 +96,6 @@ module GiavaScript
     )
 
     ARRAY_TYPE = TypeObject.new(
-      "Array",
       {
         "at"            => BuiltinMethodDefinition.new("Array.at", ->(receiver : Value, args : Array(Value)) { array_at(receiver, args).as(Value) }),
         "concat"        => BuiltinMethodDefinition.new("Array.concat", ->(receiver : Value, args : Array(Value)) { array_concat(receiver, args).as(Value) }),
@@ -141,7 +137,6 @@ module GiavaScript
     )
 
     OBJECT_TYPE = TypeObject.new(
-      "Object",
       {
         "toString" => BuiltinMethodDefinition.new("Object.toString", ->(receiver : Value, args : Array(Value)) { object_to_string(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
@@ -149,7 +144,6 @@ module GiavaScript
     )
 
     BOOL_TYPE = TypeObject.new(
-      "Bool",
       {
         "toString" => BuiltinMethodDefinition.new("Bool.toString", ->(receiver : Value, args : Array(Value)) { bool_to_string(receiver, args).as(Value) }),
       } of String => BuiltinMethodDefinition,
@@ -157,7 +151,6 @@ module GiavaScript
     )
 
     DATE_TYPE = TypeObject.new(
-      "Date",
       {
         "getTime"  => BuiltinMethodDefinition.new("Date.getTime", ->(receiver : Value, args : Array(Value)) { date_get_time(receiver, args).as(Value) }),
         "toString" => BuiltinMethodDefinition.new("Date.toString", ->(receiver : Value, args : Array(Value)) { date_to_string(receiver, args).as(Value) }),
@@ -166,7 +159,6 @@ module GiavaScript
     )
 
     REGEXP_TYPE = TypeObject.new(
-      "RegExp",
       {
         "test"     => BuiltinMethodDefinition.new("RegExp.test", ->(receiver : Value, args : Array(Value)) { regexp_test(receiver, args).as(Value) }),
         "exec"     => BuiltinMethodDefinition.new("RegExp.exec", ->(receiver : Value, args : Array(Value)) { regexp_exec(receiver, args).as(Value) }),
@@ -231,6 +223,39 @@ module GiavaScript
       result
     ensure
       @@callback_invoker = previous
+    end
+
+    def js_string(value : Value) : String
+      return "null" if value.nil?
+      return "undefined" if value.is_a?(UndefinedValue)
+      return value.map { |item| js_array_element_string(item) }.join(",") if value.is_a?(Array(Value))
+      return "[object Object]" if value.is_a?(Hash(String, Value))
+      return "function" if value.is_a?(BuiltinFunction) || value.is_a?(UserFunction)
+
+      value.to_s
+    end
+
+    def truthy?(value : Value) : Bool
+      return false if value.nil? || value.is_a?(UndefinedValue)
+      return value if value.is_a?(Bool)
+      return !value.empty? if value.is_a?(String)
+      return value != 0 if value.is_a?(Int32)
+      return value != 0.0 if value.is_a?(Float64)
+
+      true
+    end
+
+    def object_key(value : Value) : String
+      return value if value.is_a?(String)
+      return value.to_s if value.is_a?(Int32) || value.is_a?(Float64)
+
+      raise ExpressionError.new("Error: object property key must be a string or number")
+    end
+
+    private def js_array_element_string(value : Value) : String
+      return "" if value.nil? || value.is_a?(UndefinedValue)
+
+      js_string(value)
     end
 
     private def string_length(receiver : Value) : Value
@@ -557,16 +582,7 @@ module GiavaScript
       end
 
       search = string_argument(args[0], "String.replace")
-
-      return "#{replacement}#{string}" if search.empty?
-
-      match_index = string.index(search)
-      return string unless match_index
-
-      prefix = string[0...match_index]
-      suffix_start = match_index + search.size
-      suffix = string[suffix_start...string.size]
-      "#{prefix}#{replacement}#{suffix}"
+      string.sub(search, replacement)
     end
 
     private def string_replace_all(receiver : Value, args : Array(Value)) : Value
@@ -618,7 +634,7 @@ module GiavaScript
       end_index = args.size == 2 ? normalize_slice_index(integer_argument(args[1], "String.slice"), size) : size
       return "" if end_index <= start_index
 
-      string_range_by_char_index(string, start_index, end_index)
+      string[start_index...end_index]
     end
 
     private def string_substring(receiver : Value, args : Array(Value)) : Value
@@ -632,7 +648,7 @@ module GiavaScript
         start_index, end_index = end_index, start_index
       end
 
-      string_range_by_char_index(string, start_index, end_index)
+      string[start_index...end_index]
     end
 
     private def string_to_string(receiver : Value, args : Array(Value)) : Value
@@ -766,7 +782,7 @@ module GiavaScript
           [value, index, array_receiver] of Value,
           "Array.filter"
         )
-        result << value if runtime_truthy?(predicate_result)
+        result << value if truthy?(predicate_result)
         index += 1
       end
 
@@ -859,7 +875,7 @@ module GiavaScript
           [array_receiver[index], index, array_receiver] of Value,
           "Array.some"
         )
-        return true if runtime_truthy?(predicate_result)
+        return true if truthy?(predicate_result)
         index += 1
       end
 
@@ -881,7 +897,7 @@ module GiavaScript
           [array_receiver[index], index, array_receiver] of Value,
           "Array.every"
         )
-        return false unless runtime_truthy?(predicate_result)
+        return false unless truthy?(predicate_result)
         index += 1
       end
 
@@ -904,7 +920,7 @@ module GiavaScript
           [value, index, array_receiver] of Value,
           "Array.find"
         )
-        return value if runtime_truthy?(predicate_result)
+        return value if truthy?(predicate_result)
         index += 1
       end
 
@@ -926,7 +942,7 @@ module GiavaScript
           [array_receiver[index], index, array_receiver] of Value,
           "Array.findIndex"
         )
-        return index if runtime_truthy?(predicate_result)
+        return index if truthy?(predicate_result)
         index += 1
       end
 
@@ -1005,19 +1021,7 @@ module GiavaScript
 
     private def array_reverse(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "Array.reverse")
-      array_receiver = receiver_array(receiver, "Array.reverse")
-      left = 0
-      right = array_receiver.size - 1
-
-      while left < right
-        tmp = array_receiver[left]
-        array_receiver[left] = array_receiver[right]
-        array_receiver[right] = tmp
-        left += 1
-        right -= 1
-      end
-
-      array_receiver
+      receiver_array(receiver, "Array.reverse").reverse!
     end
 
     private def array_shift(receiver : Value, args : Array(Value)) : Value
@@ -1036,14 +1040,7 @@ module GiavaScript
       end_index = args.size == 2 ? normalize_slice_index(integer_argument(args[1], "Array.slice"), size) : size
       return [] of Value if end_index <= start_index
 
-      result = Array(Value).new(end_index - start_index)
-      index = start_index
-      while index < end_index
-        result << array_receiver[index]
-        index += 1
-      end
-
-      result
+      array_receiver[start_index...end_index]
     end
 
     private def array_sort(receiver : Value, args : Array(Value)) : Value
@@ -1185,7 +1182,7 @@ module GiavaScript
           [value, index, array_receiver] of Value,
           "Array.findLast"
         )
-        return value if runtime_truthy?(predicate_result)
+        return value if truthy?(predicate_result)
         index -= 1
       end
 
@@ -1204,7 +1201,7 @@ module GiavaScript
           [array_receiver[index], index, array_receiver] of Value,
           "Array.findLastIndex"
         )
-        return index if runtime_truthy?(predicate_result)
+        return index if truthy?(predicate_result)
         index -= 1
       end
 
@@ -1252,10 +1249,7 @@ module GiavaScript
 
     private def array_values(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "Array.values")
-      array_receiver = receiver_array(receiver, "Array.values")
-      result = Array(Value).new(array_receiver.size)
-      array_receiver.each { |value| result << value }
-      result
+      receiver_array(receiver, "Array.values").dup
     end
 
     private def normalize_copy_within_index(index : Int32, size : Int32) : Int32
@@ -1291,9 +1285,7 @@ module GiavaScript
 
     private def date_to_string(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "Date.toString")
-      date = receiver_date(receiver, "Date.toString")
-      timestamp = date.timestamp_ms.round.to_i64
-      Time.unix_ms(timestamp).to_s("%Y-%m-%dT%H:%M:%S.%3N") + "Z"
+      receiver_date(receiver, "Date.toString").to_s
     end
 
     private def regexp_test(receiver : Value, args : Array(Value)) : Value
@@ -1315,16 +1307,6 @@ module GiavaScript
         (1...match.size).each do |i|
           result << (match[i]? || "")
         end
-      end
-
-      match_index = match.begin
-      result_object = Hash(String, Value).new
-      result_object["index"] = match_index
-      result_object["input"] = input
-      result_object["length"] = result.size
-      result_object["0"] = result[0]
-      result.each_with_index do |element, idx|
-        result_object[idx.to_s] = element
       end
 
       result.as(Value)
@@ -1602,29 +1584,6 @@ module GiavaScript
       false
     end
 
-    private def runtime_truthy?(value : Value) : Bool
-      return false if value.nil?
-      return false if value.is_a?(UndefinedValue)
-
-      if value.is_a?(Bool)
-        return value
-      end
-
-      if value.is_a?(String)
-        return !value.empty?
-      end
-
-      if value.is_a?(Int32)
-        return value != 0
-      end
-
-      if value.is_a?(Float64)
-        return value != 0.0
-      end
-
-      true
-    end
-
     private def clamp_substring_index(index : Int32, size : Int32) : Int32
       return 0 if index < 0
       return size if index > size
@@ -1647,23 +1606,6 @@ module GiavaScript
       end
     end
 
-    private def string_range_by_char_index(string : String, start_index : Int32, end_index : Int32) : String
-      return "" if end_index <= start_index
-
-      String.build do |builder|
-        char_index = 0
-        string.each_char do |char|
-          break if char_index >= end_index
-
-          if char_index >= start_index
-            builder << char
-          end
-
-          char_index += 1
-        end
-      end
-    end
-
     private def error_message(receiver : Value) : Value
       receiver_error(receiver, "Error.message").message
     end
@@ -1678,8 +1620,7 @@ module GiavaScript
 
     private def error_to_string(receiver : Value, args : Array(Value)) : Value
       assert_arity(args, 0, "Error.toString")
-      error_value = receiver_error(receiver, "Error.toString")
-      "#{error_value.name}: #{error_value.message}"
+      receiver_error(receiver, "Error.toString").to_s
     end
 
     private def receiver_error(value : Value, method_name : String) : ErrorValue

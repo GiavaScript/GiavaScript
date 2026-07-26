@@ -7,10 +7,6 @@ import sys
 from pathlib import Path
 
 
-def run_command(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, cwd=cwd, text=True, capture_output=True)
-
-
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     examples_dir = repo_root / "examples"
@@ -23,29 +19,30 @@ def main() -> int:
     binary_path = repo_root / "bin" / "giavascript-smoke"
     binary_path.parent.mkdir(parents=True, exist_ok=True)
 
-    build_result = run_command(
+    build_result = subprocess.run(
         ["crystal", "build", "src/giavascript_cli.cr", "-o", str(binary_path)],
         cwd=repo_root,
+        text=True,
+        capture_output=True,
     )
     if build_result.returncode != 0:
-        if build_result.stdout:
-            print(build_result.stdout, file=sys.stderr, end="")
-        if build_result.stderr:
-            print(build_result.stderr, file=sys.stderr, end="")
+        sys.stderr.write(build_result.stdout + build_result.stderr)
         return build_result.returncode
 
     failures = []
     for example_path in example_paths:
         relative_example = example_path.relative_to(repo_root)
         print(f"Running {relative_example}")
-        result = run_command([str(binary_path), str(relative_example)], cwd=repo_root)
+        result = subprocess.run(
+            [str(binary_path), str(relative_example)],
+            cwd=repo_root,
+            text=True,
+            capture_output=True,
+        )
 
         if result.returncode != 0:
             failures.append(relative_example)
-            if result.stdout:
-                print(result.stdout, file=sys.stderr, end="")
-            if result.stderr:
-                print(result.stderr, file=sys.stderr, end="")
+            sys.stderr.write(result.stdout + result.stderr)
 
     if failures:
         print("\nExample smoke tests failed:", file=sys.stderr)

@@ -120,9 +120,7 @@ module GiavaScript
 
       array["of"] = BuiltinFunction.new("Array.of", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Array.of")
-        values = Array(Value).new(args.size)
-        args.each { |arg| values << arg }
-        values.as(Value)
+        args.dup.as(Value)
       end)
 
       array["from"] = BuiltinFunction.new("Array.from", ->(receiver : Value, args : Array(Value)) do
@@ -236,10 +234,10 @@ module GiavaScript
         if args[0].is_a?(RegExpValue)
           source_regexp = args[0].as(RegExpValue)
           pattern = source_regexp.pattern
-          flags = args.size >= 2 ? to_primitive_string_for_globals(args[1]) : source_regexp.flags
+          flags = args.size >= 2 ? RuntimeTypes.js_string(args[1]) : source_regexp.flags
         elsif args[0].is_a?(String)
           pattern = args[0].as(String)
-          flags = args.size >= 2 ? to_primitive_string_for_globals(args[1]) : ""
+          flags = args.size >= 2 ? RuntimeTypes.js_string(args[1]) : ""
         else
           raise ExpressionError.new("Error: RegExp argument 1 must be a string or RegExp")
         end
@@ -256,12 +254,11 @@ module GiavaScript
 
     private def build_error(name : String) : Hash(String, Value)
       error_obj = Hash(String, Value).new
-      error_name = name
 
       error_obj["__construct"] = BuiltinFunction.new(name, ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, name)
-        message = args.empty? ? "" : to_primitive_string_for_globals(args[0])
-        ErrorValue.new(message, error_name).as(Value)
+        message = args.empty? ? "" : RuntimeTypes.js_string(args[0])
+        ErrorValue.new(message, name).as(Value)
       end)
 
       error_obj
@@ -271,7 +268,7 @@ module GiavaScript
       BuiltinFunction.new("parseInt", ->(_receiver : Value, args : Array(Value)) do
         assert_builtin_arity_between(args, 1, 2, "parseInt")
 
-        source = to_primitive_string_for_globals(args[0]).lstrip
+        source = RuntimeTypes.js_string(args[0]).lstrip
         nan = Float64::NAN.as(Value)
 
         result = if source.empty?
@@ -342,7 +339,7 @@ module GiavaScript
     private def build_parse_float_function : Value
       BuiltinFunction.new("parseFloat", ->(_receiver : Value, args : Array(Value)) do
         assert_builtin_arity(args, 1, "parseFloat")
-        source = to_primitive_string_for_globals(args[0]).lstrip
+        source = RuntimeTypes.js_string(args[0]).lstrip
         nan = Float64::NAN.as(Value)
 
         result = if match = source.match(/\A[+-]?(?:Infinity|(?:(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?))/)
@@ -660,10 +657,7 @@ module GiavaScript
       math["SQRT1_2"] = 0.7071067811865476
       math["SQRT2"] = 1.4142135623730951
 
-      math["sqrt"] = BuiltinFunction.new("Math.sqrt", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.sqrt")
-        Math.sqrt(unary_number_arg_f64(args, "Math.sqrt")).as(Value)
-      end)
+      register_unary_math(math, "sqrt") { |value| Math.sqrt(value).as(Value) }
 
       math["abs"] = BuiltinFunction.new("Math.abs", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.abs")
@@ -676,30 +670,11 @@ module GiavaScript
         end
       end)
 
-      math["acos"] = BuiltinFunction.new("Math.acos", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.acos")
-        Math.acos(unary_number_arg_f64(args, "Math.acos")).as(Value)
-      end)
-
-      math["acosh"] = BuiltinFunction.new("Math.acosh", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.acosh")
-        Math.acosh(unary_number_arg_f64(args, "Math.acosh")).as(Value)
-      end)
-
-      math["asin"] = BuiltinFunction.new("Math.asin", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.asin")
-        Math.asin(unary_number_arg_f64(args, "Math.asin")).as(Value)
-      end)
-
-      math["asinh"] = BuiltinFunction.new("Math.asinh", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.asinh")
-        Math.asinh(unary_number_arg_f64(args, "Math.asinh")).as(Value)
-      end)
-
-      math["atan"] = BuiltinFunction.new("Math.atan", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.atan")
-        Math.atan(unary_number_arg_f64(args, "Math.atan")).as(Value)
-      end)
+      register_unary_math(math, "acos") { |value| Math.acos(value).as(Value) }
+      register_unary_math(math, "acosh") { |value| Math.acosh(value).as(Value) }
+      register_unary_math(math, "asin") { |value| Math.asin(value).as(Value) }
+      register_unary_math(math, "asinh") { |value| Math.asinh(value).as(Value) }
+      register_unary_math(math, "atan") { |value| Math.atan(value).as(Value) }
 
       math["atan2"] = BuiltinFunction.new("Math.atan2", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.atan2")
@@ -707,20 +682,9 @@ module GiavaScript
         Math.atan2(y, x).as(Value)
       end)
 
-      math["atanh"] = BuiltinFunction.new("Math.atanh", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.atanh")
-        Math.atanh(unary_number_arg_f64(args, "Math.atanh")).as(Value)
-      end)
-
-      math["cbrt"] = BuiltinFunction.new("Math.cbrt", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.cbrt")
-        Math.cbrt(unary_number_arg_f64(args, "Math.cbrt")).as(Value)
-      end)
-
-      math["ceil"] = BuiltinFunction.new("Math.ceil", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.ceil")
-        unary_number_arg_f64(args, "Math.ceil").ceil.to_i32.as(Value)
-      end)
+      register_unary_math(math, "atanh") { |value| Math.atanh(value).as(Value) }
+      register_unary_math(math, "cbrt") { |value| Math.cbrt(value).as(Value) }
+      register_unary_math(math, "ceil") { |value| value.ceil.to_i32.as(Value) }
 
       math["clz32"] = BuiltinFunction.new("Math.clz32", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.clz32")
@@ -729,40 +693,13 @@ module GiavaScript
         number_to_uint32(value).leading_zeros_count.to_i32.as(Value)
       end)
 
-      math["cos"] = BuiltinFunction.new("Math.cos", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.cos")
-        Math.cos(unary_number_arg_f64(args, "Math.cos")).as(Value)
-      end)
-
-      math["cosh"] = BuiltinFunction.new("Math.cosh", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.cosh")
-        Math.cosh(unary_number_arg_f64(args, "Math.cosh")).as(Value)
-      end)
-
-      math["exp"] = BuiltinFunction.new("Math.exp", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.exp")
-        Math.exp(unary_number_arg_f64(args, "Math.exp")).as(Value)
-      end)
-
-      math["expm1"] = BuiltinFunction.new("Math.expm1", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.expm1")
-        Math.expm1(unary_number_arg_f64(args, "Math.expm1")).as(Value)
-      end)
-
-      math["f16round"] = BuiltinFunction.new("Math.f16round", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.f16round")
-        math_f16round(unary_number_arg_f64(args, "Math.f16round")).as(Value)
-      end)
-
-      math["floor"] = BuiltinFunction.new("Math.floor", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.floor")
-        unary_number_arg_f64(args, "Math.floor").floor.to_i32.as(Value)
-      end)
-
-      math["fround"] = BuiltinFunction.new("Math.fround", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.fround")
-        unary_number_arg_f64(args, "Math.fround").to_f32.to_f64.as(Value)
-      end)
+      register_unary_math(math, "cos") { |value| Math.cos(value).as(Value) }
+      register_unary_math(math, "cosh") { |value| Math.cosh(value).as(Value) }
+      register_unary_math(math, "exp") { |value| Math.exp(value).as(Value) }
+      register_unary_math(math, "expm1") { |value| Math.expm1(value).as(Value) }
+      register_unary_math(math, "f16round") { |value| math_f16round(value).as(Value) }
+      register_unary_math(math, "floor") { |value| value.floor.to_i32.as(Value) }
+      register_unary_math(math, "fround") { |value| value.to_f32.to_f64.as(Value) }
 
       math["hypot"] = BuiltinFunction.new("Math.hypot", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.hypot")
@@ -824,25 +761,10 @@ module GiavaScript
         (left &* right).unsafe_as(Int32).as(Value)
       end)
 
-      math["log"] = BuiltinFunction.new("Math.log", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.log")
-        Math.log(unary_number_arg_f64(args, "Math.log")).as(Value)
-      end)
-
-      math["log10"] = BuiltinFunction.new("Math.log10", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.log10")
-        Math.log10(unary_number_arg_f64(args, "Math.log10")).as(Value)
-      end)
-
-      math["log1p"] = BuiltinFunction.new("Math.log1p", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.log1p")
-        Math.log1p(unary_number_arg_f64(args, "Math.log1p")).as(Value)
-      end)
-
-      math["log2"] = BuiltinFunction.new("Math.log2", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.log2")
-        Math.log2(unary_number_arg_f64(args, "Math.log2")).as(Value)
-      end)
+      register_unary_math(math, "log") { |value| Math.log(value).as(Value) }
+      register_unary_math(math, "log10") { |value| Math.log10(value).as(Value) }
+      register_unary_math(math, "log1p") { |value| Math.log1p(value).as(Value) }
+      register_unary_math(math, "log2") { |value| Math.log2(value).as(Value) }
 
       math["max"] = BuiltinFunction.new("Math.max", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.max")
@@ -888,34 +810,10 @@ module GiavaScript
         rand.as(Value)
       end)
 
-      math["round"] = BuiltinFunction.new("Math.round", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.round")
-        unary_number_arg_f64(args, "Math.round").round.to_i32.as(Value)
-      end)
-
-      math["sign"] = BuiltinFunction.new("Math.sign", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.sign")
-        assert_builtin_arity(args, 1, "Math.sign")
-
-        value = unary_number_arg_f64(args, "Math.sign")
-        if value < 0
-          -1.as(Value)
-        elsif value > 0
-          1.as(Value)
-        else
-          0.as(Value)
-        end
-      end)
-
-      math["sin"] = BuiltinFunction.new("Math.sin", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.sin")
-        Math.sin(unary_number_arg_f64(args, "Math.sin")).as(Value)
-      end)
-
-      math["sinh"] = BuiltinFunction.new("Math.sinh", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.sinh")
-        Math.sinh(unary_number_arg_f64(args, "Math.sinh")).as(Value)
-      end)
+      register_unary_math(math, "round") { |value| value.round.to_i32.as(Value) }
+      register_unary_math(math, "sign") { |value| (value < 0 ? -1 : value > 0 ? 1 : 0).as(Value) }
+      register_unary_math(math, "sin") { |value| Math.sin(value).as(Value) }
+      register_unary_math(math, "sinh") { |value| Math.sinh(value).as(Value) }
 
       math["sumPrecise"] = BuiltinFunction.new("Math.sumPrecise", ->(receiver : Value, args : Array(Value)) do
         assert_builtin_receiver_object(receiver, "Math.sumPrecise")
@@ -942,22 +840,19 @@ module GiavaScript
         end
       end)
 
-      math["tan"] = BuiltinFunction.new("Math.tan", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.tan")
-        Math.tan(unary_number_arg_f64(args, "Math.tan")).as(Value)
-      end)
-
-      math["tanh"] = BuiltinFunction.new("Math.tanh", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.tanh")
-        Math.tanh(unary_number_arg_f64(args, "Math.tanh")).as(Value)
-      end)
-
-      math["trunc"] = BuiltinFunction.new("Math.trunc", ->(receiver : Value, args : Array(Value)) do
-        assert_builtin_receiver_object(receiver, "Math.trunc")
-        unary_number_arg_f64(args, "Math.trunc").trunc.to_i32.as(Value)
-      end)
+      register_unary_math(math, "tan") { |value| Math.tan(value).as(Value) }
+      register_unary_math(math, "tanh") { |value| Math.tanh(value).as(Value) }
+      register_unary_math(math, "trunc") { |value| value.trunc.to_i32.as(Value) }
 
       math
+    end
+
+    private def register_unary_math(math : Hash(String, Value), name : String, &function : Float64 -> Value)
+      method_name = "Math.#{name}"
+      math[name] = BuiltinFunction.new(method_name, ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, method_name)
+        function.call(unary_number_arg_f64(args, method_name))
+      end)
     end
 
     private def assert_builtin_receiver_object(receiver : Value, method_name : String)
@@ -1154,83 +1049,10 @@ module GiavaScript
       end
 
       if value.is_a?(Array(Value))
-        return coerce_to_number_for_globals(array_to_global_number_string(value))
+        return coerce_to_number_for_globals(RuntimeTypes.js_string(value))
       end
 
       Float64::NAN
-    end
-
-    private def to_primitive_string_for_globals(value : Value) : String
-      return "null" if value.nil?
-      return "undefined" if value.is_a?(UndefinedValue)
-
-      if value.is_a?(Bool)
-        return value ? "true" : "false"
-      end
-
-      if value.is_a?(Array(Value))
-        return array_to_global_number_string(value)
-      end
-
-      if value.is_a?(Hash(String, Value))
-        return "[object Object]"
-      end
-
-      if value.is_a?(BuiltinFunction)
-        return "function"
-      end
-
-      if value.is_a?(UserFunction)
-        return "function"
-      end
-
-      if value.is_a?(RegExpValue)
-        return value.to_s
-      end
-
-      if value.is_a?(ErrorValue)
-        return value.to_s
-      end
-
-      value.to_s
-    end
-
-    private def array_to_global_number_string(values : Array(Value)) : String
-      values.map { |item| global_array_element_to_string(item) }.join(",")
-    end
-
-    private def global_array_element_to_string(value : Value) : String
-      return "" if value.nil? || value.is_a?(UndefinedValue)
-
-      if value.is_a?(Array(Value))
-        return array_to_global_number_string(value)
-      end
-
-      if value.is_a?(Hash(String, Value))
-        return "[object Object]"
-      end
-
-      if value.is_a?(BuiltinFunction)
-        return "function"
-      end
-
-      if value.is_a?(UserFunction)
-        return "function"
-      end
-
-      if value.is_a?(RegExpValue)
-        return value.to_s
-      end
-
-      if value.is_a?(ErrorValue)
-        return value.to_s
-      end
-
-      if value.is_a?(Bool)
-        return value ? "true" : "false"
-      end
-
-      value.to_s
     end
   end
 end

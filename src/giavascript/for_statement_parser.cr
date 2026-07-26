@@ -2,11 +2,9 @@ module GiavaScript
   class ForStatementParser
     include StatementParserShared
 
-    INVALID_FOR_ERROR      = "Error: invalid for statement"
-    INVALID_FUNCTION_ERROR = "Error: invalid function definition"
+    INVALID_FOR_ERROR = "Error: invalid for statement"
 
     record ParsedFor, statement : Statement, end_index : Int32
-    record ParsedStatement, statement : Statement, end_index : Int32
 
     def initialize(@source : String)
     end
@@ -25,7 +23,7 @@ module GiavaScript
 
       if for_of_header = try_parse_for_of_header(current)
         current = skip_whitespace(for_of_header[:end_paren_index] + 1)
-        body = parse_statement(current)
+        body = parse_indexed_statement(current, INVALID_FOR_ERROR)
 
         ParsedFor.new(
           ForOfStatement.new(for_of_header[:var_name], for_of_header[:iterable], body.statement),
@@ -33,17 +31,17 @@ module GiavaScript
         )
       elsif for_in_header = try_parse_for_in_header(current)
         current = skip_whitespace(for_in_header[:end_paren_index] + 1)
-        body = parse_statement(current)
+        body = parse_indexed_statement(current, INVALID_FOR_ERROR)
 
         ParsedFor.new(
-          ForInStatement.new(for_in_header[:var_name], for_in_header[:iterable], body.statement, for_in_header[:declare_var]),
+          ForInStatement.new(for_in_header[:var_name], for_in_header[:iterable], body.statement),
           body.end_index
         )
       else
         header = parse_for_header(current)
         current = skip_whitespace(header[:end_paren_index] + 1)
 
-        body = parse_statement(current)
+        body = parse_indexed_statement(current, INVALID_FOR_ERROR)
 
         ParsedFor.new(
           ForStatement.new(
@@ -184,7 +182,7 @@ module GiavaScript
       {var_name: var_name, iterable: iterable, end_paren_index: end_paren_index}
     end
 
-    private def try_parse_for_in_header(index : Int32) : NamedTuple(var_name: String, iterable: Expr, end_paren_index: Int32, declare_var: Bool)?
+    private def try_parse_for_in_header(index : Int32) : NamedTuple(var_name: String, iterable: Expr, end_paren_index: Int32)?
       current = index + 1
       current = skip_whitespace(current)
 
@@ -218,7 +216,7 @@ module GiavaScript
         raise invalid_for_error
       end
 
-      {var_name: var_name, iterable: iterable, end_paren_index: end_paren_index, declare_var: declare_var}
+      {var_name: var_name, iterable: iterable, end_paren_index: end_paren_index}
     end
 
     private def find_for_of_iterable_end(index : Int32) : Int32
@@ -266,56 +264,8 @@ module GiavaScript
       raise invalid_for_error
     end
 
-    private def parse_statement(index : Int32) : ParsedStatement
-      current = skip_whitespace(index)
-      raise invalid_for_error if current >= @source.size
-
-      if starts_with_keyword?(current, "if")
-        parsed_if = IfStatementParser.new(@source).parse_from(current)
-        return ParsedStatement.new(parsed_if.statement, parsed_if.end_index)
-      end
-
-      if starts_with_keyword?(current, "for")
-        parsed_for = parse_for_statement(current)
-        return ParsedStatement.new(parsed_for.statement, parsed_for.end_index)
-      end
-
-      if starts_with_keyword?(current, "while") || starts_with_keyword?(current, "do")
-        parsed_loop = WhileStatementParser.new(@source).parse_from(current)
-        return ParsedStatement.new(parsed_loop.statement, parsed_loop.end_index)
-      end
-
-      if starts_with_keyword?(current, "switch")
-        parsed_switch = SwitchStatementParser.new(@source).parse_from(current)
-        return ParsedStatement.new(parsed_switch.statement, parsed_switch.end_index)
-      end
-
-      if starts_with_keyword?(current, "try")
-        parsed_try = TryStatementParser.new(@source).parse_from(current)
-        return ParsedStatement.new(parsed_try.statement, parsed_try.end_index)
-      end
-
-      if starts_with_keyword?(current, "function")
-        function_end_index = find_function_end_index(current, INVALID_FUNCTION_ERROR)
-        source = @source[current...function_end_index].strip
-        raise invalid_for_error if source.empty?
-
-        return ParsedStatement.new(RawStatement.new(source), function_end_index)
-      end
-
-      if @source[current]? == '{'
-        block_end_index = find_matching_brace_end_index(current, INVALID_FOR_ERROR) + 1
-        block_body = @source[current + 1...block_end_index - 1]
-        statements = parse_block_statements(block_body)
-
-        return ParsedStatement.new(BlockStatement.new(statements), block_end_index)
-      end
-
-      simple_end_index = find_simple_statement_end_index(current)
-      source = @source[current...simple_end_index].strip
-      raise invalid_for_error if source.empty?
-
-      ParsedStatement.new(parse_statement_source(source), simple_end_index)
+    private def parse_indexed_for_statement(index : Int32) : ParsedFor
+      parse_for_statement(index)
     end
 
     private def invalid_for_error : ExpressionError
