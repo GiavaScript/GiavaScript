@@ -36,6 +36,12 @@ describe GiavaScript do
     interpreter.eval("a;").should eq(["6.0"])
   end
 
+  it "supports bitwise compound assignment operators" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var a = 5; a &= 3; a |= 2; a ^= 1; a <<= 2; a >>= 1;").should eq([] of String)
+    interpreter.eval("a;").should eq(["4"])
+  end
+
   it "supports string concatenation with plus-equals" do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("var a = \"hello\"; a += \" world\";").should eq([] of String)
@@ -103,15 +109,21 @@ describe GiavaScript do
     interpreter.eval("result;").should eq(["14"])
   end
 
-  it "evaluates power expressions" do
+  it "evaluates bitwise expressions" do
     interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("2^2;").should eq(["4"])
-    interpreter.eval("2^3;").should eq(["8"])
+    interpreter.eval("5 & 3;").should eq(["1"])
+    interpreter.eval("5 | 3;").should eq(["7"])
+    interpreter.eval("5 ^ 3;").should eq(["6"])
+    interpreter.eval("~0;").should eq(["-1"])
+    interpreter.eval("8 >> 2;").should eq(["2"])
+    interpreter.eval("1 << 3;").should eq(["8"])
   end
 
-  it "uses right associativity for power" do
+  it "evaluates bitwise operator precedence" do
     interpreter = GiavaScript::Interpreter.new
-    interpreter.eval("2^3^2;").should eq(["512"])
+    interpreter.eval("5 | 3 & 1;").should eq(["5"])
+    interpreter.eval("5 & 3 | 1;").should eq(["1"])
+    interpreter.eval("1 | 2 ^ 3 & 4;").should eq(["3"])
   end
 
   it "evaluates modulo expressions" do
@@ -497,6 +509,30 @@ describe GiavaScript do
 
     interpreter.eval("console.log(\"hello\");").should eq(["undefined"])
     output.to_s.should eq("hello\n")
+  end
+
+  it "provides process arguments, environment, and exit" do
+    key = "GIAVASCRIPT_PROCESS_ENV_SPEC"
+    previous = ENV[key]?
+    ENV[key] = "host"
+
+    begin
+      interpreter = GiavaScript::Interpreter.new(argv: ["script.js", "one"])
+
+      interpreter.eval("process.argv;").should eq(["[\"script.js\", \"one\"]"])
+      interpreter.eval("process.env[\"#{key}\"];").should eq(["\"host\""])
+      interpreter.eval("process.env[\"#{key}\"] = \"script\";").should eq([] of String)
+      ENV[key].should eq("host")
+      interpreter.eval("typeof process.exit;").should eq(["\"function\""])
+      interpreter.eval("process.exit(1, 2);").should eq(["Error: process.exit expects between 0 and 1 arguments but got 2"])
+      interpreter.eval("process.exit(\"1\");").should eq(["Error: process.exit argument 1 must be a number"])
+    ensure
+      if previous
+        ENV[key] = previous
+      else
+        ENV.delete(key)
+      end
+    end
   end
 
   it "prints all console.log arguments in readable format" do

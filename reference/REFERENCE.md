@@ -46,7 +46,7 @@ Status of core JavaScript language features in GiavaScript.
 | Numeric literals (`int`, `float`) | Available |
 | String literals (single and double quotes) | Available |
 | Arithmetic (`+`, `-`, `*`, `/`, `%`) | Available |
-| Exponent operator (`^`, non-standard) | Available |
+| Bitwise operators (`&`, `|`, `^`, `~`, `<<`, `>>`) | Available |
 | Parenthesized expressions | Available |
 | Comparisons (`<`, `>`, `<=`, `>=`) | Available |
 | Equality (`==`, `!=`) | Available |
@@ -142,6 +142,9 @@ Status of core JavaScript language features in GiavaScript.
 | `console.log()` | Available |
 | `console.warn()` | Available |
 | `console.error()` | Available |
+| `process.argv` | Available |
+| `process.env` | Available (read-only host snapshot) |
+| `process.exit()` | Available |
 | `File.read()` | Available |
 | `File.readLines()` | Available |
 | `File.write()` | Available |

@@ -24,6 +24,11 @@ module GiavaScript
       Slash
       Percent
       Caret
+      BitwiseAnd
+      BitwiseOr
+      BitwiseNot
+      ShiftLeft
+      ShiftRight
       Question
       Less
       Greater
@@ -47,6 +52,7 @@ module GiavaScript
       Dot
       Spread
       RegexLiteral
+      Equals
     end
 
     record Token, kind : TokenKind, lexeme : String
@@ -89,6 +95,9 @@ module GiavaScript
         if current_char == '='
           advance
           Token.new(TokenKind::LessEqual, "<=")
+        elsif current_char == '<'
+          advance
+          Token.new(TokenKind::ShiftLeft, "<<")
         else
           Token.new(TokenKind::Less, "<")
         end
@@ -98,6 +107,9 @@ module GiavaScript
         if current_char == '='
           advance
           Token.new(TokenKind::GreaterEqual, ">=")
+        elsif current_char == '>'
+          advance
+          Token.new(TokenKind::ShiftRight, ">>")
         else
           Token.new(TokenKind::Greater, ">")
         end
@@ -115,7 +127,7 @@ module GiavaScript
             Token.new(TokenKind::EqualEqual, "==")
           end
         else
-          raise invalid_rhs_error
+          Token.new(TokenKind::Equals, "=")
         end
       when '!'
         advance
@@ -136,7 +148,7 @@ module GiavaScript
           advance
           Token.new(TokenKind::AndAnd, "&&")
         else
-          raise invalid_rhs_error
+          Token.new(TokenKind::BitwiseAnd, "&")
         end
       when '|'
         advance
@@ -144,8 +156,11 @@ module GiavaScript
           advance
           Token.new(TokenKind::OrOr, "||")
         else
-          raise invalid_rhs_error
+          Token.new(TokenKind::BitwiseOr, "|")
         end
+      when '~'
+        advance
+        Token.new(TokenKind::BitwiseNot, "~")
       when '('
         advance
         Token.new(TokenKind::LParen, "(")

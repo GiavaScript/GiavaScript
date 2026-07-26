@@ -62,8 +62,9 @@ module GiavaScript
     getter parameters : Array(String)
     getter rest_parameter : String?
     getter body_source : String
+    getter parameter_defaults : Hash(String, String)
 
-    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @rest_parameter : String? = nil)
+    def initialize(@name : String?, @parameters : Array(String), @body_source : String, @rest_parameter : String? = nil, @parameter_defaults : Hash(String, String) = {} of String => String)
     end
   end
 
@@ -71,8 +72,9 @@ module GiavaScript
     getter parameters : Array(String)
     getter rest_parameter : String?
     getter body_source : String
+    getter parameter_defaults : Hash(String, String)
 
-    def initialize(@parameters : Array(String), @body_source : String, @rest_parameter : String? = nil)
+    def initialize(@parameters : Array(String), @body_source : String, @rest_parameter : String? = nil, @parameter_defaults : Hash(String, String) = {} of String => String)
     end
   end
 
