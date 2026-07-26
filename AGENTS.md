@@ -29,8 +29,6 @@ src/
     ├── interpreter.cr            # Main interpreter (eval + statement dispatch)
     ├── interpreter_builtins.cr   # Built-in globals (console, parseInt, etc.)
     ├── runtime_types.cr          # Runtime type implementations
-    ├── function_runtime.cr       # Function declarations, expressions, arrows
-    ├── statement_splitter.cr     # Split source into statements
     ├── statement_tokenizer.cr    # Statement-level tokenizer
     ├── statement_parser_shared.cr # Shared statement parsing utilities
     ├── if_statement_parser.cr    # if/else parsing
@@ -42,31 +40,26 @@ src/
 
 Core type alias (all runtime values):
 ```crystal
-alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue
+alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue | RegExpValue | ErrorValue
 alias Number = Int32 | Float64
 ```
 
-Interpreter caches: expressions (8192 entries), raw statements (8192 entries),
-evaluators (1024 entries), JSON stringify depth limit (1000).
+Interpreter caches: expressions (8192 entries), evaluators (1024 entries), JSON
+stringify depth limit (1000).
 
 ## Commands
 
 | Action | Command |
 |--------|---------|
-| Install deps | `shards install` |
 | Run tests | `crystal spec` |
 | Run a JS file | `crystal run src/giavascript_cli.cr -- <path/to/file.js>` |
 | Build & install binary | `./install.sh` |
-| Regenerate reference docs | `crystal run src/giavascript_cli.cr -- scripts/generate_reference.js` |
 | Smoke test examples | `python3 scripts/run_examples_smoke.py` |
 | Format a single file | `crystal tool format <path>` |
 
 ## Before opening a PR
 
-1. Run `crystal spec` — all tests must pass
-2. If you changed reference source files (`reference/Language.md`, `Types.md`,
-   `Math.md`, `JSON.md`), run `crystal run src/giavascript_cli.cr -- scripts/generate_reference.js`
-3. Verify `git diff -- reference/REFERENCE.md` shows only intended changes
+Run `crystal spec` before opening a PR.
 
 ## Code conventions
 
@@ -75,8 +68,8 @@ evaluators (1024 entries), JSON stringify depth limit (1000).
 - No external shard dependencies — everything is hand-written
 - Tests use the `spec/` directory with Crystal's built-in spec framework
 - `spec_helper.cr` bootstraps the test environment
-- Main test file: `spec/giavascript_spec.cr` (~1700 lines)
-- Documentation in `reference/` (split by topic) + auto-generated `REFERENCE.md`
+- Main test file: `spec/giavascript_spec.cr`
+- Documentation lives in the four topic files under `reference/`
 
 ## Versioning
 

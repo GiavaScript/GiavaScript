@@ -2,9 +2,7 @@ module GiavaScript
   class ExpressionEvaluator
     def initialize(
       @env : Environment,
-      @call_function : Proc(String, Array(Value), Value)? = nil,
-      @resolve_function : Proc(String, BuiltinFunction?)? = nil,
-      @invoke_user_function : Proc(UserFunction, Array(Value), Value)? = nil,
+      @invoke_user_function : Proc(UserFunction, Array(Value), Value),
     )
     end
 
@@ -18,20 +16,13 @@ module GiavaScript
         lookup = @env.lookup(expr.name)
         if lookup[:found]
           lookup[:value]
-        elsif resolve_function = @resolve_function
-          function_value = resolve_function.call(expr.name)
-          if function_value
-            function_value
-          else
-            raise ExpressionError.new("Error: variable '#{expr.name}' does not exist")
-          end
         else
           raise ExpressionError.new("Error: variable '#{expr.name}' does not exist")
         end
       when UnaryExpr
         evaluate_unary(expr)
       when TernaryExpr
-        truthy?(evaluate(expr.condition)) ? evaluate(expr.consequent) : evaluate(expr.alternate)
+        RuntimeTypes.truthy?(evaluate(expr.condition)) ? evaluate(expr.consequent) : evaluate(expr.alternate)
       when BinaryExpr
         evaluate_binary(expr)
       when FunctionCallExpr
@@ -93,7 +84,7 @@ module GiavaScript
 
         interpolation = expr.expressions[index]?
         if interpolation
-          value << value_to_string(evaluate(interpolation))
+          value << RuntimeTypes.js_string(evaluate(interpolation))
         end
       end
 
@@ -107,7 +98,7 @@ module GiavaScript
       when Tokenizer::TokenKind::Minus
         negate(evaluate(expr.operand))
       when Tokenizer::TokenKind::Bang
-        !truthy?(evaluate(expr.operand))
+        !RuntimeTypes.truthy?(evaluate(expr.operand))
       when Tokenizer::TokenKind::Typeof
         evaluate_typeof(expr.operand)
       when Tokenizer::TokenKind::Void
@@ -126,11 +117,6 @@ module GiavaScript
         lookup = @env.lookup(operand.name)
         if lookup[:found]
           return typeof_value(lookup[:value])
-        end
-
-        if resolve_function = @resolve_function
-          function_value = resolve_function.call(operand.name)
-          return typeof_value(function_value) if function_value
         end
 
         return "undefined"
@@ -156,10 +142,10 @@ module GiavaScript
 
       case expr.operator
       when Tokenizer::TokenKind::AndAnd
-        return left unless truthy?(left)
+        return left unless RuntimeTypes.truthy?(left)
         return evaluate(expr.right)
       when Tokenizer::TokenKind::OrOr
-        return left if truthy?(left)
+        return left if RuntimeTypes.truthy?(left)
         return evaluate(expr.right)
       end
 
@@ -199,8 +185,7 @@ module GiavaScript
       end
 
       if target.is_a?(Hash(String, Value))
-        key = normalize_object_key(evaluate(expr.index))
-        return lookup_object_property(target, key)
+        return target.fetch(RuntimeTypes.object_key(evaluate(expr.index)), UNDEFINED)
       end
 
       raise ExpressionError.new("Error: indexing is only supported on arrays and objects")
@@ -245,13 +230,6 @@ module GiavaScript
           return {callable: lookup[:value], receiver: nil}
         end
 
-        if resolve_function = @resolve_function
-          function_value = resolve_function.call(callee_expr.name)
-          if function_value
-            return {callable: function_value, receiver: nil}
-          end
-        end
-
         raise ExpressionError.new("Error: function '#{callee_expr.name}' does not exist")
       end
 
@@ -287,26 +265,6 @@ module GiavaScript
       target[index_value]
     end
 
-    private def normalize_object_key(key_value : Value) : String
-      if key_value.is_a?(String)
-        return key_value
-      end
-
-      if key_value.is_a?(Int32)
-        return key_value.to_s
-      end
-
-      if key_value.is_a?(Float64)
-        return key_value.to_s
-      end
-
-      raise ExpressionError.new("Error: object property key must be a string or number")
-    end
-
-    private def lookup_object_property(target : Hash(String, Value), key : String) : Value
-      target.fetch(key, UNDEFINED)
-    end
-
     private def lookup_instance_property(target : Value, property : String) : NamedTuple(found: Bool, value: Value)
       if target.is_a?(Hash(String, Value))
         value = target.fetch(property) do
@@ -331,10 +289,7 @@ module GiavaScript
       end
 
       if value.is_a?(UserFunction)
-        invoke_user_function = @invoke_user_function
-        if invoke_user_function
-          return invoke_user_function.call(value, args)
-        end
+        return @invoke_user_function.call(value, args)
       end
 
       raise ExpressionError.new("Error: value is not callable")
@@ -362,7 +317,7 @@ module GiavaScript
       case operator
       when Tokenizer::TokenKind::Plus
         if left.is_a?(String) || right.is_a?(String)
-          return value_to_string(left) + value_to_string(right)
+          return RuntimeTypes.js_string(left) + RuntimeTypes.js_string(right)
         end
 
         left_number = number_operand(left, "+")
@@ -572,7 +527,7 @@ module GiavaScript
 
     private def object_to_primitive_for_loose_equality(value : Value) : Value
       if value.is_a?(Array(Value))
-        return array_to_js_string(value)
+        return RuntimeTypes.js_string(value)
       end
 
       if value.is_a?(Hash(String, Value))
@@ -598,44 +553,6 @@ module GiavaScript
       value
     end
 
-    private def array_to_js_string(values : Array(Value)) : String
-      values.map { |item| js_string_element(item) }.join(",")
-    end
-
-    private def js_string_element(value : Value) : String
-      return "" if value.nil? || value.is_a?(UndefinedValue)
-
-      if value.is_a?(Array(Value))
-        return array_to_js_string(value)
-      end
-
-      if value.is_a?(Hash(String, Value))
-        return "[object Object]"
-      end
-
-      if value.is_a?(BuiltinFunction)
-        return "function"
-      end
-
-      if value.is_a?(UserFunction)
-        return "function"
-      end
-
-      if value.is_a?(RegExpValue)
-        return value.to_s
-      end
-
-      if value.is_a?(ErrorValue)
-        return value.to_s
-      end
-
-      if value.is_a?(Bool)
-        return value ? "true" : "false"
-      end
-
-      value.to_s
-    end
-
     private def number_operand(value : Value, operator : String) : Number
       if value.is_a?(Int32)
         return value
@@ -653,17 +570,6 @@ module GiavaScript
       return parsed if parsed
 
       value.strip.to_f64?
-    end
-
-    private def truthy?(value : Value) : Bool
-      return false if value.nil?
-      return false if value.is_a?(UndefinedValue)
-      return value if value.is_a?(Bool)
-      return !value.empty? if value.is_a?(String)
-      return value != 0 if value.is_a?(Int32)
-      return value != 0.0 if value.is_a?(Float64)
-
-      true
     end
 
     private def compare_numbers(left : Float64, right : Float64, operator : Tokenizer::TokenKind) : Bool
@@ -709,50 +615,6 @@ module GiavaScript
       else
         raise ExpressionError.new("Error: invalid expression")
       end
-    end
-
-    private def value_to_string(value : Value) : String
-      if value.nil?
-        return "null"
-      end
-
-      if value.is_a?(UndefinedValue)
-        return "undefined"
-      end
-
-      if value.is_a?(String)
-        return value
-      end
-
-      if value.is_a?(Bool)
-        return value ? "true" : "false"
-      end
-
-      if value.is_a?(Array(Value))
-        return array_to_js_string(value)
-      end
-
-      if value.is_a?(Hash(String, Value))
-        return "[object Object]"
-      end
-
-      if value.is_a?(BuiltinFunction)
-        return "function"
-      end
-
-      if value.is_a?(UserFunction)
-        return "function"
-      end
-
-      if value.is_a?(RegExpValue)
-        return value.to_s
-      end
-
-      if value.is_a?(ErrorValue)
-        return value.to_s
-      end
-
-      value.to_s
     end
 
     private def negate(value : Value) : Number

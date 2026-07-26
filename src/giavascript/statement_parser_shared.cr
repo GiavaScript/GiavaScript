@@ -1,5 +1,7 @@
 module GiavaScript
   module StatementParserShared
+    record ParsedIndexedStatement, statement : Statement, end_index : Int32
+
     private def parse_block_statements(block_body : String) : Array(Statement)
       statements = [] of Statement
       tokenizer = StatementTokenizer.new(block_body)
@@ -39,6 +41,58 @@ module GiavaScript
       return ContinueStatement.new if source == "continue"
 
       RawStatement.new(source)
+    end
+
+    private def parse_indexed_statement(index : Int32, error_message : String, stop_before_else : Bool = false, raw_simple_statement : Bool = false) : ParsedIndexedStatement
+      current = skip_whitespace(index)
+      raise ExpressionError.new(error_message) if current >= @source.size
+
+      parsed = if starts_with_keyword?(current, "if")
+                 parse_indexed_if_statement(current)
+               elsif starts_with_keyword?(current, "for")
+                 parse_indexed_for_statement(current)
+               elsif starts_with_keyword?(current, "while") || starts_with_keyword?(current, "do")
+                 parse_indexed_loop_statement(current)
+               elsif starts_with_keyword?(current, "switch")
+                 SwitchStatementParser.new(@source).parse_from(current)
+               elsif starts_with_keyword?(current, "try")
+                 TryStatementParser.new(@source).parse_from(current)
+               end
+      return ParsedIndexedStatement.new(parsed.statement, parsed.end_index) if parsed
+
+      if starts_with_keyword?(current, "function")
+        function_end_index = find_function_end_index(current)
+        source = @source[current...function_end_index].strip
+        raise ExpressionError.new(error_message) if source.empty?
+
+        return ParsedIndexedStatement.new(RawStatement.new(source), function_end_index)
+      end
+
+      if @source[current]? == '{'
+        block_end_index = find_matching_brace_end_index(current, error_message) + 1
+        block_body = @source[current + 1...block_end_index - 1]
+
+        return ParsedIndexedStatement.new(BlockStatement.new(parse_block_statements(block_body)), block_end_index)
+      end
+
+      simple_end_index = find_simple_statement_end_index(current, stop_before_else)
+      source = @source[current...simple_end_index].strip
+      raise ExpressionError.new(error_message) if source.empty?
+
+      statement = raw_simple_statement ? RawStatement.new(source).as(Statement) : parse_statement_source(source)
+      ParsedIndexedStatement.new(statement, simple_end_index)
+    end
+
+    private def parse_indexed_if_statement(index : Int32)
+      IfStatementParser.new(@source).parse_from(index)
+    end
+
+    private def parse_indexed_for_statement(index : Int32)
+      ForStatementParser.new(@source).parse_from(index)
+    end
+
+    private def parse_indexed_loop_statement(index : Int32)
+      WhileStatementParser.new(@source).parse_from(index)
     end
 
     private def starts_with_keyword_in_source?(source : String, keyword : String) : Bool

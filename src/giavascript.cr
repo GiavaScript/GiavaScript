@@ -96,8 +96,8 @@ module GiavaScript
     getter name : String
     getter stack : String
 
-    def initialize(@message : String, @name : String = "Error", stack : String? = nil)
-      @stack = stack || generate_stack
+    def initialize(@message : String, @name : String = "Error")
+      @stack = generate_stack
     end
 
     def to_s(io : IO)
@@ -133,7 +133,5 @@ require "./giavascript/switch_statement_parser"
 require "./giavascript/while_statement_parser"
 require "./giavascript/try_statement_parser"
 require "./giavascript/statement_tokenizer"
-require "./giavascript/statement_splitter"
-require "./giavascript/function_runtime"
 require "./giavascript/interpreter_builtins"
 require "./giavascript/interpreter"

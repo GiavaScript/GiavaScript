@@ -14,7 +14,6 @@ This guide covers the local workflow CI expects, so your changes are easy to rev
 ```bash
 git clone https://github.com/memburg/GiavaScript.git
 cd GiavaScript
-shards install
 ```
 
 ## Build and run
@@ -41,13 +40,8 @@ Run this before opening a pull request.
 
 ## Documentation updates
 
-If you change any reference source file in `reference/` (`Language.md`, `Types.md`, `Math.md`, or `JSON.md`), regenerate the consolidated file:
-
-```bash
-python3 scripts/generate_reference.py
-```
-
-Before opening a pull request, make sure `reference/REFERENCE.md` shows no unintended changes in `git diff`. If your PR intentionally updates the reference docs, run the generator first. CI checks that this file matches the generator output; a mismatch will fail the build.
+Update the relevant canonical reference: [Language](reference/Language.md),
+[Types](reference/Types.md), [Math](reference/Math.md), or [JSON](reference/JSON.md).
 
 ## Versioning
 
@@ -66,7 +60,7 @@ Version is defined in two places:
 To cut a release:
 1. Bump version in both files
 2. Update `CHANGELOG.md`
-3. Run `crystal spec` and regenerate `REFERENCE.md` if needed
+3. Run `crystal spec`
 4. Commit and tag: `git tag v<version>`
 5. Push: `git push && git push --tags`
 
@@ -75,13 +69,10 @@ To cut a release:
 - Keep changes focused and scoped.
 - Update docs for any user-facing behavior changes.
 - Run `crystal spec`.
-- Regenerate `reference/REFERENCE.md` when needed.
 - Include a short summary of behavior changes in your PR description.
 
 ## Recommended pre-PR command sequence
 
 ```bash
 crystal spec
-python3 scripts/generate_reference.py
-git diff -- reference/REFERENCE.md
 ```

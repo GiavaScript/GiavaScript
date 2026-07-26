@@ -23,14 +23,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install dependencies
-        run: shards install
-
-      - name: Verify reference docs are up to date
-        run: |
-          crystal run src/giavascript_cli.cr -- scripts/generate_reference.js
-          git diff --exit-code -- reference/REFERENCE.md
-
       - name: Run tests
         run: crystal spec
 

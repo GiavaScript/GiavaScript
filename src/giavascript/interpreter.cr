@@ -2,11 +2,10 @@ module GiavaScript
   class Interpreter
     include InterpreterBuiltins
 
-    IDENTIFIER_REGEX             = /^[A-Za-z_][A-Za-z0-9_]*$/
-    MAX_JSON_STRINGIFY_DEPTH     = 1_000
-    MAX_EXPRESSION_CACHE_SIZE    = 8_192
-    MAX_RAW_STATEMENT_CACHE_SIZE = 8_192
-    MAX_EVALUATOR_CACHE_SIZE     = 1_024
+    IDENTIFIER_REGEX          = /^[A-Za-z_][A-Za-z0-9_]*$/
+    MAX_JSON_STRINGIFY_DEPTH  = 1_000
+    MAX_EXPRESSION_CACHE_SIZE = 8_192
+    MAX_EVALUATOR_CACHE_SIZE  = 1_024
 
     class BreakSignal < Exception
       def initialize
@@ -20,6 +19,14 @@ module GiavaScript
       end
     end
 
+    class ReturnSignal < Exception
+      getter value : Value
+
+      def initialize(@value : Value)
+        super("return")
+      end
+    end
+
     class ThrowSignal < Exception
       getter value : Value
 
@@ -29,74 +36,12 @@ module GiavaScript
     end
 
     @env : Environment
-    @function_runtime : FunctionRuntime
     @expression_cache : Hash(String, Expr)
-    @raw_statement_cache : Hash(String, CompiledRawStatement)
     @expression_evaluator_cache : Hash(UInt64, ExpressionEvaluator)
-
-    abstract class CompiledRawStatement
-    end
-
-    class FallbackRawStatement < CompiledRawStatement
-      getter source : String
-
-      def initialize(@source : String)
-      end
-    end
-
-    class IncrementRawStatement < CompiledRawStatement
-      getter target : Expr
-      getter operator : String
-
-      def initialize(@target : Expr, @operator : String)
-      end
-    end
-
-    class VarRawStatement < CompiledRawStatement
-      getter name : String
-      getter initializer : Expr?
-      getter initializer_source : String?
-
-      def initialize(@name : String, @initializer : Expr?, @initializer_source : String?)
-      end
-    end
-
-    class AssignmentRawStatement < CompiledRawStatement
-      getter target : Expr
-      getter rhs : Expr
-      getter operator : String
-
-      def initialize(@target : Expr, @rhs : Expr, @operator : String)
-      end
-    end
-
-    class IdentifierRawStatement < CompiledRawStatement
-      getter name : String
-
-      def initialize(@name : String)
-      end
-    end
-
-    class ExpressionRawStatement < CompiledRawStatement
-      getter expr : Expr
-      getter source : String
-
-      def initialize(@expr : Expr, @source : String)
-      end
-    end
-
-    class UnsupportedDeclarationRawStatement < CompiledRawStatement
-      getter keyword : String
-
-      def initialize(@keyword : String)
-      end
-    end
 
     def initialize(@console_output : IO = STDOUT, @argv : Array(String) = ARGV)
       @env = build_global_env
-      @function_runtime = FunctionRuntime.new
       @expression_cache = Hash(String, Expr).new
-      @raw_statement_cache = Hash(String, CompiledRawStatement).new
       @expression_evaluator_cache = Hash(UInt64, ExpressionEvaluator).new
     end
 
@@ -120,7 +65,7 @@ module GiavaScript
     def eval(input : String) : Array(String)
       messages = [] of String
       statements = begin
-        StatementSplitter.new(CommentStripper.strip(input)).split
+        StatementTokenizer.new(CommentStripper.strip(input)).tokenize
       rescue ex : ExpressionError
         return [ex.message || "Error: invalid statement"]
       end
@@ -139,7 +84,17 @@ module GiavaScript
     private def eval_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       if stmt.starts_with?("function ")
         begin
-          @function_runtime.define_function(stmt)
+          function_expr = parsed_expression(stmt)
+          unless function_expr.is_a?(FunctionExpr) && function_expr.name
+            return "Error: invalid function definition"
+          end
+
+          function_name = function_expr.name.not_nil!
+          if env.has_key?(function_name)
+            return "Error: variable '#{function_name}' already exists"
+          end
+
+          env[function_name] = evaluate_expression(function_expr, env)
           return nil
         rescue ex : ExpressionError
           return ex.message || "Error: invalid function definition"
@@ -190,7 +145,7 @@ module GiavaScript
         if inside_function
           return_value_expr = match[1]?
           value = return_value_expr ? eval_rhs(return_value_expr.strip, env) : UNDEFINED
-          raise FunctionRuntime::ReturnSignal.new(value)
+          raise ReturnSignal.new(value)
         end
 
         return "Error: return can only be used inside functions"
@@ -297,23 +252,10 @@ module GiavaScript
 
       created = ExpressionEvaluator.new(
         env,
-        ->(name : String, args : Array(Value)) { call_function(name, args, env).as(Value) },
-        ->(name : String) { resolve_function_reference(name, env) },
         ->(function_value : UserFunction, args : Array(Value)) { invoke_user_function(function_value, args).as(Value) }
       )
       @expression_evaluator_cache[key] = created
       created
-    end
-
-    private def resolve_function_reference(name : String, env : Environment) : BuiltinFunction?
-      return nil unless @function_runtime.function_defined?(name)
-
-      callback_arity_resolver = -> { @function_runtime.function_parameter_count(name) }
-      BuiltinFunction.new(
-        name,
-        ->(_receiver : Value, args : Array(Value)) { call_function(name, args, env).as(Value) },
-        callback_arity_resolver
-      )
     end
 
     private def parse_assignment_target(lhs : String) : Expr
@@ -365,8 +307,7 @@ module GiavaScript
       end
 
       if target_value.is_a?(Hash(String, Value))
-        key = normalize_object_key(index_value)
-        target_value[key] = value
+        target_value[RuntimeTypes.object_key(index_value)] = value
         return
       end
 
@@ -396,22 +337,6 @@ module GiavaScript
       end
 
       target[index_value] = value
-    end
-
-    private def normalize_object_key(key_value : Value) : String
-      if key_value.is_a?(String)
-        return key_value
-      end
-
-      if key_value.is_a?(Int32)
-        return key_value.to_s
-      end
-
-      if key_value.is_a?(Float64)
-        return key_value.to_s
-      end
-
-      raise ExpressionError.new("Error: object property key must be a string or number")
     end
 
     private def split_assignment_statement(stmt : String) : NamedTuple(lhs: String, rhs: String, operator: String)?
@@ -515,7 +440,7 @@ module GiavaScript
     private def eval_if_ast(if_statement : IfStatement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       begin
         condition_value = evaluate_expression(if_statement.condition, env)
-        branch = truthy?(condition_value) ? if_statement.then_branch : if_statement.else_branch
+        branch = RuntimeTypes.truthy?(condition_value) ? if_statement.then_branch : if_statement.else_branch
         return nil unless branch
 
         eval_statement_node(branch, env, inside_function, inside_loop, inside_switch)
@@ -547,7 +472,7 @@ module GiavaScript
     private def eval_for_ast(for_statement : ForStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
       begin
         if init = for_statement.init
-          init_message = eval_precompiled_raw_statement(init.source, env, inside_function, true, inside_switch)
+          init_message = eval_statement(init.source, env, inside_function, true, inside_switch)
           if init_message && init_message.starts_with?("Error:")
             return init_message
           end
@@ -556,7 +481,7 @@ module GiavaScript
         loop do
           if condition = for_statement.condition
             condition_value = evaluate_expression(condition, env)
-            break unless truthy?(condition_value)
+            break unless RuntimeTypes.truthy?(condition_value)
           end
 
           begin
@@ -570,7 +495,7 @@ module GiavaScript
           end
 
           if update = for_statement.update
-            update_message = eval_precompiled_raw_statement(update.source, env, inside_function, true, inside_switch)
+            update_message = eval_statement(update.source, env, inside_function, true, inside_switch)
             if update_message && update_message.starts_with?("Error:")
               return update_message
             end
@@ -679,7 +604,7 @@ module GiavaScript
       begin
         loop do
           condition_value = evaluate_expression(while_statement.condition, env)
-          break unless truthy?(condition_value)
+          break unless RuntimeTypes.truthy?(condition_value)
 
           begin
             body_message = eval_statement_node(while_statement.body, env, inside_function, true, inside_switch)
@@ -712,7 +637,7 @@ module GiavaScript
           end
 
           condition_value = evaluate_expression(do_while_statement.condition, env)
-          break unless truthy?(condition_value)
+          break unless RuntimeTypes.truthy?(condition_value)
         end
 
         nil
@@ -848,7 +773,7 @@ module GiavaScript
         return "Error: #{ex.message}"
       end
 
-      statements = StatementSplitter.new(CommentStripper.strip(source)).split
+      statements = StatementTokenizer.new(CommentStripper.strip(source)).tokenize
       last_message = nil.as(String?)
 
       statements.each do |inner_stmt|
@@ -866,7 +791,7 @@ module GiavaScript
     private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
       case statement
       when RawStatement
-        eval_precompiled_raw_statement(statement.source, env, inside_function, inside_loop, inside_switch)
+        eval_statement(statement.source, env, inside_function, inside_loop, inside_switch)
       when BlockStatement
         block_message = nil.as(String?)
         statement.statements.each do |inner_statement|
@@ -904,131 +829,6 @@ module GiavaScript
       end
     end
 
-    private def eval_precompiled_raw_statement(source : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
-      compiled = compiled_raw_statement(source)
-
-      case compiled
-      when FallbackRawStatement
-        eval_statement(compiled.source, env, inside_function, inside_loop, inside_switch)
-      when IncrementRawStatement
-        begin
-          current_value = evaluate_expression(compiled.target, env)
-          next_value = incremented_value(current_value, compiled.operator)
-          assign_to_target(compiled.target, next_value, env)
-          nil
-        rescue ex : ExpressionError
-          ex.message || "Error: invalid increment expression"
-        end
-      when VarRawStatement
-        if env.has_key?(compiled.name)
-          return "Error: variable '#{compiled.name}' already exists"
-        end
-
-        begin
-          value = compiled.initializer ? evaluate_expression(compiled.initializer.not_nil!, env) : UNDEFINED
-          env[compiled.name] = value
-          nil
-        rescue ex : ExpressionError
-          rhs = compiled.initializer_source || ""
-          ex.message || "Error: invalid right-hand side '#{rhs}'"
-        end
-      when AssignmentRawStatement
-        begin
-          value = if compiled.operator == "="
-                    evaluate_expression(compiled.rhs, env)
-                  else
-                    current_value = evaluate_expression(compiled.target, env)
-                    rhs_value = evaluate_expression(compiled.rhs, env)
-                    apply_compound_assignment_operator(current_value, rhs_value, compiled.operator)
-                  end
-          assign_to_target(compiled.target, value, env)
-          nil
-        rescue ex : ExpressionError
-          ex.message || "Error: invalid assignment"
-        end
-      when IdentifierRawStatement
-        if env.has_key?(compiled.name)
-          return value_to_s(env[compiled.name])
-        end
-        "Error: variable '#{compiled.name}' does not exist"
-      when ExpressionRawStatement
-        begin
-          value = evaluate_expression(compiled.expr, env)
-          value_to_s(value)
-        rescue ex : ExpressionError
-          ex.message || "Error: invalid right-hand side '#{compiled.source}'"
-        end
-      when UnsupportedDeclarationRawStatement
-        "Error: unsupported declaration '#{compiled.keyword}'"
-      end
-    end
-
-    private def compiled_raw_statement(source : String) : CompiledRawStatement
-      key = source.strip
-      cached = @raw_statement_cache[key]?
-      return cached if cached
-
-      compiled = if key.starts_with?("function ") || starts_with_keyword?(key, "if") || starts_with_keyword?(key, "for") ||
-                    starts_with_keyword?(key, "while") || starts_with_keyword?(key, "do") || starts_with_keyword?(key, "switch") ||
-                    starts_with_keyword?(key, "try") || starts_with_keyword?(key, "throw") || starts_with_keyword?(key, "import") ||
-                    key == "break" || key == "continue" || key.starts_with?("return")
-                   FallbackRawStatement.new(source)
-                 elsif match = key.match(/^(.+?)\s*(\+\+|--)$/)
-                   target_source = match[1].strip
-                   begin
-                     target_expr = parse_assignment_target(target_source)
-                     IncrementRawStatement.new(target_expr, match[2])
-                   rescue
-                     FallbackRawStatement.new(source)
-                   end
-                 elsif match = key.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)$/)
-                   VarRawStatement.new(match[1], nil, nil)
-                 elsif match = key.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
-                   name = match[1]
-                   rhs_source = match[2].strip
-                   begin
-                     rhs = parsed_expression(rhs_source)
-                     VarRawStatement.new(name, rhs, rhs_source)
-                   rescue
-                     FallbackRawStatement.new(source)
-                   end
-                 elsif keyword = unsupported_declaration_keyword(key)
-                   UnsupportedDeclarationRawStatement.new(keyword)
-                 elsif assignment = split_assignment_statement(key)
-                   begin
-                     target = parse_assignment_target(assignment[:lhs])
-                     rhs = parsed_expression(assignment[:rhs])
-                     AssignmentRawStatement.new(target, rhs, assignment[:operator])
-                   rescue
-                     FallbackRawStatement.new(source)
-                   end
-                 elsif key.matches?(IDENTIFIER_REGEX)
-                   IdentifierRawStatement.new(key)
-                 else
-                   begin
-                     ExpressionRawStatement.new(parsed_expression(key), key)
-                   rescue
-                     FallbackRawStatement.new(source)
-                   end
-                 end
-
-      @raw_statement_cache.clear if @raw_statement_cache.size >= MAX_RAW_STATEMENT_CACHE_SIZE
-      @raw_statement_cache[key] = compiled
-
-      compiled
-    end
-
-    private def truthy?(value : Value) : Bool
-      return false if value.nil?
-      return false if value.is_a?(UndefinedValue)
-      return value if value.is_a?(Bool)
-      return !value.empty? if value.is_a?(String)
-      return value != 0 if value.is_a?(Int32)
-      return value != 0.0 if value.is_a?(Float64)
-
-      true
-    end
-
     private def strict_equals_values?(left : Value, right : Value) : Bool
       if left.is_a?(Int32) || left.is_a?(Float64)
         return false unless right.is_a?(Int32) || right.is_a?(Float64)
@@ -1063,13 +863,6 @@ module GiavaScript
       return "const" if starts_with_keyword?(source, "const")
 
       nil
-    end
-
-    private def call_function(name : String, args : Array(Value), env : Environment) : Value
-      eval_expr = ->(source : String, expr_env : Environment) : Value { eval_rhs(source, expr_env) }
-      @function_runtime.invoke_function(name, args, env, eval_expr) do |stmt, local_env, inside_function, inside_loop|
-        eval_statement(stmt, local_env, inside_function, inside_loop)
-      end
     end
 
     private def invoke_user_function(function_value : UserFunction, args : Array(Value)) : Value
@@ -1121,13 +914,13 @@ module GiavaScript
         local_env[rest_param] = rest_values
       end
 
-      statements = StatementSplitter.new(function_value.body_source).split
+      statements = StatementTokenizer.new(function_value.body_source).tokenize
 
       begin
         statements.each do |stmt|
           eval_statement(stmt, local_env, true, false)
         end
-      rescue ex : FunctionRuntime::ReturnSignal
+      rescue ex : ReturnSignal
         return ex.value
       end
 
@@ -1143,7 +936,7 @@ module GiavaScript
       end
 
       if value.is_a?(String)
-        "\"#{escape_string(value)}\""
+        value.to_json
       elsif value.is_a?(Array)
         String.build do |io|
           io << '['
@@ -1159,7 +952,7 @@ module GiavaScript
           first = true
           value.each do |key, property_value|
             first ? (first = false) : (io << ", ")
-            io << '"' << escape_string(key) << "\": " << value_to_s(property_value)
+            io << key.to_json << ": " << value_to_s(property_value)
           end
           io << '}'
         end
@@ -1169,20 +962,6 @@ module GiavaScript
         value.to_s
       else
         value.to_s
-      end
-    end
-
-    private def escape_string(value : String) : String
-      String.build do |io|
-        value.each_char do |char|
-          case char
-          when '\\' then io << "\\\\"
-          when '"'  then io << "\\\""
-          when '\n' then io << "\\n"
-          when '\t' then io << "\\t"
-          else           io << char
-          end
-        end
       end
     end
 
@@ -1397,7 +1176,7 @@ module GiavaScript
         "[#{value.map { |item| compound_value_to_string(item) }.join(", ")}]"
       elsif value.is_a?(Hash(String, Value))
         properties = value.map do |key, property_value|
-          "\"#{escape_string(key)}\": #{compound_value_to_string(property_value)}"
+          "#{key.to_json}: #{compound_value_to_string(property_value)}"
         end
         "{#{properties.join(", ")}}"
       elsif value.is_a?(RegExpValue)
