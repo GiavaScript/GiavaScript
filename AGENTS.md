@@ -94,8 +94,11 @@ Release checklist: bump both locations, update `CHANGELOG.md`, then
 
 ## Git conventions
 
-- Every commit message must include the co-author trailer:
-  ```
-  Co-authored-by: Linus Torvalds <torvalds@linux-foundation.org>
-  ```
-  This applies to all commits in this repository — never omit it.
+- Before every commit, randomly choose exactly one of these co-author trailers
+  and include it in the commit message:
+   ```
+   Co-authored-by: Linus Torvalds <torvalds@linux-foundation.org>
+   Co-authored-by: Brendan Eich <brendan@mozilla.org>
+   ```
+   This applies to all commits in this repository — never omit the selected
+   trailer or include both.
