@@ -551,6 +551,19 @@ describe GiavaScript do
     end
   end
 
+  it "runs external commands synchronously with process.run" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval(%(var result = process.run("crystal", ["eval", "STDOUT.print \\"out\\"; STDERR.print \\"err\\"; exit 7"]);)).should eq([] of String)
+    interpreter.eval("result.stdout;").should eq([%q("out")])
+    interpreter.eval("result.stderr;").should eq([%q("err")])
+    interpreter.eval("result.status;").should eq(["7"])
+    interpreter.eval("process.run(1);").should eq(["Error: process.run argument 1 must be a string"])
+    interpreter.eval(%(process.run("crystal", "--version");)).should eq(["Error: process.run argument 2 must be an array"])
+    interpreter.eval(%(process.run("crystal", [1]);)).should eq(["Error: process.run argument 2 item 1 must be a string"])
+    interpreter.eval(%(process.run("giavascript-command-that-does-not-exist");))[0].should start_with("Error: process.run failed - ")
+  end
+
   it "prints all console.log arguments in readable format" do
     output = IO::Memory.new
     interpreter = GiavaScript::Interpreter.new(output)
