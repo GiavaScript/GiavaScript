@@ -106,6 +106,37 @@ module GiavaScript
         assert_builtin_arity_between(args, 0, 1, "process.exit")
         Process.exit(args.empty? ? 0 : number_argument(args[0], "process.exit", 0).to_i32)
       end)
+      process["run"] = BuiltinFunction.new("process.run", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "process.run")
+        assert_builtin_arity_between(args, 1, 2, "process.run")
+
+        command = args[0]
+        raise ExpressionError.new("Error: process.run argument 1 must be a string") unless command.is_a?(String)
+
+        command_args = [] of String
+        if args.size == 2
+          values = args[1]
+          raise ExpressionError.new("Error: process.run argument 2 must be an array") unless values.is_a?(Array(Value))
+
+          values.each_with_index do |value, index|
+            raise ExpressionError.new("Error: process.run argument 2 item #{index + 1} must be a string") unless value.is_a?(String)
+            command_args << value
+          end
+        end
+
+        stdout = IO::Memory.new
+        stderr = IO::Memory.new
+        status = begin
+          Process.run(command, command_args, output: stdout, error: stderr)
+        rescue ex : File::Error
+          raise ExpressionError.new("Error: process.run failed - #{ex.message}")
+        end
+        result = Hash(String, Value).new
+        result["stdout"] = stdout.to_s
+        result["stderr"] = stderr.to_s
+        result["status"] = status.exit_code
+        result.as(Value)
+      end)
       process
     end
 

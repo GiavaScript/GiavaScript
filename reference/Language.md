@@ -121,6 +121,7 @@ Status of core JavaScript language features in GiavaScript.
 | `process.argv` | Available |
 | `process.env` | Available (read-only host snapshot) |
 | `process.exit()` | Available |
+| `process.run()` | Available (synchronous direct execution) |
 | `File.read()` | Available |
 | `File.readLines()` | Available |
 | `File.write()` | Available |
