@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Replace the Python example smoke runner with a GiavaScript implementation (#108)
+- Split the monolithic spec suite into feature-focused files (#105)
 
 ## [0.6.1] - 2026-07-26
 
