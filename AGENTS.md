@@ -39,6 +39,7 @@ src/
 ```
 
 Core type alias (all runtime values):
+
 ```crystal
 alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue | RegExpValue | ErrorValue
 alias Number = Int32 | Float64
@@ -54,7 +55,7 @@ stringify depth limit (1000).
 | Run tests | `crystal spec` |
 | Run a JS file | `crystal run src/giavascript_cli.cr -- <path/to/file.js>` |
 | Build & install binary | `./install.sh` |
-| Smoke test examples | `python3 scripts/run_examples_smoke.py` |
+| Smoke test examples | `crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js` |
 | Format a single file | `crystal tool format <path>` |
 
 ## Before opening a PR
@@ -68,7 +69,7 @@ Run `crystal spec` before opening a PR.
 - No external shard dependencies — everything is hand-written
 - Tests use the `spec/` directory with Crystal's built-in spec framework
 - `spec_helper.cr` bootstraps the test environment
-- Main test file: `spec/giavascript_spec.cr`
+- Feature specs are split across `spec/**/*_spec.cr`
 - Documentation lives in the four topic files under `reference/`
 
 ## Versioning
@@ -94,8 +95,12 @@ Release checklist: bump both locations, update `CHANGELOG.md`, then
 
 ## Git conventions
 
-- Every commit message must include the co-author trailer:
-  ```
-  Co-authored-by: Linus Torvalds <torvalds@linux-foundation.org>
-  ```
-  This applies to all commits in this repository — never omit it.
+Before every commit, randomly choose exactly one of these co-author trailers
+and include it in the commit message:
+
+```
+Co-authored-by: Linus Torvalds <torvalds@linux-foundation.org>
+Co-authored-by: Brendan Eich <brendan@mozilla.org>
+```
+
+This applies to all commits in this repository — never omit the selected trailer or include both.

@@ -34,7 +34,6 @@ It intentionally does not aim for full ECMAScript compliance. Check the referenc
 ### Prerequisites
 
 - [Crystal](https://crystal-lang.org/) 1.19.1 or later
-- Python 3 (for the example smoke tests)
 
 ### Install the CLI
 
