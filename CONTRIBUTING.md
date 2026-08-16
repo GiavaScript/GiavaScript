@@ -7,7 +7,6 @@ This guide covers the local workflow CI expects, so your changes are easy to rev
 ## Prerequisites
 
 - [Crystal](https://crystal-lang.org/) 1.19.1 or later
-- Python 3
 
 ## Local setup
 
@@ -37,6 +36,12 @@ crystal spec
 ```
 
 Run this before opening a pull request.
+
+Smoke test the examples:
+
+```bash
+crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js
+```
 
 ## Documentation updates
 
@@ -75,4 +80,5 @@ To cut a release:
 
 ```bash
 crystal spec
+crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js
 ```

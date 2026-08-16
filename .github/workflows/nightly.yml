@@ -18,13 +18,8 @@ jobs:
         with:
           crystal: nightly
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
       - name: Run tests
         run: crystal spec
 
       - name: Run example smoke tests
-        run: python3 scripts/run_examples_smoke.py
+        run: crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js

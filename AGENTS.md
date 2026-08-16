@@ -54,7 +54,7 @@ stringify depth limit (1000).
 | Run tests | `crystal spec` |
 | Run a JS file | `crystal run src/giavascript_cli.cr -- <path/to/file.js>` |
 | Build & install binary | `./install.sh` |
-| Smoke test examples | `python3 scripts/run_examples_smoke.py` |
+| Smoke test examples | `crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js` |
 | Format a single file | `crystal tool format <path>` |
 
 ## Before opening a PR
