@@ -69,7 +69,7 @@ Run `crystal spec` before opening a PR.
 - No external shard dependencies — everything is hand-written
 - Tests use the `spec/` directory with Crystal's built-in spec framework
 - `spec_helper.cr` bootstraps the test environment
-- Main test file: `spec/giavascript_spec.cr`
+- Feature specs are split across `spec/**/*_spec.cr`
 - Documentation lives in the four topic files under `reference/`
 
 ## Versioning
