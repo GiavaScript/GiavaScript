@@ -39,6 +39,7 @@ src/
 ```
 
 Core type alias (all runtime values):
+
 ```crystal
 alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue | RegExpValue | ErrorValue
 alias Number = Int32 | Float64
@@ -94,11 +95,12 @@ Release checklist: bump both locations, update `CHANGELOG.md`, then
 
 ## Git conventions
 
-- Before every commit, randomly choose exactly one of these co-author trailers
-  and include it in the commit message:
-   ```
-   Co-authored-by: Linus Torvalds <torvalds@linux-foundation.org>
-   Co-authored-by: Brendan Eich <brendan@mozilla.org>
-   ```
-   This applies to all commits in this repository — never omit the selected
-   trailer or include both.
+Before every commit, randomly choose exactly one of these co-author trailers
+and include it in the commit message:
+
+```
+Co-authored-by: Linus Torvalds <torvalds@linux-foundation.org>
+Co-authored-by: Brendan Eich <brendan@mozilla.org>
+```
+
+This applies to all commits in this repository — never omit the selected trailer or include both.
