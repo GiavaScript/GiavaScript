@@ -40,7 +40,7 @@ It intentionally does not aim for full ECMAScript compliance. Check the referenc
 ```bash
 git clone https://github.com/memburg/GiavaScript.git
 cd GiavaScript
-./install.sh
+crystal run src/giavascript_cli.cr -- install.js
 ```
 
 This installs the `giavascript` binary and a `gs` shortcut (symlink) to `/usr/local/bin` by default. Both commands work interchangeably.
@@ -48,7 +48,7 @@ This installs the `giavascript` binary and a `gs` shortcut (symlink) to `/usr/lo
 Install to a user-local path instead of `/usr/local/bin`:
 
 ```bash
-INSTALL_DIR="$HOME/.local/bin" ./install.sh
+INSTALL_DIR="$HOME/.local/bin" crystal run src/giavascript_cli.cr -- install.js
 ```
 
 Make sure your install directory is on `PATH`.

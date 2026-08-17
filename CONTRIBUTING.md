@@ -26,7 +26,7 @@ crystal run src/giavascript_cli.cr -- examples/templateLiterals.js
 Or install the binary:
 
 ```bash
-./install.sh
+crystal run src/giavascript_cli.cr -- install.js
 ```
 
 ## Run tests

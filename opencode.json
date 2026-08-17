@@ -9,7 +9,6 @@
       "python3 *": "allow",
       "shards *": "allow",
       "git *": "allow",
-      "./install.sh": "allow",
       "rm *": "ask",
       "sudo *": "ask",
       "brew *": "ask",
