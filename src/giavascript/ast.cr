@@ -1,5 +1,15 @@
 module GiavaScript
+  struct Span
+    getter line : Int32
+    getter column : Int32
+    getter length : Int32
+
+    def initialize(@line : Int32, @column : Int32, @length : Int32)
+    end
+  end
+
   abstract class Expr
+    property span : Span?
   end
 
   class LiteralExpr < Expr
@@ -142,6 +152,7 @@ module GiavaScript
   end
 
   abstract class Statement
+    property span : Span?
   end
 
   class RawStatement < Statement

@@ -46,7 +46,9 @@ module GiavaScript
       current = skip_whitespace(condition_end + 1)
       body = parse_indexed_statement(current, INVALID_WHILE_ERROR)
 
-      ParsedLoop.new(WhileStatement.new(condition, body.statement), body.end_index)
+      statement = WhileStatement.new(condition, body.statement)
+      statement.span = span_for(index, body.end_index)
+      ParsedLoop.new(statement, body.end_index)
     end
 
     private def parse_do_while_statement(index : Int32) : ParsedLoop
@@ -75,7 +77,9 @@ module GiavaScript
         raise invalid_do_while_error
       end
 
-      ParsedLoop.new(DoWhileStatement.new(body.statement, condition), condition_end + 1)
+      statement = DoWhileStatement.new(body.statement, condition)
+      statement.span = span_for(index, condition_end + 1)
+      ParsedLoop.new(statement, condition_end + 1)
     end
 
     private def parse_indexed_loop_statement(index : Int32) : ParsedLoop

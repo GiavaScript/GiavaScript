@@ -55,15 +55,29 @@ module GiavaScript
       Equals
     end
 
-    record Token, kind : TokenKind, lexeme : String
+    record Token, kind : TokenKind, lexeme : String, offset : Int32 = 0, line : Int32 = 0, column : Int32 = 0, raw_length : Int32 = 0
 
     def initialize(@source : String)
       @index = 0
+      @line = 1
+      @line_start = 0
+      @token_offset = 0
+      @token_line = 1
+      @token_column = 1
     end
 
     def next_token : Token
       skip_whitespace
 
+      @token_offset = @index
+      @token_line = @line
+      @token_column = @index - @line_start + 1
+
+      scanned = scan_token
+      Token.new(scanned.kind, scanned.lexeme, @token_offset, @token_line, @token_column, @index - @token_offset)
+    end
+
+    private def scan_token : Token
       char = current_char
       return Token.new(TokenKind::Eof, "") unless char
 
@@ -189,7 +203,7 @@ module GiavaScript
         if digit?(peek_char)
           parse_number_token
         elsif peek_char == '.' && (@source[@index + 2]?) == '.'
-          @index += 3
+          3.times { advance }
           Token.new(TokenKind::Spread, "...")
         else
           advance
@@ -216,6 +230,21 @@ module GiavaScript
 
     def cursor=(value : Int32)
       @index = value
+      recompute_position
+    end
+
+    private def recompute_position
+      @line = 1
+      @line_start = 0
+      limit = @index < @source.size ? @index : @source.size
+      index = 0
+      while index < limit
+        if @source[index] == '\n'
+          @line += 1
+          @line_start = index + 1
+        end
+        index += 1
+      end
     end
 
     private def parse_string_token : Token
@@ -225,6 +254,7 @@ module GiavaScript
       parser = StringLiteralParser.new(@source, @index, delimiter)
       value = parser.parse
       @index = parser.index
+      recompute_position
       Token.new(TokenKind::String, value)
     end
 
@@ -232,6 +262,7 @@ module GiavaScript
       parser = TemplateLiteralParser.new(@source, @index)
       value = parser.parse
       @index = parser.index
+      recompute_position
       Token.new(TokenKind::Template, value)
     end
 
@@ -313,6 +344,10 @@ module GiavaScript
     end
 
     private def advance
+      if @source[@index]? == '\n'
+        @line += 1
+        @line_start = @index + 1
+      end
       @index += 1
     end
 
@@ -391,8 +426,9 @@ module GiavaScript
           end
 
           @index = flags_end
+          recompute_position
           lexeme = @source[pattern_start - 1...flags_end]
-          return Token.new(TokenKind::RegexLiteral, lexeme)
+          return Token.new(TokenKind::RegexLiteral, lexeme, @token_offset, @token_line, @token_column, @index - @token_offset)
         end
 
         current += 1
