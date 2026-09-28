@@ -63,22 +63,54 @@ module GiavaScript
     end
 
     def eval(input : String) : Array(String)
-      messages = [] of String
-      statements = begin
-        StatementTokenizer.new(CommentStripper.strip(input)).tokenize
+      eval_diagnostics(input).map(&.message)
+    end
+
+    def eval_diagnostics(input : String) : Array(Diagnostic)
+      diagnostics = [] of Diagnostic
+
+      slices = begin
+        StatementTokenizer.new(CommentStripper.strip(input)).tokenize_with_offsets
+      rescue ex : StatementError
+        line, column = line_column_at(input, ex.offset)
+        return [Diagnostic.error(ex.message || "Error: invalid statement", line, column)]
       rescue ex : ExpressionError
-        return [ex.message || "Error: invalid statement"]
+        return [Diagnostic.error(ex.message || "Error: invalid statement")]
       end
 
-      statements.each do |stmt|
-        begin
-          message = eval_statement(stmt, @env, false, false, false)
-          messages << message if message
+      slices.each do |slice|
+        message = begin
+          eval_statement(slice.source, @env, false, false, false)
         rescue ex : ThrowSignal
-          messages << "Error: uncaught #{value_to_s(ex.value)}"
+          "Error: uncaught #{value_to_s(ex.value)}"
+        end
+
+        next unless message
+
+        if message.starts_with?("Error:")
+          line, column = line_column_at(input, slice.offset)
+          diagnostics << Diagnostic.error(message, line, column, slice.source.size)
+        else
+          diagnostics << Diagnostic.output(message)
         end
       end
-      messages
+
+      diagnostics
+    end
+
+    private def line_column_at(source : String, offset : Int32) : Tuple(Int32, Int32)
+      line = 1
+      line_start = 0
+      limit = offset < source.size ? offset : source.size
+      index = 0
+      while index < limit
+        if source[index] == '\n'
+          line += 1
+          line_start = index + 1
+        end
+        index += 1
+      end
+      {line, offset - line_start + 1}
     end
 
     private def eval_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?

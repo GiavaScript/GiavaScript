@@ -33,8 +33,9 @@ module GiavaScript
 
           next_char = source[index + 1]?
 
+          # ponytail: pad both delimiter chars so stripped output keeps the same char offsets as the original (position tracking)
           if char == '/' && next_char == '/'
-            io << ' '
+            io << "  "
             index += 2
 
             while index < source.size
@@ -48,7 +49,7 @@ module GiavaScript
           end
 
           if char == '/' && next_char == '*'
-            io << ' '
+            io << "  "
             index += 2
             terminated = false
 
@@ -57,7 +58,7 @@ module GiavaScript
               after = source[index + 1]?
 
               if current == '*' && after == '/'
-                io << ' '
+                io << "  "
                 index += 2
                 terminated = true
                 break
