@@ -4,7 +4,7 @@ require "time"
 require "http/client"
 
 module GiavaScript
-  VERSION = "0.7.0"
+  VERSION = "0.8.0"
 
   class ExpressionError < Exception
   end

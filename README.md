@@ -74,8 +74,8 @@ gs path/to/program.js
 Behavior to expect:
 
 - Empty files return an error.
-- If a runtime error occurs, messages are written to standard error.
-- Process exit code is `1` when any `Error:` message is produced; otherwise `0`.
+- Errors are written to standard error with their source location (`file:line:column`), the offending source line, and a caret.
+- Process exit code is `1` when any error occurs; otherwise `0`.
 
 ### Run without installing
 
