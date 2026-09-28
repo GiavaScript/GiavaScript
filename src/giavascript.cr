@@ -4,9 +4,71 @@ require "time"
 require "http/client"
 
 module GiavaScript
-  VERSION = "0.7.0"
+  VERSION = "0.8.0"
 
   class ExpressionError < Exception
+  end
+
+  class StatementError < ExpressionError
+    getter offset : Int32
+
+    def initialize(message : String, @offset : Int32)
+      super(message)
+    end
+  end
+
+  struct Diagnostic
+    enum Severity
+      Output
+      Error
+    end
+
+    getter message : String
+    getter severity : Severity
+    getter line : Int32?
+    getter column : Int32?
+    getter length : Int32?
+
+    def initialize(@message : String, @severity : Severity, @line : Int32? = nil, @column : Int32? = nil, @length : Int32? = nil)
+    end
+
+    def self.output(message : String) : Diagnostic
+      new(message, Severity::Output)
+    end
+
+    def self.error(message : String, line : Int32? = nil, column : Int32? = nil, length : Int32? = nil) : Diagnostic
+      new(message, Severity::Error, line, column, length)
+    end
+
+    def error? : Bool
+      severity.error?
+    end
+
+    def to_display(io : IO, path : String, source : String)
+      line_number = line
+      column_number = column
+
+      unless line_number && column_number
+        io.puts "#{path}: #{@message}"
+        return
+      end
+
+      message = @message
+      message = message["Error: ".size..] if message.starts_with?("Error: ")
+
+      source_line = (source.lines[line_number - 1]? || "").chomp
+      available = source_line.size - (column_number - 1)
+      caret_length = length || available
+      caret_length = available if caret_length > available
+      caret_length = 1 if caret_length < 1
+
+      gutter = line_number.to_s.size
+      io.puts "error: #{message}"
+      io.puts " --> #{path}:#{line_number}:#{column_number}"
+      io.puts "#{" " * gutter} |"
+      io.puts "#{line_number} | #{source_line}"
+      io.puts "#{" " * gutter} | #{" " * (column_number - 1)}#{"^" * caret_length}"
+    end
   end
 
   struct UndefinedValue

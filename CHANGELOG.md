@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-27
+
+### Added
+- Source position tracking for tokens and AST nodes, including spans on expressions and statements (#113)
+- Located, caret-style error output in the CLI showing `file:line:column`, the offending source line, and a caret (#114)
+
+### Changed
+- CI now runs for pull requests targeting release branches (`v*`) (#115)
+
+### Removed
+- Remove the `CLAUDE.md` shim now that the `AGENTS.md` instructions cover the workflow (#115)
+
+### Fixed
+- Preserve character offsets when stripping comments so error locations map back to the original source (#114)
+
 ## [0.7.0] - 2026-08-16
 
 ### Added

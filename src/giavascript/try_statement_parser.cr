@@ -69,7 +69,9 @@ module GiavaScript
 
       raise invalid_try_error unless catch_branch || finally_branch
 
-      ParsedTry.new(TryStatement.new(try_block[:statement], catch_parameter, catch_branch, finally_branch), last_end_index)
+      statement = TryStatement.new(try_block[:statement], catch_parameter, catch_branch, finally_branch)
+      statement.span = span_for(index, last_end_index)
+      ParsedTry.new(statement, last_end_index)
     end
 
     private def parse_block_statement(index : Int32) : NamedTuple(statement: Statement, end_index: Int32)

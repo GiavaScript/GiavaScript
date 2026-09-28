@@ -15,6 +15,7 @@ module GiavaScript
 
     private def parse_for_statement(index : Int32) : ParsedFor
       current = skip_whitespace(index)
+      start_index = current
       raise invalid_for_error unless starts_with_keyword?(current, "for")
 
       current += "for".size
@@ -25,33 +26,30 @@ module GiavaScript
         current = skip_whitespace(for_of_header[:end_paren_index] + 1)
         body = parse_indexed_statement(current, INVALID_FOR_ERROR)
 
-        ParsedFor.new(
-          ForOfStatement.new(for_of_header[:var_name], for_of_header[:iterable], body.statement),
-          body.end_index
-        )
+        statement = ForOfStatement.new(for_of_header[:var_name], for_of_header[:iterable], body.statement)
+        statement.span = span_for(start_index, body.end_index)
+        ParsedFor.new(statement, body.end_index)
       elsif for_in_header = try_parse_for_in_header(current)
         current = skip_whitespace(for_in_header[:end_paren_index] + 1)
         body = parse_indexed_statement(current, INVALID_FOR_ERROR)
 
-        ParsedFor.new(
-          ForInStatement.new(for_in_header[:var_name], for_in_header[:iterable], body.statement),
-          body.end_index
-        )
+        statement = ForInStatement.new(for_in_header[:var_name], for_in_header[:iterable], body.statement)
+        statement.span = span_for(start_index, body.end_index)
+        ParsedFor.new(statement, body.end_index)
       else
         header = parse_for_header(current)
         current = skip_whitespace(header[:end_paren_index] + 1)
 
         body = parse_indexed_statement(current, INVALID_FOR_ERROR)
 
-        ParsedFor.new(
-          ForStatement.new(
-            parse_optional_init_clause(header[:init_source]),
-            parse_optional_condition_clause(header[:condition_source]),
-            parse_optional_update_clause(header[:update_source]),
-            body.statement
-          ),
-          body.end_index
+        statement = ForStatement.new(
+          parse_optional_init_clause(header[:init_source]),
+          parse_optional_condition_clause(header[:condition_source]),
+          parse_optional_update_clause(header[:update_source]),
+          body.statement
         )
+        statement.span = span_for(start_index, body.end_index)
+        ParsedFor.new(statement, body.end_index)
       end
     end
 

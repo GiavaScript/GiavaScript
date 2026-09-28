@@ -2,78 +2,75 @@ module GiavaScript
   class StatementTokenizer
     include StatementParserShared
 
+    record StatementSlice, source : String, offset : Int32
+
     def initialize(@source : String)
       @index = 0
     end
 
     def tokenize : Array(String)
-      statements = [] of String
-      while statement = next_statement
-        statements << statement
+      tokenize_with_offsets.map(&.source)
+    end
+
+    def tokenize_with_offsets : Array(StatementSlice)
+      statements = [] of StatementSlice
+      while slice = next_statement_slice
+        statements << slice
       end
       statements
     end
 
     def next_statement : String?
+      next_statement_slice.try(&.source)
+    end
+
+    def next_statement_slice : StatementSlice?
       loop do
         @index = skip_whitespace(@index)
         return nil if @index >= @source.size
 
-        if starts_with_keyword?(@index, "function")
-          function_end_index = find_function_end_index(@index)
-          statement = @source[@index...function_end_index].strip
-          @index = function_end_index
-          @index = advance_past_statement_delimiter(@index)
-          return statement
+        start = @index
+        slice = begin
+          scan_statement(start)
+        rescue ex : ExpressionError
+          raise StatementError.new(ex.message || "Error: invalid statement", start)
         end
-
-        if starts_with_keyword?(@index, "if")
-          if_end_index = IfStatementParser.new(@source).parse_from(@index).end_index
-          statement = @source[@index...if_end_index].strip
-          @index = if_end_index
-          @index = advance_past_statement_delimiter(@index)
-          return statement
-        end
-
-        if starts_with_keyword?(@index, "for")
-          for_end_index = ForStatementParser.new(@source).parse_from(@index).end_index
-          statement = @source[@index...for_end_index].strip
-          @index = for_end_index
-          @index = advance_past_statement_delimiter(@index)
-          return statement
-        end
-
-        if starts_with_keyword?(@index, "while") || starts_with_keyword?(@index, "do")
-          loop_end_index = WhileStatementParser.new(@source).parse_from(@index).end_index
-          statement = @source[@index...loop_end_index].strip
-          @index = loop_end_index
-          @index = advance_past_statement_delimiter(@index)
-          return statement
-        end
-
-        if starts_with_keyword?(@index, "switch")
-          switch_end_index = SwitchStatementParser.new(@source).parse_from(@index).end_index
-          statement = @source[@index...switch_end_index].strip
-          @index = switch_end_index
-          @index = advance_past_statement_delimiter(@index)
-          return statement
-        end
-
-        if starts_with_keyword?(@index, "try")
-          try_end_index = TryStatementParser.new(@source).parse_from(@index).end_index
-          statement = @source[@index...try_end_index].strip
-          @index = try_end_index
-          @index = advance_past_statement_delimiter(@index)
-          return statement
-        end
-
-        statement_end_index = find_statement_end_index(@index)
-        statement = @source[@index...statement_end_index].strip
-        @index = statement_end_index
-        @index = advance_past_statement_delimiter(@index)
-
-        return statement unless statement.empty?
+        return slice if slice
       end
+    end
+
+    private def scan_statement(start : Int32) : StatementSlice?
+      end_index = nil.as(Int32?)
+
+      if starts_with_keyword?(@index, "function")
+        end_index = find_function_end_index(@index)
+      elsif starts_with_keyword?(@index, "if")
+        end_index = IfStatementParser.new(@source).parse_from(@index).end_index
+      elsif starts_with_keyword?(@index, "for")
+        end_index = ForStatementParser.new(@source).parse_from(@index).end_index
+      elsif starts_with_keyword?(@index, "while") || starts_with_keyword?(@index, "do")
+        end_index = WhileStatementParser.new(@source).parse_from(@index).end_index
+      elsif starts_with_keyword?(@index, "switch")
+        end_index = SwitchStatementParser.new(@source).parse_from(@index).end_index
+      elsif starts_with_keyword?(@index, "try")
+        end_index = TryStatementParser.new(@source).parse_from(@index).end_index
+      end
+
+      if end_index
+        statement = @source[start...end_index].strip
+        @index = end_index
+        @index = advance_past_statement_delimiter(@index)
+        return StatementSlice.new(statement, start) unless statement.empty?
+        return nil
+      end
+
+      statement_end_index = find_statement_end_index(@index)
+      statement = @source[@index...statement_end_index].strip
+      @index = statement_end_index
+      @index = advance_past_statement_delimiter(@index)
+
+      return StatementSlice.new(statement, start) unless statement.empty?
+      nil
     end
 
     private def find_statement_end_index(index : Int32) : Int32

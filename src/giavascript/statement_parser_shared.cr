@@ -2,6 +2,26 @@ module GiavaScript
   module StatementParserShared
     record ParsedIndexedStatement, statement : Statement, end_index : Int32
 
+    private def span_for(start_index : Int32, end_index : Int32) : Span
+      line = 1
+      column = 1
+      limit = start_index < @source.size ? start_index : @source.size
+      index = 0
+      while index < limit
+        if @source[index] == '\n'
+          line += 1
+          column = 1
+        else
+          column += 1
+        end
+        index += 1
+      end
+
+      length = end_index - start_index
+      length = 0 if length < 0
+      Span.new(line, column, length)
+    end
+
     private def parse_block_statements(block_body : String) : Array(Statement)
       statements = [] of Statement
       tokenizer = StatementTokenizer.new(block_body)
@@ -65,14 +85,18 @@ module GiavaScript
         source = @source[current...function_end_index].strip
         raise ExpressionError.new(error_message) if source.empty?
 
-        return ParsedIndexedStatement.new(RawStatement.new(source), function_end_index)
+        statement = RawStatement.new(source)
+        statement.span = span_for(current, function_end_index)
+        return ParsedIndexedStatement.new(statement, function_end_index)
       end
 
       if @source[current]? == '{'
         block_end_index = find_matching_brace_end_index(current, error_message) + 1
         block_body = @source[current + 1...block_end_index - 1]
 
-        return ParsedIndexedStatement.new(BlockStatement.new(parse_block_statements(block_body)), block_end_index)
+        statement = BlockStatement.new(parse_block_statements(block_body))
+        statement.span = span_for(current, block_end_index)
+        return ParsedIndexedStatement.new(statement, block_end_index)
       end
 
       simple_end_index = find_simple_statement_end_index(current, stop_before_else)
@@ -80,6 +104,7 @@ module GiavaScript
       raise ExpressionError.new(error_message) if source.empty?
 
       statement = raw_simple_statement ? RawStatement.new(source).as(Statement) : parse_statement_source(source)
+      statement.span = span_for(current, simple_end_index)
       ParsedIndexedStatement.new(statement, simple_end_index)
     end
 

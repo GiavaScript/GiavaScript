@@ -15,6 +15,7 @@ module GiavaScript
 
     private def parse_if_statement(index : Int32) : ParsedIf
       current = skip_whitespace(index)
+      start_index = current
       raise invalid_if_error unless starts_with_keyword?(current, "if")
 
       current += "if".size
@@ -47,7 +48,9 @@ module GiavaScript
         current = alternate_result.end_index
       end
 
-      ParsedIf.new(IfStatement.new(condition, consequent.statement, alternate), current)
+      statement = IfStatement.new(condition, consequent.statement, alternate)
+      statement.span = span_for(start_index, current)
+      ParsedIf.new(statement, current)
     end
 
     private def parse_indexed_if_statement(index : Int32) : ParsedIf

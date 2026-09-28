@@ -39,7 +39,9 @@ module GiavaScript
       block_body = @source[current + 1...block_end_index]
       clauses = parse_switch_clauses(block_body)
 
-      ParsedSwitch.new(SwitchStatement.new(discriminant, clauses), block_end_index + 1)
+      statement = SwitchStatement.new(discriminant, clauses)
+      statement.span = span_for(index, block_end_index + 1)
+      ParsedSwitch.new(statement, block_end_index + 1)
     end
 
     private def parse_switch_clauses(source : String) : Array(SwitchClause)
