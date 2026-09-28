@@ -2,10 +2,12 @@ module GiavaScript
   class ExpressionParser
     @tokenizer : Tokenizer
     @current : Tokenizer::Token
+    @previous : Tokenizer::Token
 
     def initialize(@source : String)
       @tokenizer = Tokenizer.new(@source)
       @current = @tokenizer.next_token
+      @previous = @current
     end
 
     def parse : Expr
@@ -19,6 +21,7 @@ module GiavaScript
     end
 
     private def parse_ternary : Expr
+      start_token = @current
       condition = parse_logical_or
 
       return condition unless @current.kind == Tokenizer::TokenKind::Question
@@ -31,10 +34,13 @@ module GiavaScript
 
       alternate = parse_ternary
 
-      TernaryExpr.new(condition, consequent, alternate)
+      node = TernaryExpr.new(condition, consequent, alternate)
+      node.span = span_from(start_token)
+      node
     end
 
     private def parse_logical_or : Expr
+      start_token = @current
       left = parse_logical_and
 
       loop do
@@ -42,13 +48,16 @@ module GiavaScript
 
         advance_token
         right = parse_logical_and
-        left = BinaryExpr.new(left, Tokenizer::TokenKind::OrOr, right)
+        node = BinaryExpr.new(left, Tokenizer::TokenKind::OrOr, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_logical_and : Expr
+      start_token = @current
       left = parse_bitwise_or
 
       loop do
@@ -56,13 +65,16 @@ module GiavaScript
 
         advance_token
         right = parse_bitwise_or
-        left = BinaryExpr.new(left, Tokenizer::TokenKind::AndAnd, right)
+        node = BinaryExpr.new(left, Tokenizer::TokenKind::AndAnd, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_bitwise_or : Expr
+      start_token = @current
       left = parse_bitwise_xor
 
       loop do
@@ -70,13 +82,16 @@ module GiavaScript
 
         advance_token
         right = parse_bitwise_xor
-        left = BinaryExpr.new(left, Tokenizer::TokenKind::BitwiseOr, right)
+        node = BinaryExpr.new(left, Tokenizer::TokenKind::BitwiseOr, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_bitwise_xor : Expr
+      start_token = @current
       left = parse_bitwise_and
 
       loop do
@@ -84,13 +99,16 @@ module GiavaScript
 
         advance_token
         right = parse_bitwise_and
-        left = BinaryExpr.new(left, Tokenizer::TokenKind::Caret, right)
+        node = BinaryExpr.new(left, Tokenizer::TokenKind::Caret, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_bitwise_and : Expr
+      start_token = @current
       left = parse_equality
 
       loop do
@@ -98,13 +116,16 @@ module GiavaScript
 
         advance_token
         right = parse_equality
-        left = BinaryExpr.new(left, Tokenizer::TokenKind::BitwiseAnd, right)
+        node = BinaryExpr.new(left, Tokenizer::TokenKind::BitwiseAnd, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_equality : Expr
+      start_token = @current
       left = parse_comparison
 
       loop do
@@ -113,13 +134,16 @@ module GiavaScript
 
         advance_token
         right = parse_comparison
-        left = BinaryExpr.new(left, operator, right)
+        node = BinaryExpr.new(left, operator, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_comparison : Expr
+      start_token = @current
       left = parse_shift
 
       loop do
@@ -128,13 +152,16 @@ module GiavaScript
 
         advance_token
         right = parse_shift
-        left = BinaryExpr.new(left, operator, right)
+        node = BinaryExpr.new(left, operator, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_shift : Expr
+      start_token = @current
       left = parse_addition
 
       loop do
@@ -143,13 +170,16 @@ module GiavaScript
 
         advance_token
         right = parse_addition
-        left = BinaryExpr.new(left, operator, right)
+        node = BinaryExpr.new(left, operator, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_addition : Expr
+      start_token = @current
       left = parse_term
 
       loop do
@@ -158,13 +188,16 @@ module GiavaScript
 
         advance_token
         right = parse_term
-        left = BinaryExpr.new(left, operator, right)
+        node = BinaryExpr.new(left, operator, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_term : Expr
+      start_token = @current
       left = parse_factor
 
       loop do
@@ -173,66 +206,87 @@ module GiavaScript
 
         advance_token
         right = parse_factor
-        left = BinaryExpr.new(left, operator, right)
+        node = BinaryExpr.new(left, operator, right)
+        node.span = span_from(start_token)
+        left = node
       end
 
       left
     end
 
     private def parse_factor : Expr
+      start_token = @current
+
       if @current.kind == Tokenizer::TokenKind::Plus
         advance_token
         value = parse_factor
-        return UnaryExpr.new(Tokenizer::TokenKind::Plus, value)
+        node = UnaryExpr.new(Tokenizer::TokenKind::Plus, value)
+        node.span = span_from(start_token)
+        return node
       end
 
       if @current.kind == Tokenizer::TokenKind::Minus
         advance_token
         value = parse_factor
-        return UnaryExpr.new(Tokenizer::TokenKind::Minus, value)
+        node = UnaryExpr.new(Tokenizer::TokenKind::Minus, value)
+        node.span = span_from(start_token)
+        return node
       end
 
       if @current.kind == Tokenizer::TokenKind::Bang
         advance_token
         value = parse_factor
-        return UnaryExpr.new(Tokenizer::TokenKind::Bang, value)
+        node = UnaryExpr.new(Tokenizer::TokenKind::Bang, value)
+        node.span = span_from(start_token)
+        return node
       end
 
       if @current.kind == Tokenizer::TokenKind::Typeof
         advance_token
         value = parse_factor
-        return UnaryExpr.new(Tokenizer::TokenKind::Typeof, value)
+        node = UnaryExpr.new(Tokenizer::TokenKind::Typeof, value)
+        node.span = span_from(start_token)
+        return node
       end
 
       if @current.kind == Tokenizer::TokenKind::Void
         advance_token
         value = parse_factor
-        return UnaryExpr.new(Tokenizer::TokenKind::Void, value)
+        node = UnaryExpr.new(Tokenizer::TokenKind::Void, value)
+        node.span = span_from(start_token)
+        return node
       end
 
       if @current.kind == Tokenizer::TokenKind::BitwiseNot
         advance_token
         value = parse_factor
-        return UnaryExpr.new(Tokenizer::TokenKind::BitwiseNot, value)
+        node = UnaryExpr.new(Tokenizer::TokenKind::BitwiseNot, value)
+        node.span = span_from(start_token)
+        return node
       end
 
       if @current.kind == Tokenizer::TokenKind::New
         advance_token
         callee = parse_primary
         args = @current.kind == Tokenizer::TokenKind::LParen ? parse_call_arguments : [] of Expr
-        return NewExpr.new(callee, args)
+        node = NewExpr.new(callee, args)
+        node.span = span_from(start_token)
+        return node
       end
 
       parse_postfix
     end
 
     private def parse_postfix : Expr
+      start_token = @current
       value = parse_primary
 
       loop do
         if @current.kind == Tokenizer::TokenKind::LParen
           args = parse_call_arguments
-          value = FunctionCallExpr.new(value, args)
+          node = FunctionCallExpr.new(value, args)
+          node.span = span_from(start_token)
+          value = node
           next
         end
 
@@ -241,7 +295,9 @@ module GiavaScript
           index = parse_expression
           raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RBracket
           advance_token
-          value = IndexExpr.new(value, index)
+          node = IndexExpr.new(value, index)
+          node.span = span_from(start_token)
+          value = node
           next
         end
 
@@ -250,7 +306,9 @@ module GiavaScript
           raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
           property = @current.lexeme
           advance_token
-          value = PropertyAccessExpr.new(value, property)
+          node = PropertyAccessExpr.new(value, property)
+          node.span = span_from(start_token)
+          value = node
           next
         end
 
@@ -261,6 +319,8 @@ module GiavaScript
     end
 
     private def parse_primary : Expr
+      start_token = @current
+
       case @current.kind
       when Tokenizer::TokenKind::LParen
         parsed_arrow = try_parse_paren_arrow_function
@@ -280,21 +340,31 @@ module GiavaScript
       when Tokenizer::TokenKind::String
         string_value = @current.lexeme
         advance_token
-        LiteralExpr.new(string_value)
+        node = LiteralExpr.new(string_value)
+        node.span = span_from(start_token)
+        node
       when Tokenizer::TokenKind::Template
         template_source = @current.lexeme
         advance_token
-        parse_template_literal(template_source)
+        node = parse_template_literal(template_source)
+        node.span = span_from(start_token)
+        node
       when Tokenizer::TokenKind::True
         advance_token
-        LiteralExpr.new(true)
+        node = LiteralExpr.new(true)
+        node.span = span_from(start_token)
+        node
       when Tokenizer::TokenKind::False
         advance_token
-        LiteralExpr.new(false)
+        node = LiteralExpr.new(false)
+        node.span = span_from(start_token)
+        node
       when Tokenizer::TokenKind::Number
         number_lexeme = @current.lexeme
         advance_token
-        LiteralExpr.new(parse_number_value(number_lexeme))
+        node = LiteralExpr.new(parse_number_value(number_lexeme))
+        node.span = span_from(start_token)
+        node
       when Tokenizer::TokenKind::Slash
         regex_token = @tokenizer.parse_regex_literal
         raise invalid_rhs_error unless regex_token
@@ -312,7 +382,9 @@ module GiavaScript
         end
 
         advance_token
-        RegexLiteralExpr.new(pattern, flags)
+        node = RegexLiteralExpr.new(pattern, flags)
+        node.span = Span.new(regex_token.line, regex_token.column, regex_token.raw_length)
+        node
       when Tokenizer::TokenKind::Identifier
         parsed_arrow = try_parse_identifier_arrow_function
         return parsed_arrow if parsed_arrow
@@ -324,6 +396,7 @@ module GiavaScript
 
     private def parse_array_literal : Expr
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LBracket
+      start_token = @current
       advance_token
 
       elements = [] of Expr
@@ -331,8 +404,11 @@ module GiavaScript
       unless @current.kind == Tokenizer::TokenKind::RBracket
         loop do
           if @current.kind == Tokenizer::TokenKind::Spread
+            spread_token = @current
             advance_token
-            elements << SpreadElement.new(parse_expression)
+            spread = SpreadElement.new(parse_expression)
+            spread.span = span_from(spread_token)
+            elements << spread
           else
             elements << parse_expression
           end
@@ -349,11 +425,14 @@ module GiavaScript
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RBracket
       advance_token
 
-      ArrayLiteral.new(elements)
+      node = ArrayLiteral.new(elements)
+      node.span = span_from(start_token)
+      node
     end
 
     private def parse_object_literal : Expr
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::LBrace
+      start_token = @current
       advance_token
 
       properties = [] of ObjectProperty
@@ -385,7 +464,9 @@ module GiavaScript
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RBrace
       advance_token
 
-      ObjectLiteral.new(properties)
+      node = ObjectLiteral.new(properties)
+      node.span = span_from(start_token)
+      node
     end
 
     private def parse_object_key : String
@@ -406,6 +487,7 @@ module GiavaScript
 
     private def parse_function_expression : Expr
       raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Function
+      start_token = @current
       advance_token
 
       function_name = nil.as(String?)
@@ -427,18 +509,21 @@ module GiavaScript
       @tokenizer.cursor = body_end + 1
       advance_token
 
-      FunctionExpr.new(
+      node = FunctionExpr.new(
         function_name,
         parsed_parameters[:parameters],
         body_source,
         parsed_parameters[:rest_parameter],
         parsed_parameters[:defaults]
       )
+      node.span = Span.new(start_token.line, start_token.column, (body_end + 1) - start_token.offset)
+      node
     end
 
     private def try_parse_paren_arrow_function : ArrowFunctionExpr?
       return nil unless @current.kind == Tokenizer::TokenKind::LParen
 
+      start_token = @current
       saved_cursor = @tokenizer.cursor
       saved_token = @current
 
@@ -452,7 +537,8 @@ module GiavaScript
         return parse_arrow_body(
           parsed_parameters[:parameters],
           parsed_parameters[:rest_parameter],
-          parsed_parameters[:defaults]
+          parsed_parameters[:defaults],
+          start_token
         )
       rescue ExpressionError
         return restore_and_nil(saved_cursor, saved_token)
@@ -462,6 +548,7 @@ module GiavaScript
     private def try_parse_identifier_arrow_function : ArrowFunctionExpr?
       return nil unless @current.kind == Tokenizer::TokenKind::Identifier
 
+      start_token = @current
       saved_cursor = @tokenizer.cursor
       saved_token = @current
 
@@ -470,7 +557,7 @@ module GiavaScript
 
       if @current.kind == Tokenizer::TokenKind::Arrow
         advance_token
-        return parse_arrow_body([param])
+        return parse_arrow_body([param], start_token: start_token)
       end
 
       @tokenizer.cursor = saved_cursor
@@ -585,7 +672,7 @@ module GiavaScript
       default_source
     end
 
-    private def parse_arrow_body(parameters : Array(String), rest_parameter : String? = nil, defaults : Hash(String, String) = {} of String => String) : ArrowFunctionExpr
+    private def parse_arrow_body(parameters : Array(String), rest_parameter : String? = nil, defaults : Hash(String, String) = {} of String => String, start_token : Tokenizer::Token? = nil) : ArrowFunctionExpr
       if @current.kind == Tokenizer::TokenKind::LBrace
         body_start = @tokenizer.cursor
         body_end = find_matching_brace_end_index(body_start)
@@ -594,29 +681,34 @@ module GiavaScript
         @tokenizer.cursor = body_end + 1
         advance_token
 
-        return ArrowFunctionExpr.new(parameters, body_source, rest_parameter, defaults)
+        node = ArrowFunctionExpr.new(parameters, body_source, rest_parameter, defaults)
+        node.span = Span.new(start_token.line, start_token.column, (body_end + 1) - start_token.offset) if start_token
+        return node
       end
 
       body_start = @tokenizer.cursor - @current.lexeme.size
       parse_expression
       body_end = @tokenizer.cursor - @current.lexeme.size
       body_source = "return " + @source[body_start...body_end].strip + ";"
-      ArrowFunctionExpr.new(parameters, body_source, rest_parameter, defaults)
+      node = ArrowFunctionExpr.new(parameters, body_source, rest_parameter, defaults)
+      node.span = Span.new(start_token.line, start_token.column, body_end - start_token.offset) if start_token
+      node
     end
 
     private def parse_identifier_expression : Expr
+      start_token = @current
       identifier = @current.lexeme
       advance_token
 
-      if identifier == "null"
-        return LiteralExpr.new(nil)
-      end
-
-      if identifier == "undefined"
-        return LiteralExpr.new(UNDEFINED)
-      end
-
-      VariableExpr.new(identifier)
+      node = if identifier == "null"
+               LiteralExpr.new(nil)
+             elsif identifier == "undefined"
+               LiteralExpr.new(UNDEFINED)
+             else
+               VariableExpr.new(identifier)
+             end
+      node.span = span_from(start_token)
+      node
     end
 
     private def parse_template_literal(template_source : String) : Expr
@@ -800,8 +892,11 @@ module GiavaScript
       unless @current.kind == Tokenizer::TokenKind::RParen
         loop do
           if @current.kind == Tokenizer::TokenKind::Spread
+            spread_token = @current
             advance_token
-            args << SpreadCallArg.new(parse_expression)
+            spread = SpreadCallArg.new(parse_expression)
+            spread.span = span_from(spread_token)
+            args << spread
           else
             args << parse_expression
           end
@@ -843,7 +938,14 @@ module GiavaScript
     end
 
     private def advance_token
+      @previous = @current
       @current = @tokenizer.next_token
+    end
+
+    private def span_from(start_token : Tokenizer::Token) : Span
+      length = (@previous.offset + @previous.raw_length) - start_token.offset
+      length = 0 if length < 0
+      Span.new(start_token.line, start_token.column, length)
     end
 
     private def invalid_rhs_error : ExpressionError
