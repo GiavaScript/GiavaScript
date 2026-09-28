@@ -17,17 +17,18 @@ def run_file(path : String, argv : Array(String)) : Int32
   end
 
   interpreter = GiavaScript::Interpreter.new(argv: argv)
-  messages = interpreter.eval(source)
+  diagnostics = interpreter.eval_diagnostics(source)
 
-  messages.each do |message|
-    if message.starts_with?("Error:")
-      STDERR.puts "#{path}: #{message}"
+  has_errors = false
+  diagnostics.each do |diagnostic|
+    if diagnostic.error?
+      has_errors = true
+      diagnostic.to_display(STDERR, path, source)
     else
-      puts message
+      puts diagnostic.message
     end
   end
 
-  has_errors = messages.any? { |message| message.starts_with?("Error:") }
   has_errors ? 1 : 0
 end
 
