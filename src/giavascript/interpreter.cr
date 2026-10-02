@@ -552,37 +552,31 @@ module GiavaScript
       begin
         iterable_value = evaluate_expression(for_of.iterable, env)
 
-        case iterable_value
-        when Array(Value)
-          iterable_value.each do |element|
-            env[for_of.var_name] = element
+        elements = case iterable_value
+                   when Array(Value)
+                     iterable_value
+                   when String
+                     iterable_value.chars.map { |char| char.to_s.as(Value) }
+                   when MapValue
+                     iterable_value.entries_map.map { |key, value| [key.value, value] of Value }
+                   when SetValue
+                     iterable_value.values_set.map { |key| key.value }
+                   else
+                     return "Error: for...of requires an iterable (array, string, Map, or Set)"
+                   end
 
-            begin
-              body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
-              if body_message && body_message.starts_with?("Error:")
-                return body_message
-              end
-            rescue ContinueSignal
-            rescue BreakSignal
-              break
-            end
-          end
-        when String
-          iterable_value.each_char do |ch|
-            env[for_of.var_name] = ch.to_s
+        elements.each do |element|
+          env[for_of.var_name] = element
 
-            begin
-              body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
-              if body_message && body_message.starts_with?("Error:")
-                return body_message
-              end
-            rescue ContinueSignal
-            rescue BreakSignal
-              break
+          begin
+            body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
+            if body_message && body_message.starts_with?("Error:")
+              return body_message
             end
+          rescue ContinueSignal
+          rescue BreakSignal
+            break
           end
-        else
-          return "Error: for...of requires an iterable (array or string)"
         end
 
         nil
@@ -887,6 +881,8 @@ module GiavaScript
       return right.is_a?(DateValue) && left.object_id == right.object_id if left.is_a?(DateValue)
       return right.is_a?(RegExpValue) && left.object_id == right.object_id if left.is_a?(RegExpValue)
       return right.is_a?(ErrorValue) && left.object_id == right.object_id if left.is_a?(ErrorValue)
+      return right.is_a?(MapValue) && left.object_id == right.object_id if left.is_a?(MapValue)
+      return right.is_a?(SetValue) && left.object_id == right.object_id if left.is_a?(SetValue)
 
       false
     end

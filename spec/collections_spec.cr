@@ -348,7 +348,6 @@ describe GiavaScript do
     interpreter.eval("[1].reduce();").should eq(["Error: Array.reduce expects between 1 and 2 arguments but got 0"])
     interpreter.eval("[].reduce(function(acc, value, index, array) { return acc + value + index + array.length; });").should eq(["Error: Array.reduce cannot reduce an empty array without an initial value"])
   end
-
 end
 describe "Array.prototype.fill" do
   it "fills ranges in place" do
@@ -429,5 +428,101 @@ describe "Array.from" do
     interpreter.eval("Array.from([1, 2, 3]);").should eq(["[1, 2, 3]"])
     interpreter.eval("Array.from({length: 3, \"0\": \"a\", \"1\": \"b\", \"2\": \"c\"});").should eq(["[\"a\", \"b\", \"c\"]"])
     interpreter.eval("Array.from(\"\");").should eq(["[]"])
+  end
+end
+
+describe "Map" do
+  it "supports set, get, has, delete, clear, and size" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var m = new Map();").should eq([] of String)
+    interpreter.eval("m.size;").should eq(["0"])
+    interpreter.eval("m.set(\"a\", 1);").should eq(["[object Map]"])
+    interpreter.eval("m.set(\"b\", 2);").should eq(["[object Map]"])
+    interpreter.eval("m.size;").should eq(["2"])
+    interpreter.eval("m.get(\"a\");").should eq(["1"])
+    interpreter.eval("m.get(\"missing\");").should eq(["undefined"])
+    interpreter.eval("m.has(\"b\");").should eq(["true"])
+    interpreter.eval("m.has(\"missing\");").should eq(["false"])
+    interpreter.eval("m.delete(\"b\");").should eq(["true"])
+    interpreter.eval("m.delete(\"b\");").should eq(["false"])
+    interpreter.eval("m.size;").should eq(["1"])
+    interpreter.eval("m.clear();").should eq(["undefined"])
+    interpreter.eval("m.size;").should eq(["0"])
+  end
+
+  it "returns keys, values, and entries as arrays" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var m = new Map();").should eq([] of String)
+    interpreter.eval("m.set(\"a\", 1);").should eq(["[object Map]"])
+    interpreter.eval("m.set(\"b\", 2);").should eq(["[object Map]"])
+    interpreter.eval("m.keys();").should eq(["[\"a\", \"b\"]"])
+    interpreter.eval("m.values();").should eq(["[1, 2]"])
+    interpreter.eval("m.entries();").should eq(["[[\"a\", 1], [\"b\", 2]]"])
+  end
+
+  it "iterates entries with forEach" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+    interpreter.eval("var m = new Map();").should eq([] of String)
+    interpreter.eval("m.set(\"a\", 1);").should eq(["[object Map]"])
+    interpreter.eval("m.set(\"b\", 2);").should eq(["[object Map]"])
+    interpreter.eval("m.forEach(function(value, key) { console.log(key + \"=\" + value); });").should eq(["undefined"])
+    output.to_s.should eq("a=1\nb=2\n")
+  end
+
+  it "uses SameValueZero key equality" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var m = new Map();").should eq([] of String)
+    interpreter.eval("m.set(1, \"one\");").should eq(["[object Map]"])
+    interpreter.eval("m.get(1.0);").should eq(["\"one\""])
+    interpreter.eval("m.has(1);").should eq(["true"])
+    interpreter.eval("m.has(2);").should eq(["false"])
+    interpreter.eval("var a = {}; var b = {};").should eq([] of String)
+    interpreter.eval("m.set(a, \"obj\");").should eq(["[object Map]"])
+    interpreter.eval("m.has(a);").should eq(["true"])
+    interpreter.eval("m.has(b);").should eq(["false"])
+  end
+end
+
+describe "Set" do
+  it "supports add, has, delete, clear, and size" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var s = new Set();").should eq([] of String)
+    interpreter.eval("s.size;").should eq(["0"])
+    interpreter.eval("s.add(1);").should eq(["[object Set]"])
+    interpreter.eval("s.add(2);").should eq(["[object Set]"])
+    interpreter.eval("s.add(2);").should eq(["[object Set]"])
+    interpreter.eval("s.size;").should eq(["2"])
+    interpreter.eval("s.has(2);").should eq(["true"])
+    interpreter.eval("s.has(3);").should eq(["false"])
+    interpreter.eval("s.values();").should eq(["[1, 2]"])
+    interpreter.eval("s.entries();").should eq(["[[1, 1], [2, 2]]"])
+    interpreter.eval("s.delete(1);").should eq(["true"])
+    interpreter.eval("s.size;").should eq(["1"])
+    interpreter.eval("s.clear();").should eq(["undefined"])
+    interpreter.eval("s.size;").should eq(["0"])
+  end
+
+  it "iterates values with forEach" do
+    output = IO::Memory.new
+    interpreter = GiavaScript::Interpreter.new(output)
+    interpreter.eval("var s = new Set();").should eq([] of String)
+    interpreter.eval("s.add(1);").should eq(["[object Set]"])
+    interpreter.eval("s.add(2);").should eq(["[object Set]"])
+    interpreter.eval("s.forEach(function(value) { console.log(value); });").should eq(["undefined"])
+    output.to_s.should eq("1\n2\n")
+  end
+end
+
+describe "for...of over Map and Set" do
+  it "yields key/value pairs for Map and values for Set" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("var m = new Map();").should eq([] of String)
+    interpreter.eval("m.set(\"a\", 1);").should eq(["[object Map]"])
+    interpreter.eval("m.set(\"b\", 2);").should eq(["[object Map]"])
+    interpreter.eval("var out = []; for (var pair of m) { out.push(pair[0] + pair[1]); } out;").should eq(["[\"a1\", \"b2\"]"])
+
+    interpreter.eval("var s = new Set(); s.add(3); s.add(4);").should eq(["[object Set]", "[object Set]"])
+    interpreter.eval("var collected = []; for (var value of s) { collected.push(value); } collected;").should eq(["[3, 4]"])
   end
 end

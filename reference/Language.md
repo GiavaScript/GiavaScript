@@ -104,6 +104,9 @@ Status of core JavaScript language features in GiavaScript.
 | Spread in objects (`{...obj}`) | Available |
 | Dot and bracket property access | Available |
 | Template literals | Available |
+| `new Map()` | Available |
+| `new Set()` | Available |
+| `for...of` over Map and Set | Available |
 
 ## Classic global functions
 
