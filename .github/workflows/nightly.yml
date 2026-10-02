@@ -14,9 +14,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Crystal
-        uses: crystal-lang/install-crystal@44c8bd5f42f9ac08a7c9ebf9a75f16a7de79ccfd
-        with:
-          crystal: nightly
+        run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash -s -- --channel=nightly
 
       - name: Run tests
         run: crystal spec

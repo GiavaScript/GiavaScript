@@ -21,8 +21,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Crystal
-        uses: crystal-lang/install-crystal@44c8bd5f42f9ac08a7c9ebf9a75f16a7de79ccfd
+      - name: Install Crystal (Linux)
+        if: runner.os == 'Linux'
+        run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash -s -- --version=1.19
+
+      - name: Install Crystal (macOS/Windows)
+        if: runner.os != 'Linux'
+        uses: crystal-lang/install-crystal@v1
         with:
           crystal: 1.19.1
 
