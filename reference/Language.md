@@ -12,8 +12,8 @@ Status of core JavaScript language features in GiavaScript.
 | Compound assignment (`+=`, `-=`, `*=`, `/=`) | Available |
 | Postfix increment and decrement (`++`, `--`) | Available |
 | `import "file.js"` | Available |
-| `let` | Not available |
-| `const` | Not available |
+| `let` declaration | Available |
+| `const` declaration (initializer required) | Available |
 
 ## Expressions and operators
 
@@ -130,6 +130,7 @@ Status of core JavaScript language features in GiavaScript.
 ## Notes
 
 - This reflects the current behavior in the interpreter and specs.
-- `let` and `const` declarations return explicit errors: `Error: unsupported declaration 'let'` and `Error: unsupported declaration 'const'`.
-- Use `var` for variable declarations.
+- `let` is currently an alias for `var`: function/global scope, no block scoping.
+- `const` requires an initializer and cannot be reassigned or updated; attempts raise `Error: assignment to constant variable 'x'`.
+- Prefer `let` and `const` for variable declarations.
 - Statements can be separated by newlines without requiring semicolons. A semicolon is not required when two statements are on separate lines.

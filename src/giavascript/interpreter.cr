@@ -183,10 +183,6 @@ module GiavaScript
         return "Error: return can only be used inside functions"
       end
 
-      if keyword = unsupported_declaration_keyword(stmt)
-        return "Error: unsupported declaration '#{keyword}'"
-      end
-
       if match = stmt.match(/^(.+?)\s*(\+\+|--)$/)
         target_source = match[1].strip
         operator = match[2]
@@ -202,8 +198,11 @@ module GiavaScript
         end
       end
 
-      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)$/)
-        var_name = match[1]
+      if match = stmt.match(/^(var|let|const)\s+([A-Za-z_][A-Za-z0-9_]*)$/)
+        keyword = match[1]
+        var_name = match[2]
+
+        return "Error: const declaration '#{var_name}' requires an initializer" if keyword == "const"
 
         if env.has_key?(var_name)
           return "Error: variable '#{var_name}' already exists"
@@ -213,9 +212,10 @@ module GiavaScript
         return nil
       end
 
-      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
-        var_name = match[1]
-        rhs = match[2].strip
+      if match = stmt.match(/^(var|let|const)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
+        keyword = match[1]
+        var_name = match[2]
+        rhs = match[3].strip
 
         if env.has_key?(var_name)
           return "Error: variable '#{var_name}' already exists"
@@ -223,7 +223,11 @@ module GiavaScript
 
         begin
           value = eval_rhs(rhs, env)
-          env[var_name] = value
+          if keyword == "const"
+            env.declare_const(var_name, value)
+          else
+            env[var_name] = value
+          end
           return nil
         rescue ex : ExpressionError
           return ex.message || "Error: invalid right-hand side '#{rhs}'"
@@ -324,6 +328,10 @@ module GiavaScript
     private def assign_to_variable(target_expr : VariableExpr, value : Value, env : Environment)
       unless env.has_key?(target_expr.name)
         raise ExpressionError.new("Error: variable '#{target_expr.name}' does not exist")
+      end
+
+      if env.constant?(target_expr.name)
+        raise ExpressionError.new("Error: assignment to constant variable '#{target_expr.name}'")
       end
 
       env[target_expr.name] = value
@@ -888,13 +896,6 @@ module GiavaScript
 
       next_char = source[keyword.size]?
       next_char.nil? || !(next_char.ascii_letter? || next_char.ascii_number? || next_char == '_')
-    end
-
-    private def unsupported_declaration_keyword(source : String) : String?
-      return "let" if starts_with_keyword?(source, "let")
-      return "const" if starts_with_keyword?(source, "const")
-
-      nil
     end
 
     private def invoke_user_function(function_value : UserFunction, args : Array(Value)) : Value
