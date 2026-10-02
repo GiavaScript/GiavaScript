@@ -508,6 +508,8 @@ module GiavaScript
       return right.is_a?(UserFunction) && left.object_id == right.object_id if left.is_a?(UserFunction)
       return right.is_a?(RegExpValue) && left.object_id == right.object_id if left.is_a?(RegExpValue)
       return right.is_a?(ErrorValue) && left.object_id == right.object_id if left.is_a?(ErrorValue)
+      return right.is_a?(MapValue) && left.object_id == right.object_id if left.is_a?(MapValue)
+      return right.is_a?(SetValue) && left.object_id == right.object_id if left.is_a?(SetValue)
 
       false
     end
@@ -522,7 +524,7 @@ module GiavaScript
     end
 
     private def object_value_for_loose_equality?(value : Value) : Bool
-      value.is_a?(Array(Value)) || value.is_a?(Hash(String, Value)) || value.is_a?(BuiltinFunction) || value.is_a?(UserFunction) || value.is_a?(RegExpValue) || value.is_a?(ErrorValue)
+      value.is_a?(Array(Value)) || value.is_a?(Hash(String, Value)) || value.is_a?(BuiltinFunction) || value.is_a?(UserFunction) || value.is_a?(RegExpValue) || value.is_a?(ErrorValue) || value.is_a?(MapValue) || value.is_a?(SetValue)
     end
 
     private def object_to_primitive_for_loose_equality(value : Value) : Value
@@ -548,6 +550,10 @@ module GiavaScript
 
       if value.is_a?(ErrorValue)
         return value.to_s
+      end
+
+      if value.is_a?(MapValue) || value.is_a?(SetValue)
+        return RuntimeTypes.js_string(value)
       end
 
       value
