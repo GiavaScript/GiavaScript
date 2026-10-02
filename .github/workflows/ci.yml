@@ -14,14 +14,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Crystal
+      - name: Install Crystal (Linux)
+        if: runner.os == 'Linux'
+        run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash -s -- --version=1.19
+
+      - name: Install Crystal (macOS/Windows)
+        if: runner.os != 'Linux'
         uses: crystal-lang/install-crystal@v1
         with:
           crystal: 1.19.1

@@ -175,6 +175,38 @@ module GiavaScript
       } of String => BuiltinPropertyGetter
     )
 
+    MAP_TYPE = TypeObject.new(
+      {
+        "set"     => BuiltinMethodDefinition.new("Map.set", ->(receiver : Value, args : Array(Value)) { map_set(receiver, args).as(Value) }),
+        "get"     => BuiltinMethodDefinition.new("Map.get", ->(receiver : Value, args : Array(Value)) { map_get(receiver, args).as(Value) }),
+        "has"     => BuiltinMethodDefinition.new("Map.has", ->(receiver : Value, args : Array(Value)) { map_has(receiver, args).as(Value) }),
+        "delete"  => BuiltinMethodDefinition.new("Map.delete", ->(receiver : Value, args : Array(Value)) { map_delete(receiver, args).as(Value) }),
+        "clear"   => BuiltinMethodDefinition.new("Map.clear", ->(receiver : Value, args : Array(Value)) { map_clear(receiver, args).as(Value) }),
+        "keys"    => BuiltinMethodDefinition.new("Map.keys", ->(receiver : Value, args : Array(Value)) { map_keys(receiver, args).as(Value) }),
+        "values"  => BuiltinMethodDefinition.new("Map.values", ->(receiver : Value, args : Array(Value)) { map_values(receiver, args).as(Value) }),
+        "entries" => BuiltinMethodDefinition.new("Map.entries", ->(receiver : Value, args : Array(Value)) { map_entries(receiver, args).as(Value) }),
+        "forEach" => BuiltinMethodDefinition.new("Map.forEach", ->(receiver : Value, args : Array(Value)) { map_for_each(receiver, args).as(Value) }),
+      } of String => BuiltinMethodDefinition,
+      {
+        "size" => ->(receiver : Value) { map_size(receiver).as(Value) },
+      } of String => BuiltinPropertyGetter
+    )
+
+    SET_TYPE = TypeObject.new(
+      {
+        "add"     => BuiltinMethodDefinition.new("Set.add", ->(receiver : Value, args : Array(Value)) { set_add(receiver, args).as(Value) }),
+        "has"     => BuiltinMethodDefinition.new("Set.has", ->(receiver : Value, args : Array(Value)) { set_has(receiver, args).as(Value) }),
+        "delete"  => BuiltinMethodDefinition.new("Set.delete", ->(receiver : Value, args : Array(Value)) { set_delete(receiver, args).as(Value) }),
+        "clear"   => BuiltinMethodDefinition.new("Set.clear", ->(receiver : Value, args : Array(Value)) { set_clear(receiver, args).as(Value) }),
+        "values"  => BuiltinMethodDefinition.new("Set.values", ->(receiver : Value, args : Array(Value)) { set_values(receiver, args).as(Value) }),
+        "entries" => BuiltinMethodDefinition.new("Set.entries", ->(receiver : Value, args : Array(Value)) { set_entries(receiver, args).as(Value) }),
+        "forEach" => BuiltinMethodDefinition.new("Set.forEach", ->(receiver : Value, args : Array(Value)) { set_for_each(receiver, args).as(Value) }),
+      } of String => BuiltinMethodDefinition,
+      {
+        "size" => ->(receiver : Value) { set_size(receiver).as(Value) },
+      } of String => BuiltinPropertyGetter
+    )
+
     def get_type(value : Value) : TypeObject?
       return nil if value.nil?
       return nil if value.is_a?(UndefinedValue)
@@ -196,6 +228,10 @@ module GiavaScript
         REGEXP_TYPE
       when ErrorValue
         ERROR_TYPE
+      when MapValue
+        MAP_TYPE
+      when SetValue
+        SET_TYPE
       else
         nil
       end
@@ -230,6 +266,8 @@ module GiavaScript
       return "undefined" if value.is_a?(UndefinedValue)
       return value.map { |item| js_array_element_string(item) }.join(",") if value.is_a?(Array(Value))
       return "[object Object]" if value.is_a?(Hash(String, Value))
+      return "[object Map]" if value.is_a?(MapValue)
+      return "[object Set]" if value.is_a?(SetValue)
       return "function" if value.is_a?(BuiltinFunction) || value.is_a?(UserFunction)
 
       value.to_s
@@ -957,7 +995,7 @@ module GiavaScript
 
       index = start_index
       while index < array_receiver.size
-        return true if array_value_equals?(array_receiver[index], needle)
+        return true if same_value?(array_receiver[index], needle)
         index += 1
       end
 
@@ -972,7 +1010,7 @@ module GiavaScript
 
       index = start_index
       while index < array_receiver.size
-        return index if array_value_equals?(array_receiver[index], needle)
+        return index if same_value?(array_receiver[index], needle)
         index += 1
       end
 
@@ -997,7 +1035,7 @@ module GiavaScript
               end
 
       while index >= 0
-        return index if array_value_equals?(array_receiver[index], needle)
+        return index if same_value?(array_receiver[index], needle)
         index -= 1
       end
 
@@ -1527,7 +1565,7 @@ module GiavaScript
       end
     end
 
-    private def array_value_equals?(left : Value, right : Value) : Bool
+    def same_value?(left : Value, right : Value) : Bool
       if left.is_a?(Int32) || left.is_a?(Float64)
         return false unless right.is_a?(Int32) || right.is_a?(Float64)
 
@@ -1581,7 +1619,141 @@ module GiavaScript
         return right.is_a?(ErrorValue) && left.object_id == right.object_id
       end
 
+      if left.is_a?(MapValue)
+        return right.is_a?(MapValue) && left.object_id == right.object_id
+      end
+
+      if left.is_a?(SetValue)
+        return right.is_a?(SetValue) && left.object_id == right.object_id
+      end
+
       false
+    end
+
+    private def receiver_map(value : Value, method_name : String) : MapValue
+      return value if value.is_a?(MapValue)
+      raise ExpressionError.new("Error: #{method_name} receiver must be a Map")
+    end
+
+    private def map_set(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 2, "Map.set")
+      receiver_map(receiver, "Map.set").entries_map[MapKey.new(args[0])] = args[1]
+      receiver
+    end
+
+    private def map_get(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Map.get")
+      receiver_map(receiver, "Map.get").entries_map.fetch(MapKey.new(args[0]), UNDEFINED)
+    end
+
+    private def map_has(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Map.has")
+      receiver_map(receiver, "Map.has").entries_map.has_key?(MapKey.new(args[0]))
+    end
+
+    private def map_delete(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Map.delete")
+      receiver_map(receiver, "Map.delete").entries_map.delete(MapKey.new(args[0])) ? true.as(Value) : false.as(Value)
+    end
+
+    private def map_clear(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Map.clear")
+      receiver_map(receiver, "Map.clear").entries_map.clear
+      UNDEFINED
+    end
+
+    private def map_size(receiver : Value) : Value
+      receiver_map(receiver, "Map.size").entries_map.size
+    end
+
+    private def map_keys(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Map.keys")
+      result = Array(Value).new
+      receiver_map(receiver, "Map.keys").entries_map.each_key { |key| result << key.value }
+      result
+    end
+
+    private def map_values(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Map.values")
+      result = Array(Value).new
+      receiver_map(receiver, "Map.values").entries_map.each_value { |value| result << value }
+      result
+    end
+
+    private def map_entries(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Map.entries")
+      result = Array(Value).new
+      receiver_map(receiver, "Map.entries").entries_map.each do |key, value|
+        result << [key.value, value] of Value
+      end
+      result
+    end
+
+    private def map_for_each(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Map.forEach")
+      callback = callback_argument(args[0], "Map.forEach")
+
+      receiver_map(receiver, "Map.forEach").entries_map.each do |key, value|
+        invoke_callback(callback, [value, key.value, receiver] of Value, "Map.forEach")
+      end
+
+      UNDEFINED
+    end
+
+    private def receiver_set(value : Value, method_name : String) : SetValue
+      return value if value.is_a?(SetValue)
+      raise ExpressionError.new("Error: #{method_name} receiver must be a Set")
+    end
+
+    private def set_add(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Set.add")
+      receiver_set(receiver, "Set.add").values_set << MapKey.new(args[0])
+      receiver
+    end
+
+    private def set_has(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Set.has")
+      receiver_set(receiver, "Set.has").values_set.includes?(MapKey.new(args[0]))
+    end
+
+    private def set_delete(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Set.delete")
+      receiver_set(receiver, "Set.delete").values_set.delete(MapKey.new(args[0])) ? true.as(Value) : false.as(Value)
+    end
+
+    private def set_clear(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Set.clear")
+      receiver_set(receiver, "Set.clear").values_set.clear
+      UNDEFINED
+    end
+
+    private def set_size(receiver : Value) : Value
+      receiver_set(receiver, "Set.size").values_set.size
+    end
+
+    private def set_values(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Set.values")
+      result = Array(Value).new
+      receiver_set(receiver, "Set.values").values_set.each { |key| result << key.value }
+      result
+    end
+
+    private def set_entries(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 0, "Set.entries")
+      result = Array(Value).new
+      receiver_set(receiver, "Set.entries").values_set.each { |key| result << [key.value, key.value] of Value }
+      result
+    end
+
+    private def set_for_each(receiver : Value, args : Array(Value)) : Value
+      assert_arity(args, 1, "Set.forEach")
+      callback = callback_argument(args[0], "Set.forEach")
+
+      receiver_set(receiver, "Set.forEach").values_set.each do |key|
+        invoke_callback(callback, [key.value, key.value, receiver] of Value, "Set.forEach")
+      end
+
+      UNDEFINED
     end
 
     private def clamp_substring_index(index : Int32, size : Int32) : Int32
