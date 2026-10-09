@@ -29,8 +29,9 @@ module GiavaScript
 
     class ThrowSignal < Exception
       getter value : Value
+      getter frames : Array(String)
 
-      def initialize(@value : Value)
+      def initialize(@value : Value, @frames : Array(String) = [] of String)
         super("throw")
       end
     end
@@ -82,7 +83,7 @@ module GiavaScript
         message = begin
           eval_statement(slice.source, @env, false, false, false)
         rescue ex : ThrowSignal
-          "Error: uncaught #{value_to_s(ex.value)}"
+          format_uncaught(ex)
         end
 
         next unless message
@@ -96,6 +97,12 @@ module GiavaScript
       end
 
       diagnostics
+    end
+
+    private def format_uncaught(ex : ThrowSignal) : String
+      message = "Error: uncaught #{value_to_s(ex.value)}"
+      ex.frames.each { |frame| message += "\n    at #{frame}" }
+      message
     end
 
     private def line_column_at(source : String, offset : Int32) : Tuple(Int32, Int32)
@@ -815,7 +822,7 @@ module GiavaScript
           message = eval_statement(inner_stmt, env, inside_function, inside_loop, inside_switch)
           last_message = message if message
         rescue ex : ThrowSignal
-          return "Error: uncaught #{value_to_s(ex.value)}"
+          return format_uncaught(ex)
         end
       end
 
@@ -951,6 +958,8 @@ module GiavaScript
         end
       rescue ex : ReturnSignal
         return ex.value
+      rescue ex : ThrowSignal
+        raise ThrowSignal.new(ex.value, ex.frames + [display_name])
       end
 
       UNDEFINED

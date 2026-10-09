@@ -195,6 +195,8 @@ Status of built-in methods and properties on GiavaScript runtime types.
 - `toString()` returns `"name: message"`.
 - Error objects can be thrown with `throw` and caught with `try/catch`.
 - Raw value throws continue to work alongside Error objects.
+- An uncaught throw is reported with its value and a source location (`file:line:column`).
+- When a throw propagates out of user functions, the uncaught output includes a best-effort stack of the calling functions, one `at name` line per frame. Anonymous functions appear as `at anonymous`.
 
 ## Notes
 
