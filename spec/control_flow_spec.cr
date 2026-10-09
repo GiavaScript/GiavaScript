@@ -235,7 +235,7 @@ describe GiavaScript do
   it "returns error for for...of with non-iterable value" do
     interpreter = GiavaScript::Interpreter.new
 
-    interpreter.eval("var n = 42; for (var x of n) console.log(x);").should eq(["Error: for...of requires an iterable (array or string)"])
+    interpreter.eval("var n = 42; for (var x of n) console.log(x);").should eq(["Error: for...of requires an iterable (array, string, Map, or Set)"])
   end
 
   it "supports for...in iteration over object keys" do
@@ -424,7 +424,6 @@ describe GiavaScript do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("continue;").should eq(["Error: continue can only be used inside loops"])
   end
-
 end
 describe "Error" do
   it "constructs Error with standard properties and behavior" do

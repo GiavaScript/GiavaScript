@@ -29,8 +29,9 @@ module GiavaScript
 
     class ThrowSignal < Exception
       getter value : Value
+      getter frames : Array(String)
 
-      def initialize(@value : Value)
+      def initialize(@value : Value, @frames : Array(String) = [] of String)
         super("throw")
       end
     end
@@ -82,7 +83,7 @@ module GiavaScript
         message = begin
           eval_statement(slice.source, @env, false, false, false)
         rescue ex : ThrowSignal
-          "Error: uncaught #{value_to_s(ex.value)}"
+          format_uncaught(ex)
         end
 
         next unless message
@@ -96,6 +97,12 @@ module GiavaScript
       end
 
       diagnostics
+    end
+
+    private def format_uncaught(ex : ThrowSignal) : String
+      message = "Error: uncaught #{value_to_s(ex.value)}"
+      ex.frames.each { |frame| message += "\n    at #{frame}" }
+      message
     end
 
     private def line_column_at(source : String, offset : Int32) : Tuple(Int32, Int32)
@@ -183,10 +190,6 @@ module GiavaScript
         return "Error: return can only be used inside functions"
       end
 
-      if keyword = unsupported_declaration_keyword(stmt)
-        return "Error: unsupported declaration '#{keyword}'"
-      end
-
       if match = stmt.match(/^(.+?)\s*(\+\+|--)$/)
         target_source = match[1].strip
         operator = match[2]
@@ -202,8 +205,11 @@ module GiavaScript
         end
       end
 
-      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)$/)
-        var_name = match[1]
+      if match = stmt.match(/^(var|let|const)\s+([A-Za-z_][A-Za-z0-9_]*)$/)
+        keyword = match[1]
+        var_name = match[2]
+
+        return "Error: const declaration '#{var_name}' requires an initializer" if keyword == "const"
 
         if env.has_key?(var_name)
           return "Error: variable '#{var_name}' already exists"
@@ -213,9 +219,10 @@ module GiavaScript
         return nil
       end
 
-      if match = stmt.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
-        var_name = match[1]
-        rhs = match[2].strip
+      if match = stmt.match(/^(var|let|const)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
+        keyword = match[1]
+        var_name = match[2]
+        rhs = match[3].strip
 
         if env.has_key?(var_name)
           return "Error: variable '#{var_name}' already exists"
@@ -223,7 +230,11 @@ module GiavaScript
 
         begin
           value = eval_rhs(rhs, env)
-          env[var_name] = value
+          if keyword == "const"
+            env.declare_const(var_name, value)
+          else
+            env[var_name] = value
+          end
           return nil
         rescue ex : ExpressionError
           return ex.message || "Error: invalid right-hand side '#{rhs}'"
@@ -324,6 +335,10 @@ module GiavaScript
     private def assign_to_variable(target_expr : VariableExpr, value : Value, env : Environment)
       unless env.has_key?(target_expr.name)
         raise ExpressionError.new("Error: variable '#{target_expr.name}' does not exist")
+      end
+
+      if env.constant?(target_expr.name)
+        raise ExpressionError.new("Error: assignment to constant variable '#{target_expr.name}'")
       end
 
       env[target_expr.name] = value
@@ -544,37 +559,31 @@ module GiavaScript
       begin
         iterable_value = evaluate_expression(for_of.iterable, env)
 
-        case iterable_value
-        when Array(Value)
-          iterable_value.each do |element|
-            env[for_of.var_name] = element
+        elements = case iterable_value
+                   when Array(Value)
+                     iterable_value
+                   when String
+                     iterable_value.chars.map { |char| char.to_s.as(Value) }
+                   when MapValue
+                     iterable_value.entries_map.map { |key, value| [key.value, value] of Value }
+                   when SetValue
+                     iterable_value.values_set.map { |key| key.value }
+                   else
+                     return "Error: for...of requires an iterable (array, string, Map, or Set)"
+                   end
 
-            begin
-              body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
-              if body_message && body_message.starts_with?("Error:")
-                return body_message
-              end
-            rescue ContinueSignal
-            rescue BreakSignal
-              break
-            end
-          end
-        when String
-          iterable_value.each_char do |ch|
-            env[for_of.var_name] = ch.to_s
+        elements.each do |element|
+          env[for_of.var_name] = element
 
-            begin
-              body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
-              if body_message && body_message.starts_with?("Error:")
-                return body_message
-              end
-            rescue ContinueSignal
-            rescue BreakSignal
-              break
+          begin
+            body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
+            if body_message && body_message.starts_with?("Error:")
+              return body_message
             end
+          rescue ContinueSignal
+          rescue BreakSignal
+            break
           end
-        else
-          return "Error: for...of requires an iterable (array or string)"
         end
 
         nil
@@ -813,7 +822,7 @@ module GiavaScript
           message = eval_statement(inner_stmt, env, inside_function, inside_loop, inside_switch)
           last_message = message if message
         rescue ex : ThrowSignal
-          return "Error: uncaught #{value_to_s(ex.value)}"
+          return format_uncaught(ex)
         end
       end
 
@@ -879,6 +888,8 @@ module GiavaScript
       return right.is_a?(DateValue) && left.object_id == right.object_id if left.is_a?(DateValue)
       return right.is_a?(RegExpValue) && left.object_id == right.object_id if left.is_a?(RegExpValue)
       return right.is_a?(ErrorValue) && left.object_id == right.object_id if left.is_a?(ErrorValue)
+      return right.is_a?(MapValue) && left.object_id == right.object_id if left.is_a?(MapValue)
+      return right.is_a?(SetValue) && left.object_id == right.object_id if left.is_a?(SetValue)
 
       false
     end
@@ -888,13 +899,6 @@ module GiavaScript
 
       next_char = source[keyword.size]?
       next_char.nil? || !(next_char.ascii_letter? || next_char.ascii_number? || next_char == '_')
-    end
-
-    private def unsupported_declaration_keyword(source : String) : String?
-      return "let" if starts_with_keyword?(source, "let")
-      return "const" if starts_with_keyword?(source, "const")
-
-      nil
     end
 
     private def invoke_user_function(function_value : UserFunction, args : Array(Value)) : Value
@@ -954,6 +958,8 @@ module GiavaScript
         end
       rescue ex : ReturnSignal
         return ex.value
+      rescue ex : ThrowSignal
+        raise ThrowSignal.new(ex.value, ex.frames + [display_name])
       end
 
       UNDEFINED

@@ -22,7 +22,7 @@ module GiavaScript
 
     private def parse_ternary : Expr
       start_token = @current
-      condition = parse_logical_or
+      condition = parse_nullish
 
       return condition unless @current.kind == Tokenizer::TokenKind::Question
 
@@ -37,6 +37,23 @@ module GiavaScript
       node = TernaryExpr.new(condition, consequent, alternate)
       node.span = span_from(start_token)
       node
+    end
+
+    private def parse_nullish : Expr
+      start_token = @current
+      left = parse_logical_or
+
+      loop do
+        break unless @current.kind == Tokenizer::TokenKind::QuestionQuestion
+
+        advance_token
+        right = parse_logical_or
+        node = BinaryExpr.new(left, Tokenizer::TokenKind::QuestionQuestion, right)
+        node.span = span_from(start_token)
+        left = node
+      end
+
+      left
     end
 
     private def parse_logical_or : Expr
@@ -280,39 +297,73 @@ module GiavaScript
     private def parse_postfix : Expr
       start_token = @current
       value = parse_primary
+      chain_base = nil.as(Expr?)
+      links = [] of ChainLink
 
       loop do
-        if @current.kind == Tokenizer::TokenKind::LParen
-          args = parse_call_arguments
-          node = FunctionCallExpr.new(value, args)
-          node.span = span_from(start_token)
-          value = node
-          next
-        end
+        case @current.kind
+        when Tokenizer::TokenKind::QuestionDot
+          chain_base ||= value
+          advance_token
 
-        if @current.kind == Tokenizer::TokenKind::LBracket
+          case @current.kind
+          when Tokenizer::TokenKind::Identifier
+            property = @current.lexeme
+            advance_token
+            links << ChainLink.new(ChainLinkKind::Property, name: property, optional: true)
+          when Tokenizer::TokenKind::LBracket
+            advance_token
+            index = parse_expression
+            raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RBracket
+            advance_token
+            links << ChainLink.new(ChainLinkKind::Index, index: index, optional: true)
+          when Tokenizer::TokenKind::LParen
+            links << ChainLink.new(ChainLinkKind::Call, args: parse_call_arguments, optional: true)
+          else
+            raise invalid_rhs_error
+          end
+        when Tokenizer::TokenKind::LParen
+          args = parse_call_arguments
+          if chain_base
+            links << ChainLink.new(ChainLinkKind::Call, args: args)
+          else
+            node = FunctionCallExpr.new(value, args)
+            node.span = span_from(start_token)
+            value = node
+          end
+        when Tokenizer::TokenKind::LBracket
           advance_token
           index = parse_expression
           raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::RBracket
           advance_token
-          node = IndexExpr.new(value, index)
-          node.span = span_from(start_token)
-          value = node
-          next
-        end
-
-        if @current.kind == Tokenizer::TokenKind::Dot
+          if chain_base
+            links << ChainLink.new(ChainLinkKind::Index, index: index)
+          else
+            node = IndexExpr.new(value, index)
+            node.span = span_from(start_token)
+            value = node
+          end
+        when Tokenizer::TokenKind::Dot
           advance_token
           raise invalid_rhs_error unless @current.kind == Tokenizer::TokenKind::Identifier
           property = @current.lexeme
           advance_token
-          node = PropertyAccessExpr.new(value, property)
-          node.span = span_from(start_token)
-          value = node
-          next
+          if chain_base
+            links << ChainLink.new(ChainLinkKind::Property, name: property)
+          else
+            node = PropertyAccessExpr.new(value, property)
+            node.span = span_from(start_token)
+            value = node
+          end
+        else
+          break
         end
+      end
 
-        break
+      if base = chain_base
+        node = OptionalChainExpr.new(base, links)
+        node.span = span_from(start_token)
+        return node
       end
 
       value
