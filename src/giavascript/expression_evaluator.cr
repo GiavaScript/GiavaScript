@@ -25,6 +25,8 @@ module GiavaScript
         RuntimeTypes.truthy?(evaluate(expr.condition)) ? evaluate(expr.consequent) : evaluate(expr.alternate)
       when BinaryExpr
         evaluate_binary(expr)
+      when OptionalChainExpr
+        evaluate_optional_chain(expr)
       when FunctionCallExpr
         evaluate_function_call(expr)
       when NewExpr
@@ -147,6 +149,9 @@ module GiavaScript
       when Tokenizer::TokenKind::OrOr
         return left if RuntimeTypes.truthy?(left)
         return evaluate(expr.right)
+      when Tokenizer::TokenKind::QuestionQuestion
+        return left unless nullish?(left)
+        return evaluate(expr.right)
       end
 
       right = evaluate(expr.right)
@@ -177,18 +182,48 @@ module GiavaScript
     end
 
     private def evaluate_index_expression(expr : IndexExpr) : Value
-      target = evaluate(expr.target)
+      evaluate_index_on_target(evaluate(expr.target), expr.index)
+    end
+
+    private def evaluate_index_on_target(target : Value, index_expr : Expr) : Value
       raise_undefined_null_property_error(target) if target.nil? || target.is_a?(UndefinedValue)
 
       if target.is_a?(Array)
-        return evaluate_array_index(target, expr.index)
+        return evaluate_array_index(target, index_expr)
       end
 
       if target.is_a?(Hash(String, Value))
-        return target.fetch(RuntimeTypes.object_key(evaluate(expr.index)), UNDEFINED)
+        return target.fetch(RuntimeTypes.object_key(evaluate(index_expr)), UNDEFINED)
       end
 
       raise ExpressionError.new("Error: indexing is only supported on arrays and objects")
+    end
+
+    private def evaluate_optional_chain(expr : OptionalChainExpr) : Value
+      current = evaluate(expr.base)
+      receiver = nil.as(Value)
+
+      expr.links.each do |link|
+        return UNDEFINED if link.optional && nullish?(current)
+
+        case link.kind
+        when ChainLinkKind::Property
+          receiver = current
+          current = resolve_property_access_value(current, link.name)
+        when ChainLinkKind::Index
+          receiver = current
+          current = evaluate_index_on_target(current, link.index.not_nil!)
+        when ChainLinkKind::Call
+          current = invoke_callable(current, receiver, flatten_call_args(link.args))
+          receiver = nil
+        end
+      end
+
+      current
+    end
+
+    private def nullish?(value : Value) : Bool
+      value.nil? || value.is_a?(UndefinedValue)
     end
 
     private def flatten_call_args(args : Array(Expr)) : Array(Value)
