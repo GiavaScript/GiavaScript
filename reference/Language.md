@@ -28,6 +28,8 @@ Status of core JavaScript language features in GiavaScript.
 | Equality (`==`, `!=`) | Available |
 | Strict equality (`===`, `!==`) | Available |
 | Logical operators (`&&`, `\|\|`, `!`) | Available |
+| Optional chaining (`?.`, `?.[]`, `?.()`) | Available |
+| Nullish coalescing (`??`) | Available |
 | `typeof` operator | Available |
 | `void` operator | Available |
 | Unary plus (`+`) | Available |
@@ -56,7 +58,20 @@ Status of core JavaScript language features in GiavaScript.
 - `a || b`: evaluates `a` first; if `a` is truthy, returns `a` and does not evaluate `b`; otherwise evaluates and returns `b`.
 - `!a`: evaluates `a` and returns a boolean negation (`true`/`false`).
 - `a ? b : c`: evaluates `a` first; if `a` is truthy, evaluates and returns `b`; otherwise evaluates and returns `c`.
-- Precedence: `!` binds tighter than `&&`, `&&` binds tighter than `||`, and `||` binds tighter than `? :`.
+- Precedence: `!` binds tighter than `&&`, `&&` binds tighter than `||`, `||` binds tighter than `??`, and `??` binds tighter than `? :`.
+
+### Optional chaining semantics
+
+- `a?.b`, `a?.[i]`, and `a?.(args)` short-circuit to `undefined` when `a` is `null` or `undefined` instead of raising.
+- Once a chain short-circuits, the remaining accesses in that chain are skipped: `null?.a.b` is `undefined`.
+- Falsy values that are not `null` or `undefined` (`0`, `""`, `false`) are still accessed normally.
+- Accessing a property of a `null` or `undefined` target without `?.` still raises an error.
+
+### Nullish coalescing semantics
+
+- `a ?? b` returns `a` unless `a` is `null` or `undefined`, in which case it returns `b`.
+- Unlike `||`, other falsy values (`0`, `0.0`, `""`, `false`) are kept: `0 ?? 5` is `0`.
+- `??` parses looser than `&&` and `||`; mixing them without parentheses uses that precedence.
 
 ### Spread and rest parameter semantics
 
