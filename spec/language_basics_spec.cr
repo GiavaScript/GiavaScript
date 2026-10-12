@@ -238,11 +238,49 @@ describe GiavaScript do
     interpreter.eval("function sumNumbers(a, b)\n  return a + b;\nend").should eq(["Error: invalid function definition"])
   end
 
-  it "rejects unsupported declarations" do
+  it "supports let declarations" do
     interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("let value = 1;").should eq([] of String)
+    interpreter.eval("value;").should eq(["1"])
+  end
 
-    interpreter.eval("let value = 1;").should eq(["Error: unsupported declaration 'let'"])
-    interpreter.eval("const total = 2;").should eq(["Error: unsupported declaration 'const'"])
+  it "supports let declarations without initializer" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("let value;").should eq([] of String)
+    interpreter.eval("value;").should eq(["undefined"])
+  end
+
+  it "supports const declarations" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("const total = 2;").should eq([] of String)
+    interpreter.eval("total;").should eq(["2"])
+  end
+
+  it "rejects const declarations without initializer" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("const total;").should eq(["Error: const declaration 'total' requires an initializer"])
+  end
+
+  it "rejects assignment to a constant variable" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("const total = 2;").should eq([] of String)
+    interpreter.eval("total = 3;").should eq(["Error: assignment to constant variable 'total'"])
+    interpreter.eval("total += 1;").should eq(["Error: assignment to constant variable 'total'"])
+    interpreter.eval("total++;").should eq(["Error: assignment to constant variable 'total'"])
+    interpreter.eval("total;").should eq(["2"])
+  end
+
+  it "rejects redeclaration of let and const variables" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("let value = 1;").should eq([] of String)
+    interpreter.eval("let value = 2;").should eq(["Error: variable 'value' already exists"])
+    interpreter.eval("const total = 2;").should eq([] of String)
+    interpreter.eval("let total = 3;").should eq(["Error: variable 'total' already exists"])
+  end
+
+  it "supports let in for-loop initializers" do
+    interpreter = GiavaScript::Interpreter.new
+    interpreter.eval("let sum = 0; for (let i = 0; i < 3; i++) { sum += i; } sum;").should eq(["3"])
   end
 
   it "rejects class declarations" do

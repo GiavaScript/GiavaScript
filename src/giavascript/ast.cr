@@ -151,6 +151,22 @@ module GiavaScript
     end
   end
 
+  enum ChainLinkKind
+    Property
+    Index
+    Call
+  end
+
+  record ChainLink, kind : ChainLinkKind, name : String = "", index : Expr? = nil, args : Array(Expr) = [] of Expr, optional : Bool = false
+
+  class OptionalChainExpr < Expr
+    getter base : Expr
+    getter links : Array(ChainLink)
+
+    def initialize(@base : Expr, @links : Array(ChainLink))
+    end
+  end
+
   abstract class Statement
     property span : Span?
   end

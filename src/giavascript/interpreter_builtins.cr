@@ -11,6 +11,8 @@ module GiavaScript
       env["String"] = build_string_object
       env["RegExp"] = build_regexp_object
       env["Number"] = build_number_object
+      env["Map"] = build_map_object
+      env["Set"] = build_set_object
       env["Error"] = build_error("Error")
       env["TypeError"] = build_error("TypeError")
       env["ReferenceError"] = build_error("ReferenceError")
@@ -281,6 +283,30 @@ module GiavaScript
       end)
 
       regexp
+    end
+
+    private def build_map_object : Hash(String, Value)
+      map = Hash(String, Value).new
+
+      map["__construct"] = BuiltinFunction.new("Map", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Map")
+        assert_builtin_arity(args, 0, "Map")
+        MapValue.new.as(Value)
+      end)
+
+      map
+    end
+
+    private def build_set_object : Hash(String, Value)
+      set = Hash(String, Value).new
+
+      set["__construct"] = BuiltinFunction.new("Set", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Set")
+        assert_builtin_arity(args, 0, "Set")
+        SetValue.new.as(Value)
+      end)
+
+      set
     end
 
     private def build_error(name : String) : Hash(String, Value)

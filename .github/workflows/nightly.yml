@@ -7,16 +7,14 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Crystal
-        uses: crystal-lang/install-crystal@v1
-        with:
-          crystal: nightly
+        run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash -s -- --channel=nightly
 
       - name: Run tests
         run: crystal spec

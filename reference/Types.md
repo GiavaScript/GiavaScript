@@ -117,6 +117,45 @@ Status of built-in methods and properties on GiavaScript runtime types.
 | `toString()` | Instance method | Available |
 | `values()` | Static method | Available |
 
+## Map
+
+| Member | Kind | Status |
+| --- | --- | --- |
+| `Map()` | Constructor | Available |
+| `size` | Instance property | Available |
+| `set()` | Instance method | Available |
+| `get()` | Instance method | Available |
+| `has()` | Instance method | Available |
+| `delete()` | Instance method | Available |
+| `clear()` | Instance method | Available |
+| `keys()` | Instance method | Available |
+| `values()` | Instance method | Available |
+| `entries()` | Instance method | Available |
+| `forEach()` | Instance method | Available |
+
+## Set
+
+| Member | Kind | Status |
+| --- | --- | --- |
+| `Set()` | Constructor | Available |
+| `size` | Instance property | Available |
+| `add()` | Instance method | Available |
+| `has()` | Instance method | Available |
+| `delete()` | Instance method | Available |
+| `clear()` | Instance method | Available |
+| `values()` | Instance method | Available |
+| `entries()` | Instance method | Available |
+| `forEach()` | Instance method | Available |
+
+### Map and Set notes
+
+- `new Map()` and `new Set()` take no arguments.
+- Keys use SameValueZero equality: numbers compare by value (`1` and `1.0` are the same key, `NaN` equals itself), strings, booleans, `null`, and `undefined` compare by value, and objects compare by reference identity.
+- `keys()`, `values()`, and `entries()` return arrays. `entries()` returns `[key, value]` pairs for Map and `[value, value]` pairs for Set. Iteration order is insertion order.
+- `forEach(callback)` invokes `callback(value, key, collection)` for Map and `callback(value, value, collection)` for Set.
+- Both are iterable with `for...of`: Map yields `[key, value]` pairs, Set yields values.
+- `Map.set()` and `Set.add()` return the collection for chaining.
+
 ## Boolean
 
 | Member | Kind | Status |
@@ -156,6 +195,8 @@ Status of built-in methods and properties on GiavaScript runtime types.
 - `toString()` returns `"name: message"`.
 - Error objects can be thrown with `throw` and caught with `try/catch`.
 - Raw value throws continue to work alongside Error objects.
+- An uncaught throw is reported with its value and a source location (`file:line:column`).
+- When a throw propagates out of user functions, the uncaught output includes a best-effort stack of the calling functions, one `at name` line per frame. Anonymous functions appear as `at anonymous`.
 
 ## Notes
 

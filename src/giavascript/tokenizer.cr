@@ -30,6 +30,8 @@ module GiavaScript
       ShiftLeft
       ShiftRight
       Question
+      QuestionQuestion
+      QuestionDot
       Less
       Greater
       LessEqual
@@ -99,7 +101,15 @@ module GiavaScript
         Token.new(TokenKind::Percent, "%")
       when '?'
         advance
-        Token.new(TokenKind::Question, "?")
+        if current_char == '?'
+          advance
+          Token.new(TokenKind::QuestionQuestion, "??")
+        elsif current_char == '.'
+          advance
+          Token.new(TokenKind::QuestionDot, "?.")
+        else
+          Token.new(TokenKind::Question, "?")
+        end
       when '^'
         advance
         Token.new(TokenKind::Caret, "^")

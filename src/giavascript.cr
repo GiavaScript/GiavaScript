@@ -176,7 +176,59 @@ module GiavaScript
     end
   end
 
-  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue | RegExpValue | ErrorValue
+  struct MapKey
+    getter value : Value
+
+    def initialize(@value : Value)
+    end
+
+    def ==(other : MapKey) : Bool
+      RuntimeTypes.same_value?(@value, other.value)
+    end
+
+    def hash(hasher)
+      value = @value
+
+      case value
+      when Int32, Float64
+        value.to_f64.hash(hasher)
+      when String, Bool
+        value.hash(hasher)
+      when Nil, UndefinedValue
+        0.hash(hasher)
+      else
+        value.object_id.hash(hasher)
+      end
+
+      hasher
+    end
+  end
+
+  class MapValue
+    getter entries_map : Hash(MapKey, Value)
+
+    def initialize
+      @entries_map = Hash(MapKey, Value).new
+    end
+
+    def to_s(io : IO)
+      io << "[object Map]"
+    end
+  end
+
+  class SetValue
+    getter values_set : Set(MapKey)
+
+    def initialize
+      @values_set = Set(MapKey).new
+    end
+
+    def to_s(io : IO)
+      io << "[object Set]"
+    end
+  end
+
+  alias Value = Number | Bool | String | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | BuiltinFunction | UserFunction | DateValue | RegExpValue | ErrorValue | MapValue | SetValue
 end
 
 require "./giavascript/string_literal_parser"
@@ -184,6 +236,7 @@ require "./giavascript/template_literal_parser"
 require "./giavascript/comment_stripper"
 require "./giavascript/tokenizer"
 require "./giavascript/ast"
+require "./giavascript/binding_pattern"
 require "./giavascript/expression_parser"
 require "./giavascript/runtime_types"
 require "./giavascript/environment"
@@ -194,6 +247,10 @@ require "./giavascript/if_statement_parser"
 require "./giavascript/switch_statement_parser"
 require "./giavascript/while_statement_parser"
 require "./giavascript/try_statement_parser"
+require "./giavascript/assignment_splitter"
 require "./giavascript/statement_tokenizer"
+require "./giavascript/syntax_checker"
+require "./giavascript/line_editor"
 require "./giavascript/interpreter_builtins"
 require "./giavascript/interpreter"
+require "./giavascript/cli"

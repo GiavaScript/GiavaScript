@@ -1,10 +1,12 @@
 module GiavaScript
   class Environment
     @values : Hash(String, Value)
+    @constants : Set(String)
     @parent : Environment?
 
     def initialize(@parent : Environment? = nil)
       @values = Hash(String, Value).new
+      @constants = Set(String).new
     end
 
     def has_key?(name : String) : Bool
@@ -53,7 +55,25 @@ module GiavaScript
       @values.delete(name)
     end
 
+    def declare_const(name : String, value : Value) : Value
+      @constants << name
+      @values[name] = value
+    end
+
+    def constant?(name : String) : Bool
+      current = self
+      loop do
+        return true if current.constants.includes?(name)
+
+        parent = current.parent
+        return false unless parent
+
+        current = parent
+      end
+    end
+
     protected getter values : Hash(String, Value)
+    protected getter constants : Set(String)
     protected getter parent : Environment?
   end
 end

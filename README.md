@@ -61,14 +61,31 @@ Make sure your install directory is on `PATH`.
 gs
 ```
 
+The REPL keeps input history for the session (up/down arrows on macOS and Linux), continues multi-line blocks with a `...` prompt, and writes errors to standard error.
+
 REPL commands:
 
-- `:quit` exits the REPL.
+- `.help` lists commands.
+- `.history` prints this session's input history.
+- `.exit` or `:quit` exits the REPL.
 
 ### Run a file
 
 ```bash
 gs path/to/program.js
+```
+
+Run a snippet without a file:
+
+```bash
+gs -e "1 + 1"
+gs --eval "console.log('hi')"
+```
+
+Parse only, without executing (exits `1` on syntax errors):
+
+```bash
+gs --check path/to/program.js
 ```
 
 Behavior to expect:
