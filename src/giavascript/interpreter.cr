@@ -46,21 +46,112 @@ module GiavaScript
       @expression_evaluator_cache = Hash(UInt64, ExpressionEvaluator).new
     end
 
-    def repl(input : IO = STDIN, output : IO = STDOUT)
+    def repl(input : IO = STDIN, output : IO = STDOUT, error_output : IO = output)
       output.puts "GiavaScript REPL"
-      output.puts "Type :quit to exit"
+      output.puts "Type .help for commands, .exit or :quit to leave"
+
+      editor = LineEditor.new(input, output)
 
       loop do
-        output.print "> "
-        line = input.gets
-        break if line.nil?
+        source = read_repl_source(editor, output)
+        break if source.nil?
 
-        text = line.not_nil!.strip
-        break if text == ":quit"
+        text = source.strip
         next if text.empty?
 
-        eval(text).each { |message| output.puts(message) }
+        case text
+        when ":quit", ".exit"
+          break
+        when ".help"
+          print_repl_help(output)
+          next
+        when ".history"
+          editor.history.each { |entry| output.puts entry }
+          next
+        end
+
+        eval_diagnostics(text).each do |diagnostic|
+          if diagnostic.error?
+            error_output.puts "error: #{diagnostic.message}"
+          else
+            output.puts diagnostic.message
+          end
+        end
       end
+    end
+
+    private def read_repl_source(editor : LineEditor, output : IO) : String?
+      prompt = "> "
+      source = ""
+
+      loop do
+        line = editor.read_line(prompt)
+        return nil if line.nil?
+
+        source = source.empty? ? line : "#{source}\n#{line}"
+        return source if source_complete?(source)
+        prompt = "... "
+      end
+    end
+
+    private def source_complete?(source : String) : Bool
+      paren_depth = 0
+      bracket_depth = 0
+      brace_depth = 0
+      string_delimiter = nil.as(Char?)
+      escaping = false
+      index = 0
+
+      while index < source.size
+        char = source[index]
+
+        if delimiter = string_delimiter
+          if escaping
+            escaping = false
+          elsif char == '\\'
+            escaping = true
+          elsif char == delimiter
+            string_delimiter = nil
+          end
+          index += 1
+          next
+        end
+
+        if char == '/' && source[index + 1]? == '/'
+          newline = source.index('\n', index)
+          index = newline ? newline : source.size
+          next
+        end
+
+        case char
+        when '"', '\'', '`'
+          string_delimiter = char
+        when '('
+          paren_depth += 1
+        when ')'
+          paren_depth -= 1
+        when '['
+          bracket_depth += 1
+        when ']'
+          bracket_depth -= 1
+        when '{'
+          brace_depth += 1
+        when '}'
+          brace_depth -= 1
+        end
+
+        index += 1
+      end
+
+      paren_depth <= 0 && bracket_depth <= 0 && brace_depth <= 0 && string_delimiter.nil?
+    end
+
+    private def print_repl_help(output : IO)
+      output.puts "Commands:"
+      output.puts "  .help      Show this help"
+      output.puts "  .history   Show this session's input history"
+      output.puts "  .exit      Exit the REPL"
+      output.puts "  :quit      Exit the REPL"
     end
 
     def eval(input : String) : Array(String)
@@ -241,10 +332,40 @@ module GiavaScript
         end
       end
 
+      if match = stmt.match(/^(var|let|const)\s+([\[{][\s\S]*)$/)
+        keyword = match[1]
+        body = match[2].strip
+        declaration = split_assignment_statement(body)
+
+        unless declaration && declaration[:operator] == "="
+          return "Error: destructuring declaration requires an initializer"
+        end
+
+        begin
+          pattern = BindingPatternParser.new(declaration[:lhs]).parse
+          value = eval_rhs(declaration[:rhs], env)
+          bind_pattern(pattern, value, env, keyword, nil)
+          return nil
+        rescue ex : ExpressionError
+          return ex.message || "Error: invalid destructuring declaration"
+        end
+      end
+
       if assignment = split_assignment_statement(stmt)
         lhs = assignment[:lhs]
         rhs = assignment[:rhs]
         operator = assignment[:operator]
+
+        if operator == "=" && (lhs.starts_with?('[') || lhs.starts_with?('{'))
+          begin
+            pattern = BindingPatternParser.new(lhs).parse
+            value = eval_rhs(rhs, env)
+            bind_pattern(pattern, value, env, nil, nil)
+            return nil
+          rescue ex : ExpressionError
+            return ex.message || "Error: invalid destructuring assignment"
+          end
+        end
 
         begin
           assignment_target = parse_assignment_target(lhs)
@@ -386,92 +507,79 @@ module GiavaScript
       target[index_value] = value
     end
 
-    private def split_assignment_statement(stmt : String) : NamedTuple(lhs: String, rhs: String, operator: String)?
-      return nil unless stmt.includes?('=')
+    private def bind_pattern(pattern : BindingPattern, value : Value, env : Environment, keyword : String?, default_source : String?) : Nil
+      value = eval_rhs(default_source, env) if default_source && value.is_a?(UndefinedValue)
 
-      current = 0
-      string_delimiter = nil.as(Char?)
-      escaping = false
-      paren_depth = 0
-      bracket_depth = 0
-      brace_depth = 0
+      case pattern
+      when IdentifierBinding
+        store_binding(env, pattern.name, value, keyword)
+      when ArrayBinding
+        items = destructuring_items(value)
 
-      while current < stmt.size
-        char = stmt[current]
-
-        if delimiter = string_delimiter
-          if escaping
-            escaping = false
-          elsif char == '\\'
-            escaping = true
-          elsif char == delimiter
-            string_delimiter = nil
-          end
-
-          current += 1
-          next
+        pattern.elements.each_with_index do |element, index|
+          element_value = index < items.size ? items[index] : UNDEFINED.as(Value)
+          bind_pattern(element.pattern, element_value, env, keyword, element.default_source)
         end
 
-        case char
-        when '"', '\'', '`'
-          string_delimiter = char
-        when '('
-          paren_depth += 1
-        when ')'
-          paren_depth -= 1 if paren_depth > 0
-        when '['
-          bracket_depth += 1
-        when ']'
-          bracket_depth -= 1 if bracket_depth > 0
-        when '{'
-          brace_depth += 1
-        when '}'
-          brace_depth -= 1 if brace_depth > 0
-        when '='
-          previous_char = current > 0 ? stmt[current - 1] : nil
-          previous_previous_char = current > 1 ? stmt[current - 2] : nil
-          next_char = stmt[current + 1]?
+        if rest_name = pattern.rest
+          rest_value = pattern.elements.size < items.size ? items[pattern.elements.size..].as(Value) : Array(Value).new.as(Value)
+          store_binding(env, rest_name, rest_value, keyword)
+        end
+      when ObjectBinding
+        object = value.is_a?(Hash(String, Value)) ? value : nil
+        used = Set(String).new
 
-          if paren_depth == 0 && bracket_depth == 0 && brace_depth == 0
-            operator = nil
-            lhs_end = current
-
-            if previous_char == '<' && previous_previous_char == '<' && next_char != '='
-              operator = "<<="
-              lhs_end = current - 2
-            elsif previous_char == '>' && previous_previous_char == '>' && next_char != '='
-              operator = ">>="
-              lhs_end = current - 2
-            elsif previous_char != '!' && previous_char != '<' && previous_char != '>' && previous_char != '=' &&
-                  next_char != '='
-              operator = "="
-
-              if previous_char == '+' || previous_char == '-' || previous_char == '*' || previous_char == '/' ||
-                 previous_char == '&' || previous_char == '|' || previous_char == '^'
-                operator = "#{previous_char}="
-                lhs_end = current - 1
-
-                if previous_previous_char == previous_char
-                  current += 1
-                  next
-                end
-              end
-            end
-
-            if operator
-              lhs = stmt[0...lhs_end].strip
-              rhs = stmt[current + 1...stmt.size].strip
-              return nil if lhs.empty? || rhs.empty?
-
-              return {lhs: lhs, rhs: rhs, operator: operator}
-            end
-          end
+        pattern.properties.each do |property|
+          used << property.key
+          property_value = object ? object.fetch(property.key, UNDEFINED.as(Value)) : UNDEFINED.as(Value)
+          bind_pattern(property.pattern, property_value, env, keyword, property.default_source)
         end
 
-        current += 1
+        if rest_name = pattern.rest
+          rest_object = Hash(String, Value).new
+          object.try(&.each { |key, entry| rest_object[key] = entry unless used.includes?(key) })
+          store_binding(env, rest_name, rest_object.as(Value), keyword)
+        end
+      end
+    end
+
+    private def destructuring_items(value : Value) : Array(Value)
+      return value if value.is_a?(Array(Value))
+
+      if value.is_a?(String)
+        return value.chars.map { |char| char.to_s.as(Value) }
       end
 
-      nil
+      Array(Value).new
+    end
+
+    private def store_binding(env : Environment, name : String, value : Value, keyword : String?)
+      if keyword
+        if env.has_key?(name)
+          raise ExpressionError.new("Error: variable '#{name}' already exists")
+        end
+
+        if keyword == "const"
+          env.declare_const(name, value)
+        else
+          env[name] = value
+        end
+        return
+      end
+
+      unless env.has_key?(name)
+        raise ExpressionError.new("Error: variable '#{name}' does not exist")
+      end
+
+      if env.constant?(name)
+        raise ExpressionError.new("Error: assignment to constant variable '#{name}'")
+      end
+
+      env[name] = value
+    end
+
+    private def split_assignment_statement(stmt : String) : NamedTuple(lhs: String, rhs: String, operator: String)?
+      AssignmentSplitter.split(stmt)
     end
 
     private def eval_if_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?

@@ -14,6 +14,17 @@ Status of core JavaScript language features in GiavaScript.
 | `import "file.js"` | Available |
 | `let` declaration | Available |
 | `const` declaration (initializer required) | Available |
+| Destructuring declaration (`var [a, b] = ...`, `var {a, b} = ...`) | Available |
+| Destructuring assignment to existing variables (`[a, b] = ...`) | Available |
+
+### Destructuring semantics
+
+- Array patterns bind by position: `var [a, b] = [1, 2]`.
+- Object patterns bind by key: `var {a, b} = {a: 1, b: 2}`; rename with `{key: name}`.
+- Rest gathers the remaining elements (`[a, ...rest]`) or own properties (`{a, ...rest}`).
+- Defaults (`[a = 1]`, `{a = 1}`) apply only when the value is `undefined`; `null` is kept.
+- Patterns can nest in either form and work with `var`, `let`, and `const`.
+- Destructuring targets must be identifiers; computed property keys and function/arrow parameter patterns are not supported.
 
 ## Expressions and operators
 
