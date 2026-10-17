@@ -59,7 +59,12 @@ stringify depth limit (1000).
 
 ## Before opening a PR
 
-Run `crystal spec` before opening a PR.
+For every issue or pull request:
+
+1. Add an entry to `CHANGELOG.md` describing the change.
+2. Bump the version in **both** `shard.yml` and `src/giavascript.cr` when the
+   change warrants a release. The two files must always match.
+3. Run `crystal spec`.
 
 ## Code conventions
 
