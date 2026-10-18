@@ -53,14 +53,19 @@ stringify depth limit (1000).
 | Action | Command |
 |--------|---------|
 | Run tests | `crystal spec` |
+| Run benchmarks | `crystal run src/giavascript_cli.cr -- benchmarks/run.js` |
 | Run a JS file | `crystal run src/giavascript_cli.cr -- <path/to/file.js>` |
 | Build & install binary | `crystal run src/giavascript_cli.cr -- install.js` |
-| Smoke test examples | `crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js` |
 | Format a single file | `crystal tool format <path>` |
 
 ## Before opening a PR
 
-Run `crystal spec` before opening a PR.
+For every issue or pull request:
+
+1. Add an entry to `CHANGELOG.md` describing the change.
+2. Bump the version in **both** `shard.yml` and `src/giavascript.cr` when the
+   change warrants a release. The two files must always match.
+3. Run `crystal spec`.
 
 ## Code conventions
 

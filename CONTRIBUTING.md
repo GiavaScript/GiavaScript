@@ -11,7 +11,7 @@ This guide covers the local workflow CI expects, so your changes are easy to rev
 ## Local setup
 
 ```bash
-git clone https://github.com/memburg/GiavaScript.git
+git clone https://github.com/GiavaScript/GiavaScript.git
 cd GiavaScript
 ```
 
@@ -20,7 +20,7 @@ cd GiavaScript
 Run the CLI directly from source:
 
 ```bash
-crystal run src/giavascript_cli.cr -- examples/templateLiterals.js
+crystal run src/giavascript_cli.cr -- -e "console.log('hi')"
 ```
 
 Or install the binary:
@@ -36,12 +36,6 @@ crystal spec
 ```
 
 Run this before opening a pull request.
-
-Smoke test the examples:
-
-```bash
-crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js
-```
 
 ## Documentation updates
 
@@ -80,5 +74,4 @@ To cut a release:
 
 ```bash
 crystal spec
-crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js
 ```

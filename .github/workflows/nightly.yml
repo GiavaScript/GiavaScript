@@ -18,6 +18,3 @@ jobs:
 
       - name: Run tests
         run: crystal spec
-
-      - name: Run example smoke tests
-        run: crystal run src/giavascript_cli.cr -- scripts/run_examples_smoke.js

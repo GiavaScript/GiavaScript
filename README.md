@@ -11,23 +11,25 @@
   <a href="https://crystal-lang.org/">
     <img src="https://img.shields.io/badge/crystal-1.19.1+-000000.svg?logo=crystal&logoColor=white" alt="Crystal" />
   </a>
-  <a href="https://github.com/memburg/GiavaScript/releases">
-    <img src="https://img.shields.io/github/v/release/memburg/GiavaScript?include_prereleases" alt="Version" />
+  <a href="https://github.com/GiavaScript/GiavaScript/releases">
+    <img src="https://img.shields.io/github/v/release/GiavaScript/GiavaScript?include_prereleases" alt="Version" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/memburg/GiavaScript/actions/workflows/ci.yml">
-    <img src="https://github.com/memburg/GiavaScript/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <a href="https://github.com/GiavaScript/GiavaScript/actions/workflows/ci.yml">
+    <img src="https://github.com/GiavaScript/GiavaScript/actions/workflows/ci.yml/badge.svg" alt="CI" />
   </a>
-  <a href="https://github.com/memburg/GiavaScript/actions/workflows/nightly.yml">
-    <img src="https://github.com/memburg/GiavaScript/actions/workflows/nightly.yml/badge.svg" alt="Nightly Crystal CI" />
+  <a href="https://github.com/GiavaScript/GiavaScript/actions/workflows/nightly.yml">
+    <img src="https://github.com/GiavaScript/GiavaScript/actions/workflows/nightly.yml/badge.svg" alt="Nightly Crystal CI" />
   </a>
 </p>
 
 GiavaScript is an open-source, cross-platform JavaScript runtime implemented in Crystal.
 
 It intentionally does not aim for full ECMAScript compliance. Check the reference docs before relying on specific language features.
+
+Documentation and examples: <https://giavascript.github.io/>
 
 ## Quick start
 
@@ -38,7 +40,7 @@ It intentionally does not aim for full ECMAScript compliance. Check the referenc
 ### Install the CLI
 
 ```bash
-git clone https://github.com/memburg/GiavaScript.git
+git clone https://github.com/GiavaScript/GiavaScript.git
 cd GiavaScript
 crystal run src/giavascript_cli.cr -- install.js
 ```
@@ -97,7 +99,7 @@ Behavior to expect:
 ### Run without installing
 
 ```bash
-crystal run src/giavascript_cli.cr -- examples/templateLiterals.js
+crystal run src/giavascript_cli.cr -- -e "console.log('hi')"
 ```
 
 ## Development workflow
@@ -114,25 +116,6 @@ crystal spec
 - [Type methods and properties](reference/Types.md)
 - [Math](reference/Math.md)
 - [JSON](reference/JSON.md)
-
-## Examples
-
-Sample programs are in `examples/`:
-
-- `examples/templateLiterals.js` - string interpolation and expression formatting
-- `examples/arrayFlatFlatMapSplice.js` - array manipulation methods
-- `examples/dateBasics.js` - Date object usage
-- `examples/functionExpressionsAndOperators.js` - function expressions and operators
-- `examples/multilineMethodChaining.js` - method chaining patterns
-- `examples/objectKeysValuesEntries.js` - Object.keys, values, entries
-- `examples/random.js` - random number generation
-- `examples/tryCatchFinally.js` - error handling with try/catch/finally
-
-Run any example with:
-
-```bash
-gs examples/templateLiterals.js
-```
 
 ## Contributing
 
