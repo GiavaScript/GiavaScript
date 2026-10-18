@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Benchmark harness with baseline numbers for interpreter hot paths (#139)
 
 ### Changed
+- Cache parsed function bodies instead of re-tokenizing them on every call (#137)
 - Streamlined the README and contributing guide
 - Moved example programs to the documentation website
 

@@ -1058,7 +1058,7 @@ module GiavaScript
         local_env[rest_param] = rest_values
       end
 
-      statements = StatementTokenizer.new(function_value.body_source).tokenize
+      statements = function_value.statements
 
       begin
         statements.each do |stmt|
