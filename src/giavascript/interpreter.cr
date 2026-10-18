@@ -7,23 +7,39 @@ module GiavaScript
     MAX_EXPRESSION_CACHE_SIZE = 8_192
     MAX_EVALUATOR_CACHE_SIZE  = 1_024
 
-    class BreakSignal < Exception
-      def initialize
-        super("break")
-      end
+    enum ControlFlow
+      Normal
+      Return
+      Break
+      Continue
     end
 
-    class ContinueSignal < Exception
-      def initialize
-        super("continue")
-      end
-    end
-
-    class ReturnSignal < Exception
+    struct EvalResult
+      getter flow : ControlFlow
+      getter message : String?
       getter value : Value
 
-      def initialize(@value : Value)
-        super("return")
+      def initialize(@flow : ControlFlow = ControlFlow::Normal, @message : String? = nil, @value : Value = UNDEFINED)
+      end
+
+      def self.normal(message : String? = nil) : EvalResult
+        new(ControlFlow::Normal, message)
+      end
+
+      def self.returning(value : Value) : EvalResult
+        new(ControlFlow::Return, nil, value)
+      end
+
+      def self.breaking : EvalResult
+        new(ControlFlow::Break)
+      end
+
+      def self.continuing : EvalResult
+        new(ControlFlow::Continue)
+      end
+
+      def error? : Bool
+        message.try(&.starts_with?("Error:")) || false
       end
     end
 
@@ -171,12 +187,13 @@ module GiavaScript
       end
 
       slices.each do |slice|
-        message = begin
+        result = begin
           eval_statement(slice.source, @env, false, false, false)
         rescue ex : ThrowSignal
-          format_uncaught(ex)
+          EvalResult.normal(format_uncaught(ex))
         end
 
+        message = result.message
         next unless message
 
         if message.starts_with?("Error:")
@@ -211,23 +228,23 @@ module GiavaScript
       {line, offset - line_start + 1}
     end
 
-    private def eval_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       if stmt.starts_with?("function ")
         begin
           function_expr = parsed_expression(stmt)
           unless function_expr.is_a?(FunctionExpr) && function_expr.name
-            return "Error: invalid function definition"
+            return EvalResult.normal("Error: invalid function definition")
           end
 
           function_name = function_expr.name.not_nil!
           if env.has_key?(function_name)
-            return "Error: variable '#{function_name}' already exists"
+            return EvalResult.normal("Error: variable '#{function_name}' already exists")
           end
 
           env[function_name] = evaluate_expression(function_expr, env)
-          return nil
+          return EvalResult.normal
         rescue ex : ExpressionError
-          return ex.message || "Error: invalid function definition"
+          return EvalResult.normal(ex.message || "Error: invalid function definition")
         end
       end
 
@@ -262,23 +279,23 @@ module GiavaScript
       end
 
       if stmt == "break"
-        return "Error: break can only be used inside loops or switch statements" unless inside_loop || inside_switch
-        raise BreakSignal.new
+        return EvalResult.normal("Error: break can only be used inside loops or switch statements") unless inside_loop || inside_switch
+        return EvalResult.breaking
       end
 
       if stmt == "continue"
-        return "Error: continue can only be used inside loops" unless inside_loop
-        raise ContinueSignal.new
+        return EvalResult.normal("Error: continue can only be used inside loops") unless inside_loop
+        return EvalResult.continuing
       end
 
       if match = stmt.match(/^return(?:\s+(.+))?$/m)
         if inside_function
           return_value_expr = match[1]?
           value = return_value_expr ? eval_rhs(return_value_expr.strip, env) : UNDEFINED
-          raise ReturnSignal.new(value)
+          return EvalResult.returning(value)
         end
 
-        return "Error: return can only be used inside functions"
+        return EvalResult.normal("Error: return can only be used inside functions")
       end
 
       if match = stmt.match(/^(.+?)\s*(\+\+|--)$/)
@@ -290,9 +307,9 @@ module GiavaScript
           current_value = evaluate_expression(target_expr, env)
           next_value = incremented_value(current_value, operator)
           assign_to_target(target_expr, next_value, env)
-          return nil
+          return EvalResult.normal
         rescue ex : ExpressionError
-          return ex.message || "Error: invalid increment expression"
+          return EvalResult.normal(ex.message || "Error: invalid increment expression")
         end
       end
 
@@ -300,14 +317,14 @@ module GiavaScript
         keyword = match[1]
         var_name = match[2]
 
-        return "Error: const declaration '#{var_name}' requires an initializer" if keyword == "const"
+        return EvalResult.normal("Error: const declaration '#{var_name}' requires an initializer") if keyword == "const"
 
         if env.has_key?(var_name)
-          return "Error: variable '#{var_name}' already exists"
+          return EvalResult.normal("Error: variable '#{var_name}' already exists")
         end
 
         env[var_name] = UNDEFINED
-        return nil
+        return EvalResult.normal
       end
 
       if match = stmt.match(/^(var|let|const)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
@@ -316,7 +333,7 @@ module GiavaScript
         rhs = match[3].strip
 
         if env.has_key?(var_name)
-          return "Error: variable '#{var_name}' already exists"
+          return EvalResult.normal("Error: variable '#{var_name}' already exists")
         end
 
         begin
@@ -326,9 +343,9 @@ module GiavaScript
           else
             env[var_name] = value
           end
-          return nil
+          return EvalResult.normal
         rescue ex : ExpressionError
-          return ex.message || "Error: invalid right-hand side '#{rhs}'"
+          return EvalResult.normal(ex.message || "Error: invalid right-hand side '#{rhs}'")
         end
       end
 
@@ -338,16 +355,16 @@ module GiavaScript
         declaration = split_assignment_statement(body)
 
         unless declaration && declaration[:operator] == "="
-          return "Error: destructuring declaration requires an initializer"
+          return EvalResult.normal("Error: destructuring declaration requires an initializer")
         end
 
         begin
           pattern = BindingPatternParser.new(declaration[:lhs]).parse
           value = eval_rhs(declaration[:rhs], env)
           bind_pattern(pattern, value, env, keyword, nil)
-          return nil
+          return EvalResult.normal
         rescue ex : ExpressionError
-          return ex.message || "Error: invalid destructuring declaration"
+          return EvalResult.normal(ex.message || "Error: invalid destructuring declaration")
         end
       end
 
@@ -361,9 +378,9 @@ module GiavaScript
             pattern = BindingPatternParser.new(lhs).parse
             value = eval_rhs(rhs, env)
             bind_pattern(pattern, value, env, nil, nil)
-            return nil
+            return EvalResult.normal
           rescue ex : ExpressionError
-            return ex.message || "Error: invalid destructuring assignment"
+            return EvalResult.normal(ex.message || "Error: invalid destructuring assignment")
           end
         end
 
@@ -377,24 +394,24 @@ module GiavaScript
                     apply_compound_assignment_operator(current_value, rhs_value, operator)
                   end
           assign_to_target(assignment_target, value, env)
-          return nil
+          return EvalResult.normal
         rescue ex : ExpressionError
-          return ex.message || "Error: invalid assignment"
+          return EvalResult.normal(ex.message || "Error: invalid assignment")
         end
       end
 
       if stmt.matches?(IDENTIFIER_REGEX)
         if env.has_key?(stmt)
-          return value_to_s(env[stmt])
+          return EvalResult.normal(value_to_s(env[stmt]))
         end
-        return "Error: variable '#{stmt}' does not exist"
+        return EvalResult.normal("Error: variable '#{stmt}' does not exist")
       end
 
       begin
         value = eval_rhs(stmt, env)
-        value_to_s(value)
+        EvalResult.normal(value_to_s(value))
       rescue ex : ExpressionError
-        ex.message || "Error: invalid right-hand side '#{stmt}'"
+        EvalResult.normal(ex.message || "Error: invalid right-hand side '#{stmt}'")
       end
     end
 
@@ -582,33 +599,33 @@ module GiavaScript
       AssignmentSplitter.split(stmt)
     end
 
-    private def eval_if_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_if_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       parsed_if = begin
         IfStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
-        return ex.message || "Error: invalid if statement"
+        return EvalResult.normal(ex.message || "Error: invalid if statement")
       end
 
       eval_if_ast(parsed_if.statement, env, inside_function, inside_loop, inside_switch)
     end
 
-    private def eval_if_ast(if_statement : IfStatement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_if_ast(if_statement : IfStatement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       begin
         condition_value = evaluate_expression(if_statement.condition, env)
         branch = RuntimeTypes.truthy?(condition_value) ? if_statement.then_branch : if_statement.else_branch
-        return nil unless branch
+        return EvalResult.normal unless branch
 
         eval_statement_node(branch, env, inside_function, inside_loop, inside_switch)
       rescue ex : ExpressionError
-        ex.message || "Error: invalid if statement"
+        EvalResult.normal(ex.message || "Error: invalid if statement")
       end
     end
 
-    private def eval_for_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_for_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       parsed_for = begin
         ForStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
-        return ex.message || "Error: invalid for statement"
+        return EvalResult.normal(ex.message || "Error: invalid for statement")
       end
 
       statement = parsed_for.statement
@@ -620,17 +637,15 @@ module GiavaScript
       when ForInStatement
         eval_for_in_ast(statement, env, inside_function, inside_loop, inside_switch)
       else
-        "Error: invalid for statement"
+        EvalResult.normal("Error: invalid for statement")
       end
     end
 
-    private def eval_for_ast(for_statement : ForStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_for_ast(for_statement : ForStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       begin
         if init = for_statement.init
-          init_message = eval_statement(init.source, env, inside_function, true, inside_switch)
-          if init_message && init_message.starts_with?("Error:")
-            return init_message
-          end
+          init_result = eval_statement(init.source, env, inside_function, true, inside_switch)
+          return init_result if init_result.error? || init_result.flow != ControlFlow::Normal
         end
 
         loop do
@@ -639,31 +654,28 @@ module GiavaScript
             break unless RuntimeTypes.truthy?(condition_value)
           end
 
-          begin
-            body_message = eval_statement_node(for_statement.body, env, inside_function, true, inside_switch)
-            if body_message && body_message.starts_with?("Error:")
-              return body_message
-            end
-          rescue ContinueSignal
-          rescue BreakSignal
+          body_result = eval_statement_node(for_statement.body, env, inside_function, true, inside_switch)
+          return body_result if body_result.error?
+          case body_result.flow
+          when ControlFlow::Break
             break
+          when ControlFlow::Return
+            return body_result
           end
 
           if update = for_statement.update
-            update_message = eval_statement(update.source, env, inside_function, true, inside_switch)
-            if update_message && update_message.starts_with?("Error:")
-              return update_message
-            end
+            update_result = eval_statement(update.source, env, inside_function, true, inside_switch)
+            return update_result if update_result.error? || update_result.flow != ControlFlow::Normal
           end
         end
 
-        nil
+        EvalResult.normal
       rescue ex : ExpressionError
-        ex.message || "Error: invalid for statement"
+        EvalResult.normal(ex.message || "Error: invalid for statement")
       end
     end
 
-    private def eval_for_of_ast(for_of : ForOfStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_for_of_ast(for_of : ForOfStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       begin
         iterable_value = evaluate_expression(for_of.iterable, env)
 
@@ -677,30 +689,29 @@ module GiavaScript
                    when SetValue
                      iterable_value.values_set.map { |key| key.value }
                    else
-                     return "Error: for...of requires an iterable (array, string, Map, or Set)"
+                     return EvalResult.normal("Error: for...of requires an iterable (array, string, Map, or Set)")
                    end
 
         elements.each do |element|
           env[for_of.var_name] = element
 
-          begin
-            body_message = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
-            if body_message && body_message.starts_with?("Error:")
-              return body_message
-            end
-          rescue ContinueSignal
-          rescue BreakSignal
+          body_result = eval_statement_node(for_of.body, env, inside_function, true, inside_switch)
+          return body_result if body_result.error?
+          case body_result.flow
+          when ControlFlow::Break
             break
+          when ControlFlow::Return
+            return body_result
           end
         end
 
-        nil
+        EvalResult.normal
       rescue ex : ExpressionError
-        ex.message || "Error: invalid for...of statement"
+        EvalResult.normal(ex.message || "Error: invalid for...of statement")
       end
     end
 
-    private def eval_for_in_ast(for_in : ForInStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_for_in_ast(for_in : ForInStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       begin
         iterable_value = evaluate_expression(for_in.iterable, env)
 
@@ -709,34 +720,33 @@ module GiavaScript
           iterable_value.each_key do |key|
             env[for_in.var_name] = key
 
-            begin
-              body_message = eval_statement_node(for_in.body, env, inside_function, true, inside_switch)
-              if body_message && body_message.starts_with?("Error:")
-                return body_message
-              end
-            rescue ContinueSignal
-            rescue BreakSignal
+            body_result = eval_statement_node(for_in.body, env, inside_function, true, inside_switch)
+            return body_result if body_result.error?
+            case body_result.flow
+            when ControlFlow::Break
               break
+            when ControlFlow::Return
+              return body_result
             end
           end
         else
-          return "Error: for...in requires an object"
+          return EvalResult.normal("Error: for...in requires an object")
         end
 
-        nil
+        EvalResult.normal
       rescue ex : ExpressionError
-        ex.message || "Error: invalid for...in statement"
+        EvalResult.normal(ex.message || "Error: invalid for...in statement")
       end
     end
 
-    private def eval_while_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_while_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       parsed_loop = begin
         WhileStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
         message = ex.message || ""
-        return ex.message || "Error: invalid while statement" if message.starts_with?("Error: invalid while statement")
-        return ex.message || "Error: invalid do...while statement" if message.starts_with?("Error: invalid do...while statement")
-        return ex.message || "Error: invalid while statement"
+        return EvalResult.normal(ex.message || "Error: invalid while statement") if message.starts_with?("Error: invalid while statement")
+        return EvalResult.normal(ex.message || "Error: invalid do...while statement") if message.starts_with?("Error: invalid do...while statement")
+        return EvalResult.normal(ex.message || "Error: invalid while statement")
       end
 
       case statement = parsed_loop.statement
@@ -745,67 +755,65 @@ module GiavaScript
       when DoWhileStatement
         eval_do_while_ast(statement, env, inside_function, inside_loop, inside_switch)
       else
-        "Error: invalid while statement"
+        EvalResult.normal("Error: invalid while statement")
       end
     end
 
-    private def eval_while_ast(while_statement : WhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_while_ast(while_statement : WhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       begin
         loop do
           condition_value = evaluate_expression(while_statement.condition, env)
           break unless RuntimeTypes.truthy?(condition_value)
 
-          begin
-            body_message = eval_statement_node(while_statement.body, env, inside_function, true, inside_switch)
-            if body_message && body_message.starts_with?("Error:")
-              return body_message
-            end
-          rescue ContinueSignal
-          rescue BreakSignal
+          body_result = eval_statement_node(while_statement.body, env, inside_function, true, inside_switch)
+          return body_result if body_result.error?
+          case body_result.flow
+          when ControlFlow::Break
             break
+          when ControlFlow::Return
+            return body_result
           end
         end
 
-        nil
+        EvalResult.normal
       rescue ex : ExpressionError
-        ex.message || "Error: invalid while statement"
+        EvalResult.normal(ex.message || "Error: invalid while statement")
       end
     end
 
-    private def eval_do_while_ast(do_while_statement : DoWhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_do_while_ast(do_while_statement : DoWhileStatement, env : Environment, inside_function : Bool, _inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       begin
         loop do
-          begin
-            body_message = eval_statement_node(do_while_statement.body, env, inside_function, true, inside_switch)
-            if body_message && body_message.starts_with?("Error:")
-              return body_message
-            end
-          rescue ContinueSignal
-          rescue BreakSignal
+          body_result = eval_statement_node(do_while_statement.body, env, inside_function, true, inside_switch)
+          return body_result if body_result.error?
+          case body_result.flow
+          when ControlFlow::Break
             break
+          when ControlFlow::Return
+            return body_result
           end
 
           condition_value = evaluate_expression(do_while_statement.condition, env)
           break unless RuntimeTypes.truthy?(condition_value)
         end
 
-        nil
+        EvalResult.normal
       rescue ex : ExpressionError
-        ex.message || "Error: invalid do...while statement"
+        EvalResult.normal(ex.message || "Error: invalid do...while statement")
       end
     end
 
-    private def eval_switch_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_switch_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       parsed_switch = begin
         SwitchStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
-        return ex.message || "Error: invalid switch statement"
+        return EvalResult.normal(ex.message || "Error: invalid switch statement")
       end
 
       eval_switch_ast(parsed_switch.statement, env, inside_function, inside_loop, inside_switch)
     end
 
-    private def eval_switch_ast(switch_statement : SwitchStatement, env : Environment, inside_function : Bool, inside_loop : Bool, _inside_switch : Bool = false) : String?
+    private def eval_switch_ast(switch_statement : SwitchStatement, env : Environment, inside_function : Bool, inside_loop : Bool, _inside_switch : Bool = false) : EvalResult
       begin
         discriminant_value = evaluate_expression(switch_statement.discriminant, env)
         start_index = nil.as(Int32?)
@@ -826,100 +834,109 @@ module GiavaScript
         end
 
         execute_from = start_index || default_index
-        return nil unless execute_from
+        return EvalResult.normal unless execute_from
 
         index = execute_from
         while index < switch_statement.clauses.size
           clause = switch_statement.clauses[index]
 
           clause.statements.each do |inner_statement|
-            begin
-              message = eval_statement_node(inner_statement, env, inside_function, inside_loop, true)
-              if message && message.starts_with?("Error:")
-                return message
-              end
-            rescue BreakSignal
-              return nil
+            result = eval_statement_node(inner_statement, env, inside_function, inside_loop, true)
+            return result if result.error?
+            case result.flow
+            when ControlFlow::Break
+              return EvalResult.normal
+            when ControlFlow::Return, ControlFlow::Continue
+              return result
             end
           end
 
           index += 1
         end
 
-        nil
+        EvalResult.normal
       rescue ex : ExpressionError
-        ex.message || "Error: invalid switch statement"
+        EvalResult.normal(ex.message || "Error: invalid switch statement")
       end
     end
 
-    private def eval_try_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_try_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       parsed_try = begin
         TryStatementParser.new(stmt).parse_from
       rescue ex : ExpressionError
-        return ex.message || "Error: invalid try statement"
+        return EvalResult.normal(ex.message || "Error: invalid try statement")
       end
 
       eval_try_ast(parsed_try.statement, env, inside_function, inside_loop, inside_switch)
     end
 
-    private def eval_try_ast(try_statement : TryStatement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
-      message = nil.as(String?)
+    private def eval_try_ast(try_statement : TryStatement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
+      result = EvalResult.normal
+      pending_throw = nil.as(ThrowSignal?)
 
       begin
         begin
-          message = eval_statement_node(try_statement.try_branch, env, inside_function, inside_loop, inside_switch)
+          result = eval_statement_node(try_statement.try_branch, env, inside_function, inside_loop, inside_switch)
         rescue ex : ThrowSignal
           catch_branch = try_statement.catch_branch
-          raise ex unless catch_branch
+          if catch_branch
+            if catch_parameter = try_statement.catch_parameter
+              previous_local = env.local_lookup(catch_parameter)
+              env.set_local(catch_parameter, ex.value)
 
-          if catch_parameter = try_statement.catch_parameter
-            previous_local = env.local_lookup(catch_parameter)
-            env.set_local(catch_parameter, ex.value)
-
-            begin
-              message = eval_statement_node(catch_branch, env, inside_function, inside_loop, inside_switch)
-            ensure
-              if previous_local[:found]
-                env.set_local(catch_parameter, previous_local[:value])
-              else
-                env.delete_local(catch_parameter)
+              begin
+                result = eval_statement_node(catch_branch, env, inside_function, inside_loop, inside_switch)
+              ensure
+                if previous_local[:found]
+                  env.set_local(catch_parameter, previous_local[:value])
+                else
+                  env.delete_local(catch_parameter)
+                end
               end
+            else
+              result = eval_statement_node(catch_branch, env, inside_function, inside_loop, inside_switch)
             end
           else
-            message = eval_statement_node(catch_branch, env, inside_function, inside_loop, inside_switch)
+            pending_throw = ex
           end
         end
       ensure
         if finally_branch = try_statement.finally_branch
-          final_message = eval_statement_node(finally_branch, env, inside_function, inside_loop, inside_switch)
-          if final_message && final_message.starts_with?("Error:")
-            message = final_message
-          elsif message.nil? && final_message
-            message = final_message
+          final_result = eval_statement_node(finally_branch, env, inside_function, inside_loop, inside_switch)
+          if final_result.flow != ControlFlow::Normal
+            pending_throw = nil
+            result = final_result
+          elsif pending_throw.nil? && result.flow == ControlFlow::Normal
+            if final_result.error?
+              result = final_result
+            elsif result.message.nil? && final_result.message
+              result = EvalResult.normal(final_result.message)
+            end
           end
         end
       end
 
-      message
+      raise pending_throw if pending_throw
+      result
     rescue ex : ExpressionError
-      ex.message || "Error: invalid try statement"
+      EvalResult.normal(ex.message || "Error: invalid try statement")
     end
 
-    private def eval_import_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_import_statement(stmt : String, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       match = stmt.match(/^import\s+(\"[^\"]*\"|\'[^\']*\')$/)
       unless match
-        return "Error: invalid import statement — expected import \"file.js\""
+        return EvalResult.normal("Error: invalid import statement — expected import \"file.js\"")
       end
 
       path = eval_rhs(match[1].strip, env)
       unless path.is_a?(String)
-        return "Error: import path must be a string"
+        return EvalResult.normal("Error: import path must be a string")
       end
 
       source = begin
         ::File.read(path)
       rescue ex : ::File::Error
-        return "Error: #{ex.message}"
+        return EvalResult.normal("Error: #{ex.message}")
       end
 
       statements = StatementTokenizer.new(CommentStripper.strip(source)).tokenize
@@ -927,30 +944,29 @@ module GiavaScript
 
       statements.each do |inner_stmt|
         begin
-          message = eval_statement(inner_stmt, env, inside_function, inside_loop, inside_switch)
-          last_message = message if message
+          result = eval_statement(inner_stmt, env, inside_function, inside_loop, inside_switch)
+          return result if result.error? || result.flow != ControlFlow::Normal
+          last_message = result.message if result.message
         rescue ex : ThrowSignal
-          return format_uncaught(ex)
+          return EvalResult.normal(format_uncaught(ex))
         end
       end
 
-      last_message
+      EvalResult.normal(last_message)
     end
 
-    private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : String?
+    private def eval_statement_node(statement : Statement, env : Environment, inside_function : Bool, inside_loop : Bool, inside_switch : Bool = false) : EvalResult
       case statement
       when RawStatement
         eval_statement(statement.source, env, inside_function, inside_loop, inside_switch)
       when BlockStatement
         block_message = nil.as(String?)
         statement.statements.each do |inner_statement|
-          message = eval_statement_node(inner_statement, env, inside_function, inside_loop, inside_switch)
-          if message && message.starts_with?("Error:")
-            return message
-          end
-          block_message = message if message
+          result = eval_statement_node(inner_statement, env, inside_function, inside_loop, inside_switch)
+          return result if result.error? || result.flow != ControlFlow::Normal
+          block_message = result.message if result.message
         end
-        block_message
+        EvalResult.normal(block_message)
       when IfStatement
         eval_if_ast(statement, env, inside_function, inside_loop, inside_switch)
       when ForStatement
@@ -968,11 +984,11 @@ module GiavaScript
       when TryStatement
         eval_try_ast(statement, env, inside_function, inside_loop, inside_switch)
       when BreakStatement
-        return "Error: break can only be used inside loops or switch statements" unless inside_loop || inside_switch
-        raise BreakSignal.new
+        return EvalResult.normal("Error: break can only be used inside loops or switch statements") unless inside_loop || inside_switch
+        EvalResult.breaking
       when ContinueStatement
-        return "Error: continue can only be used inside loops" unless inside_loop
-        raise ContinueSignal.new
+        return EvalResult.normal("Error: continue can only be used inside loops") unless inside_loop
+        EvalResult.continuing
       else
         raise ExpressionError.new("Error: invalid statement")
       end
@@ -1062,10 +1078,9 @@ module GiavaScript
 
       begin
         statements.each do |stmt|
-          eval_statement(stmt, local_env, true, false)
+          result = eval_statement(stmt, local_env, true, false)
+          return result.value if result.flow == ControlFlow::Return
         end
-      rescue ex : ReturnSignal
-        return ex.value
       rescue ex : ThrowSignal
         raise ThrowSignal.new(ex.value, ex.frames + [display_name])
       end
