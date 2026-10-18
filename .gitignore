@@ -5,3 +5,4 @@
 *.dwarf
 .DS_Store
 giavascript_cli
+giavascript_bench

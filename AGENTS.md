@@ -53,6 +53,7 @@ stringify depth limit (1000).
 | Action | Command |
 |--------|---------|
 | Run tests | `crystal spec` |
+| Run benchmarks | `crystal run src/giavascript_cli.cr -- benchmarks/run.js` |
 | Run a JS file | `crystal run src/giavascript_cli.cr -- <path/to/file.js>` |
 | Build & install binary | `crystal run src/giavascript_cli.cr -- install.js` |
 | Format a single file | `crystal tool format <path>` |

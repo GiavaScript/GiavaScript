@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.0] - Unreleased
 
+### Added
+- Benchmark harness with baseline numbers for interpreter hot paths (#139)
+
 ### Changed
 - Streamlined the README and contributing guide
 - Moved example programs to the documentation website
