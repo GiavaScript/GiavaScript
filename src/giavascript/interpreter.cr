@@ -56,7 +56,7 @@ module GiavaScript
     @expression_cache : Hash(String, Expr)
     @expression_evaluator_cache : Hash(UInt64, ExpressionEvaluator)
 
-    def initialize(@console_output : IO = STDOUT, @argv : Array(String) = ARGV)
+    def initialize(@console_output : IO = STDOUT, @argv : Array(String) = ARGV, @input : IO = STDIN)
       @env = build_global_env
       @expression_cache = Hash(String, Expr).new
       @expression_evaluator_cache = Hash(UInt64, ExpressionEvaluator).new

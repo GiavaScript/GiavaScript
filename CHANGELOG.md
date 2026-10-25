@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `sleep(ms)` global builtin for pausing execution (#133)
+- `readAll()` and `readAllLines()` global builtins for consuming piped stdin (#134)
 
 ## [0.10.0] - 2026-10-18
 

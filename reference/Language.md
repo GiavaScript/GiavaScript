@@ -142,6 +142,8 @@ Status of core JavaScript language features in GiavaScript.
 | `parseFloat()` | Available |
 | `isNaN()` | Available |
 | `readLine()` | Available |
+| `readAll()` | Available |
+| `readAllLines()` | Available |
 | `sleep(ms)` | Available |
 | `Date.now()` | Available |
 | `new Date()` | Available |
