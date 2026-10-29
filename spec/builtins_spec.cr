@@ -217,6 +217,24 @@ describe GiavaScript do
     interpreter.eval("isNaN();").should eq(["Error: isNaN expects 1 arguments but got 0"])
   end
 
+  it "provides sleep as a global function" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("sleep(0);").should eq(["undefined"])
+    interpreter.eval("sleep(-10);").should eq(["undefined"])
+
+    elapsed = Time.monotonic
+    interpreter.eval("sleep(20);")
+    (Time.monotonic - elapsed).should be >= 15.milliseconds
+  end
+
+  it "validates sleep arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("sleep();").should eq(["Error: sleep expects 1 arguments but got 0"])
+    interpreter.eval("sleep(\"10\");").should eq(["Error: sleep argument 1 must be a number"])
+  end
+
   it "raises runtime error when parseInt is overwritten with non-callable" do
     interpreter = GiavaScript::Interpreter.new
 
@@ -328,5 +346,4 @@ describe GiavaScript do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
   end
-
 end

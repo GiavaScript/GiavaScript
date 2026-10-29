@@ -21,6 +21,7 @@ module GiavaScript
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
       env["readLine"] = build_read_line_function
+      env["sleep"] = build_sleep_function
       env["fetch"] = build_fetch_function
       env["File"] = build_file_object
       env["process"] = build_process_object
@@ -431,6 +432,15 @@ module GiavaScript
         assert_builtin_arity(args, 0, "readLine")
         input = STDIN.gets
         input ? input.chomp.as(Value) : "".as(Value)
+      end)
+    end
+
+    private def build_sleep_function : Value
+      BuiltinFunction.new("sleep", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 1, "sleep")
+        milliseconds = number_argument(args[0], "sleep", 0)
+        sleep(milliseconds / 1000.0) if milliseconds > 0
+        UNDEFINED.as(Value)
       end)
     end
 
