@@ -21,6 +21,9 @@ module GiavaScript
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
       env["readLine"] = build_read_line_function
+      env["readAll"] = build_read_all_function
+      env["readAllLines"] = build_read_all_lines_function
+      env["sleep"] = build_sleep_function
       env["fetch"] = build_fetch_function
       env["File"] = build_file_object
       env["process"] = build_process_object
@@ -429,8 +432,31 @@ module GiavaScript
     private def build_read_line_function : Value
       BuiltinFunction.new("readLine", ->(_receiver : Value, args : Array(Value)) do
         assert_builtin_arity(args, 0, "readLine")
-        input = STDIN.gets
+        input = @input.gets
         input ? input.chomp.as(Value) : "".as(Value)
+      end)
+    end
+
+    private def build_sleep_function : Value
+      BuiltinFunction.new("sleep", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 1, "sleep")
+        milliseconds = number_argument(args[0], "sleep", 0)
+        sleep(milliseconds / 1000.0) if milliseconds > 0
+        UNDEFINED.as(Value)
+      end)
+    end
+
+    private def build_read_all_function : Value
+      BuiltinFunction.new("readAll", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 0, "readAll")
+        @input.gets_to_end.as(Value)
+      end)
+    end
+
+    private def build_read_all_lines_function : Value
+      BuiltinFunction.new("readAllLines", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 0, "readAllLines")
+        @input.gets_to_end.lines.map(&.as(Value)).as(Value)
       end)
     end
 

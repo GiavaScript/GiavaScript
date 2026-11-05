@@ -217,6 +217,42 @@ describe GiavaScript do
     interpreter.eval("isNaN();").should eq(["Error: isNaN expects 1 arguments but got 0"])
   end
 
+  it "provides sleep as a global function" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("sleep(0);").should eq(["undefined"])
+    interpreter.eval("sleep(-10);").should eq(["undefined"])
+
+    elapsed = Time.monotonic
+    interpreter.eval("sleep(20);")
+    (Time.monotonic - elapsed).should be >= 15.milliseconds
+  end
+
+  it "validates sleep arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("sleep();").should eq(["Error: sleep expects 1 arguments but got 0"])
+    interpreter.eval("sleep(\"10\");").should eq(["Error: sleep argument 1 must be a number"])
+  end
+
+  it "provides readAll and readAllLines as global functions" do
+    GiavaScript::Interpreter.new(input: IO::Memory.new("alpha\nbeta\n"))
+      .eval("readAll();").should eq(["\"alpha\\nbeta\\n\""])
+
+    GiavaScript::Interpreter.new(input: IO::Memory.new("alpha\nbeta\n"))
+      .eval("readAllLines();").should eq(["[\"alpha\", \"beta\"]"])
+
+    GiavaScript::Interpreter.new(input: IO::Memory.new(""))
+      .eval("readAllLines();").should eq(["[]"])
+  end
+
+  it "validates readAll and readAllLines arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("readAll(1);").should eq(["Error: readAll expects 0 arguments but got 1"])
+    interpreter.eval("readAllLines(1);").should eq(["Error: readAllLines expects 0 arguments but got 1"])
+  end
+
   it "raises runtime error when parseInt is overwritten with non-callable" do
     interpreter = GiavaScript::Interpreter.new
 
@@ -328,5 +364,4 @@ describe GiavaScript do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
   end
-
 end
