@@ -235,6 +235,24 @@ describe GiavaScript do
     interpreter.eval("sleep(\"10\");").should eq(["Error: sleep argument 1 must be a number"])
   end
 
+  it "provides readAll and readAllLines as global functions" do
+    GiavaScript::Interpreter.new(input: IO::Memory.new("alpha\nbeta\n"))
+      .eval("readAll();").should eq(["\"alpha\\nbeta\\n\""])
+
+    GiavaScript::Interpreter.new(input: IO::Memory.new("alpha\nbeta\n"))
+      .eval("readAllLines();").should eq(["[\"alpha\", \"beta\"]"])
+
+    GiavaScript::Interpreter.new(input: IO::Memory.new(""))
+      .eval("readAllLines();").should eq(["[]"])
+  end
+
+  it "validates readAll and readAllLines arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("readAll(1);").should eq(["Error: readAll expects 0 arguments but got 1"])
+    interpreter.eval("readAllLines(1);").should eq(["Error: readAllLines expects 0 arguments but got 1"])
+  end
+
   it "raises runtime error when parseInt is overwritten with non-callable" do
     interpreter = GiavaScript::Interpreter.new
 
