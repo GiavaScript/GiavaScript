@@ -102,6 +102,38 @@ Behavior to expect:
 crystal run src/giavascript_cli.cr -- -e "console.log('hi')"
 ```
 
+## Embedding as a Crystal shard
+
+Add GiavaScript to your `shard.yml`:
+
+```yaml
+dependencies:
+  giavascript:
+    github: GiavaScript/GiavaScript
+```
+
+Then embed it directly:
+
+```crystal
+require "giavascript"
+
+engine = GiavaScript::Interpreter.new
+
+engine.eval_value("1 + 1")       # => 2
+engine.set("answer", 42)
+engine.eval_value("answer + 1")  # => 43
+engine.get("answer")             # => 42
+
+engine.register("double") do |args|
+  args[0].as(Int32) * 2
+end
+
+engine.eval_value("double(21)")                   # => 42
+engine.call("double", [21] of GiavaScript::Value) # => 42
+```
+
+`eval_value` raises `GiavaScript::ExecutionError` on failure, while `eval` keeps returning diagnostic strings for CLI compatibility. `Value` is the explicit interop type (`Int32 | Float64 | String | Bool | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | …`); there is no automatic bridging to arbitrary Crystal objects.
+
 ## Development workflow
 
 Run the tests:

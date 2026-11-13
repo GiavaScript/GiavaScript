@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `readAll()` and `readAllLines()` global builtins for consuming piped stdin (#134)
 - `parseArgs(argv)` global builtin for flag and positional argument parsing (#135)
 - Filesystem and path builtins: `File.exists/isDir/size/listDir/mkdir/remove/rename/copy/glob` and `Path.join/dirname/basename/extname/resolve` (#132)
+- Embedding API for Crystal hosts: `eval_value`, `set`/`get`, `register`, and `call`, plus a public `ExecutionError` (#144)
+
+### Fixed
+- Bare `true`, `false`, `null`, and `undefined` expression statements no longer raise "variable does not exist"
 
 ## [0.10.0] - 2026-10-18
 
