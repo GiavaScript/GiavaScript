@@ -310,6 +310,64 @@ describe GiavaScript do
     interpreter.eval("File.readLines(true);").should eq(["Error: File.readLines argument 1 must be a string"])
   end
 
+  it "provides File filesystem helpers" do
+    interpreter = GiavaScript::Interpreter.new
+    dir = File.join(Dir.tempdir, "giavascript-fs-#{Process.pid}-#{Random.rand(1_000_000)}")
+    d = dir.to_json
+    a = File.join(dir, "a.txt").to_json
+    b = File.join(dir, "b.txt").to_json
+    c = File.join(dir, "c.txt").to_json
+
+    begin
+      interpreter.eval("File.mkdir(#{d});").should eq(["undefined"])
+      interpreter.eval("File.exists(#{d});").should eq(["true"])
+      interpreter.eval("File.isDir(#{d});").should eq(["true"])
+
+      interpreter.eval("File.write(#{a}, \"hi\");").should eq(["undefined"])
+      interpreter.eval("File.exists(#{a});").should eq(["true"])
+      interpreter.eval("File.isDir(#{a});").should eq(["false"])
+      interpreter.eval("File.size(#{a});").should eq(["2"])
+      interpreter.eval("File.listDir(#{d});").should eq(["[\"a.txt\"]"])
+
+      interpreter.eval("File.copy(#{a}, #{b});").should eq(["undefined"])
+      interpreter.eval("File.read(#{b});").should eq(["\"hi\""])
+
+      interpreter.eval("File.rename(#{b}, #{c});").should eq(["undefined"])
+      interpreter.eval("File.exists(#{b});").should eq(["false"])
+      interpreter.eval("File.exists(#{c});").should eq(["true"])
+
+      interpreter.eval("File.glob(#{File.join(dir, "*.txt").to_json}).length;").should eq(["2"])
+
+      interpreter.eval("File.remove(#{d});").should eq(["undefined"])
+      interpreter.eval("File.exists(#{d});").should eq(["false"])
+    ensure
+      FileUtils.rm_r(dir) if File.exists?(dir)
+    end
+  end
+
+  it "provides Path helpers" do
+    interpreter = GiavaScript::Interpreter.new
+    sample = File.join("a", "b", "c.txt")
+
+    interpreter.eval("Path.join(\"a\", \"b\", \"c.txt\");").should eq([sample.to_json])
+    interpreter.eval("Path.dirname(#{sample.to_json});").should eq([File.dirname(sample).to_json])
+    interpreter.eval("Path.basename(#{sample.to_json});").should eq([File.basename(sample).to_json])
+    interpreter.eval("Path.extname(#{sample.to_json});").should eq([File.extname(sample).to_json])
+    interpreter.eval("Path.resolve(\".\");").should eq([File.expand_path(".").to_json])
+  end
+
+  it "validates filesystem and path builtin arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("File.exists();").should eq(["Error: File.exists expects 1 arguments but got 0"])
+    interpreter.eval("File.exists(1);").should eq(["Error: File.exists argument 1 must be a string"])
+    interpreter.eval("File.rename(\"a\");").should eq(["Error: File.rename expects 2 arguments but got 1"])
+    interpreter.eval("File.copy(1, 2);").should eq(["Error: File.copy argument 1 must be a string"])
+    interpreter.eval("Path.join();").should eq(["Error: Path.join expects at least 1 arguments but got 0"])
+    interpreter.eval("Path.join(\"a\", 2);").should eq(["Error: Path.join argument 2 must be a string"])
+    interpreter.eval("Path.basename();").should eq(["Error: Path.basename expects 1 arguments but got 0"])
+  end
+
   it "raises error for non-existent file path on File.read" do
     interpreter = GiavaScript::Interpreter.new
 

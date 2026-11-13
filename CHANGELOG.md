@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sleep(ms)` global builtin for pausing execution (#133)
 - `readAll()` and `readAllLines()` global builtins for consuming piped stdin (#134)
 - `parseArgs(argv)` global builtin for flag and positional argument parsing (#135)
+- Filesystem and path builtins: `File.exists/isDir/size/listDir/mkdir/remove/rename/copy/glob` and `Path.join/dirname/basename/extname/resolve` (#132)
 
 ## [0.10.0] - 2026-10-18
 
