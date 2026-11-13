@@ -1,6 +1,6 @@
 module GiavaScript
   module InterpreterBuiltins
-    private def build_global_env : Environment
+    private def build_global_env(capabilities : Array(Symbol)? = nil) : Environment
       env = Environment.new
       env["console"] = build_console_object
       env["JSON"] = build_json_object
@@ -20,10 +20,17 @@ module GiavaScript
       env["parseInt"] = build_parse_int_function
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
+      env["parseArgs"] = build_parse_args_function
       env["readLine"] = build_read_line_function
-      env["fetch"] = build_fetch_function
-      env["File"] = build_file_object
-      env["process"] = build_process_object
+      env["readAll"] = build_read_all_function
+      env["readAllLines"] = build_read_all_lines_function
+      env["sleep"] = build_sleep_function
+      if capabilities.nil? || capabilities.includes?(:file)
+        env["File"] = build_file_object
+        env["Path"] = build_path_object
+      end
+      env["fetch"] = build_fetch_function if capabilities.nil? || capabilities.includes?(:fetch)
+      env["process"] = build_process_object if capabilities.nil? || capabilities.includes?(:process)
       env
     end
 
@@ -426,11 +433,82 @@ module GiavaScript
       end)
     end
 
+    private def build_parse_args_function : Value
+      BuiltinFunction.new("parseArgs", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 1, "parseArgs")
+        argv = args[0]
+        raise ExpressionError.new("Error: parseArgs argument 1 must be an array") unless argv.is_a?(Array(Value))
+
+        positional = [] of Value
+        flags = Hash(String, Value).new
+        end_of_flags = false
+        index = 0
+        while index < argv.size
+          arg_value = argv[index]
+          raise ExpressionError.new("Error: parseArgs argument 1 must be an array of strings") unless arg_value.is_a?(String)
+          arg = arg_value
+
+          if end_of_flags
+            positional << arg
+          elsif arg == "--"
+            end_of_flags = true
+          elsif arg.starts_with?("--")
+            body = arg[2..]
+            if equals = body.index('=')
+              flags[body[0...equals]] = body[(equals + 1)..]
+            else
+              following = index + 1 < argv.size ? argv[index + 1] : nil
+              if following.is_a?(String) && !following.starts_with?("-")
+                index += 1
+                flags[body] = following
+              else
+                flags[body] = true.as(Value)
+              end
+            end
+          elsif arg.starts_with?("-") && arg.size > 1
+            arg[1..].each_char { |char| flags[char.to_s] = true.as(Value) }
+          else
+            positional << arg
+          end
+
+          index += 1
+        end
+
+        result = Hash(String, Value).new
+        result["_"] = positional.as(Value)
+        result["flags"] = flags.as(Value)
+        result.as(Value)
+      end)
+    end
+
     private def build_read_line_function : Value
       BuiltinFunction.new("readLine", ->(_receiver : Value, args : Array(Value)) do
         assert_builtin_arity(args, 0, "readLine")
-        input = STDIN.gets
+        input = @input.gets
         input ? input.chomp.as(Value) : "".as(Value)
+      end)
+    end
+
+    private def build_sleep_function : Value
+      BuiltinFunction.new("sleep", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 1, "sleep")
+        milliseconds = number_argument(args[0], "sleep", 0)
+        sleep((milliseconds / 1000.0).seconds) if milliseconds > 0
+        UNDEFINED.as(Value)
+      end)
+    end
+
+    private def build_read_all_function : Value
+      BuiltinFunction.new("readAll", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 0, "readAll")
+        @input.gets_to_end.as(Value)
+      end)
+    end
+
+    private def build_read_all_lines_function : Value
+      BuiltinFunction.new("readAllLines", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 0, "readAllLines")
+        @input.gets_to_end.lines.map(&.as(Value)).as(Value)
       end)
     end
 
@@ -589,7 +667,151 @@ module GiavaScript
         end
       end)
 
+      file["exists"] = BuiltinFunction.new("File.exists", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.exists")
+        assert_builtin_arity(args, 1, "File.exists")
+        path = string_argument(args[0], "File.exists", 0)
+        ::File.exists?(path).as(Value)
+      end)
+
+      file["isDir"] = BuiltinFunction.new("File.isDir", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.isDir")
+        assert_builtin_arity(args, 1, "File.isDir")
+        path = string_argument(args[0], "File.isDir", 0)
+        ::File.directory?(path).as(Value)
+      end)
+
+      file["size"] = BuiltinFunction.new("File.size", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.size")
+        assert_builtin_arity(args, 1, "File.size")
+        path = string_argument(args[0], "File.size", 0)
+
+        begin
+          size = ::File.size(path)
+          # ponytail: values are Int32|Float64; promote files over 2 GiB to Float64.
+          (size > Int32::MAX ? size.to_f64 : size.to_i32).as(Value)
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file["listDir"] = BuiltinFunction.new("File.listDir", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.listDir")
+        assert_builtin_arity(args, 1, "File.listDir")
+        path = string_argument(args[0], "File.listDir", 0)
+
+        begin
+          ::Dir.children(path).map(&.as(Value)).as(Value)
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file["mkdir"] = BuiltinFunction.new("File.mkdir", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.mkdir")
+        assert_builtin_arity(args, 1, "File.mkdir")
+        path = string_argument(args[0], "File.mkdir", 0)
+
+        begin
+          ::Dir.mkdir_p(path)
+          UNDEFINED.as(Value)
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file["remove"] = BuiltinFunction.new("File.remove", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.remove")
+        assert_builtin_arity(args, 1, "File.remove")
+        path = string_argument(args[0], "File.remove", 0)
+
+        begin
+          ::FileUtils.rm_r(path)
+          UNDEFINED.as(Value)
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file["rename"] = BuiltinFunction.new("File.rename", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.rename")
+        assert_builtin_arity(args, 2, "File.rename")
+        from = string_argument(args[0], "File.rename", 0)
+        to = string_argument(args[1], "File.rename", 1)
+
+        begin
+          ::File.rename(from, to)
+          UNDEFINED.as(Value)
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file["copy"] = BuiltinFunction.new("File.copy", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.copy")
+        assert_builtin_arity(args, 2, "File.copy")
+        from = string_argument(args[0], "File.copy", 0)
+        to = string_argument(args[1], "File.copy", 1)
+
+        begin
+          ::File.copy(from, to)
+          UNDEFINED.as(Value)
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
+      file["glob"] = BuiltinFunction.new("File.glob", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "File.glob")
+        assert_builtin_arity(args, 1, "File.glob")
+        pattern = string_argument(args[0], "File.glob", 0)
+
+        begin
+          # ponytail: Dir.glob matches "/" on Windows; accept either separator.
+          ::Dir.glob(pattern.gsub('\\', '/')).map(&.as(Value)).as(Value)
+        rescue ex : Exception
+          raise ExpressionError.new("Error: #{ex.message}")
+        end
+      end)
+
       file
+    end
+
+    private def build_path_object : Hash(String, Value)
+      path = Hash(String, Value).new
+
+      path["join"] = BuiltinFunction.new("Path.join", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Path.join")
+        assert_builtin_arity_at_least(args, 1, "Path.join")
+        parts = args.map_with_index { |arg, index| string_argument(arg, "Path.join", index) }
+        ::File.join(parts).as(Value)
+      end)
+
+      path["dirname"] = BuiltinFunction.new("Path.dirname", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Path.dirname")
+        assert_builtin_arity(args, 1, "Path.dirname")
+        ::File.dirname(string_argument(args[0], "Path.dirname", 0)).as(Value)
+      end)
+
+      path["basename"] = BuiltinFunction.new("Path.basename", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Path.basename")
+        assert_builtin_arity(args, 1, "Path.basename")
+        ::File.basename(string_argument(args[0], "Path.basename", 0)).as(Value)
+      end)
+
+      path["extname"] = BuiltinFunction.new("Path.extname", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Path.extname")
+        assert_builtin_arity(args, 1, "Path.extname")
+        ::File.extname(string_argument(args[0], "Path.extname", 0)).as(Value)
+      end)
+
+      path["resolve"] = BuiltinFunction.new("Path.resolve", ->(receiver : Value, args : Array(Value)) do
+        assert_builtin_receiver_object(receiver, "Path.resolve")
+        assert_builtin_arity(args, 1, "Path.resolve")
+        ::File.expand_path(string_argument(args[0], "Path.resolve", 0)).as(Value)
+      end)
+
+      path
     end
 
     private def build_console_object : Hash(String, Value)
@@ -941,6 +1163,12 @@ module GiavaScript
       return value if value.is_a?(Float64)
 
       raise ExpressionError.new("Error: #{method_name} argument #{index + 1} must be a number")
+    end
+
+    private def string_argument(value : Value, method_name : String, index : Int32) : String
+      return value if value.is_a?(String)
+
+      raise ExpressionError.new("Error: #{method_name} argument #{index + 1} must be a string")
     end
 
     private def object_argument(value : Value, method_name : String, index : Int32) : Hash(String, Value)

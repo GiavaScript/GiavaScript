@@ -142,6 +142,10 @@ Status of core JavaScript language features in GiavaScript.
 | `parseFloat()` | Available |
 | `isNaN()` | Available |
 | `readLine()` | Available |
+| `readAll()` | Available |
+| `readAllLines()` | Available |
+| `sleep(ms)` | Available |
+| `parseArgs(argv)` | Available |
 | `Date.now()` | Available |
 | `new Date()` | Available |
 | `console.log()` | Available |
@@ -155,6 +159,20 @@ Status of core JavaScript language features in GiavaScript.
 | `File.readLines()` | Available |
 | `File.write()` | Available |
 | `File.append()` | Available |
+| `File.exists()` | Available |
+| `File.isDir()` | Available |
+| `File.size()` | Available |
+| `File.listDir()` | Available (entry names only) |
+| `File.mkdir()` | Available (recursive) |
+| `File.remove()` | Available (recursive for directories) |
+| `File.rename()` | Available |
+| `File.copy()` | Available |
+| `File.glob()` | Available |
+| `Path.join()` | Available |
+| `Path.dirname()` | Available |
+| `Path.basename()` | Available |
+| `Path.extname()` | Available |
+| `Path.resolve()` | Available |
 
 ## Notes
 
@@ -163,3 +181,4 @@ Status of core JavaScript language features in GiavaScript.
 - `const` requires an initializer and cannot be reassigned or updated; attempts raise `Error: assignment to constant variable 'x'`.
 - Prefer `let` and `const` for variable declarations.
 - Statements can be separated by newlines without requiring semicolons. A semicolon is not required when two statements are on separate lines.
+- `parseArgs(argv)` returns `{ _: [positional], flags: {…} }`. It handles `--flag`, `--key=value`, `--key value`, bundled short flags (`-abc`), and `--` to end flag parsing. Repeated flags are last-wins, and a value-less long flag is `true`. Because `--flag` and `--key value` are ambiguous, a long flag followed by a non-flag token consumes it as the value.

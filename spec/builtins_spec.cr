@@ -217,6 +217,72 @@ describe GiavaScript do
     interpreter.eval("isNaN();").should eq(["Error: isNaN expects 1 arguments but got 0"])
   end
 
+  it "provides sleep as a global function" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("sleep(0);").should eq(["undefined"])
+    interpreter.eval("sleep(-10);").should eq(["undefined"])
+
+    elapsed = Time.instant
+    interpreter.eval("sleep(20);")
+    (Time.instant - elapsed).should be >= 15.milliseconds
+  end
+
+  it "validates sleep arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("sleep();").should eq(["Error: sleep expects 1 arguments but got 0"])
+    interpreter.eval("sleep(\"10\");").should eq(["Error: sleep argument 1 must be a number"])
+  end
+
+  it "provides readAll and readAllLines as global functions" do
+    GiavaScript::Interpreter.new(input: IO::Memory.new("alpha\nbeta\n"))
+      .eval("readAll();").should eq(["\"alpha\\nbeta\\n\""])
+
+    GiavaScript::Interpreter.new(input: IO::Memory.new("alpha\nbeta\n"))
+      .eval("readAllLines();").should eq(["[\"alpha\", \"beta\"]"])
+
+    GiavaScript::Interpreter.new(input: IO::Memory.new(""))
+      .eval("readAllLines();").should eq(["[]"])
+  end
+
+  it "validates readAll and readAllLines arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("readAll(1);").should eq(["Error: readAll expects 0 arguments but got 1"])
+    interpreter.eval("readAllLines(1);").should eq(["Error: readAllLines expects 0 arguments but got 1"])
+  end
+
+  it "provides parseArgs as a global function" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var args = parseArgs([\"file.txt\", \"--verbose\", \"--out=dist\", \"--tag\", \"v1\", \"-abc\", \"--\", \"--raw\"]);").should eq([] of String)
+
+    interpreter.eval("args.flags.verbose;").should eq(["true"])
+    interpreter.eval("args.flags.out;").should eq(["\"dist\""])
+    interpreter.eval("args.flags.tag;").should eq(["\"v1\""])
+    interpreter.eval("args.flags.a;").should eq(["true"])
+    interpreter.eval("args.flags.b;").should eq(["true"])
+    interpreter.eval("args.flags.c;").should eq(["true"])
+    interpreter.eval("args._;").should eq(["[\"file.txt\", \"--raw\"]"])
+  end
+
+  it "lets repeated parseArgs flags win last and leaves value-less flags true" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var repeated = parseArgs([\"--mode\", \"fast\", \"--mode\", \"slow\"]); repeated.flags.mode;").should eq(["\"slow\""])
+    interpreter.eval("var bare = parseArgs([\"--a\", \"--b\"]); bare.flags.a;").should eq(["true"])
+    interpreter.eval("var empty = parseArgs([\"--key=\"]); empty.flags.key;").should eq(["\"\""])
+  end
+
+  it "validates parseArgs arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("parseArgs();").should eq(["Error: parseArgs expects 1 arguments but got 0"])
+    interpreter.eval("parseArgs(\"x\");").should eq(["Error: parseArgs argument 1 must be an array"])
+    interpreter.eval("parseArgs([1]);").should eq(["Error: parseArgs argument 1 must be an array of strings"])
+  end
+
   it "raises runtime error when parseInt is overwritten with non-callable" do
     interpreter = GiavaScript::Interpreter.new
 
@@ -242,6 +308,64 @@ describe GiavaScript do
     interpreter.eval("File.read(5);").should eq(["Error: File.read argument 1 must be a string"])
     interpreter.eval("File.readLines();").should eq(["Error: File.readLines expects 1 arguments but got 0"])
     interpreter.eval("File.readLines(true);").should eq(["Error: File.readLines argument 1 must be a string"])
+  end
+
+  it "provides File filesystem helpers" do
+    interpreter = GiavaScript::Interpreter.new
+    dir = File.join(Dir.tempdir, "giavascript-fs-#{Process.pid}-#{Random.rand(1_000_000)}")
+    d = dir.to_json
+    a = File.join(dir, "a.txt").to_json
+    b = File.join(dir, "b.txt").to_json
+    c = File.join(dir, "c.txt").to_json
+
+    begin
+      interpreter.eval("File.mkdir(#{d});").should eq(["undefined"])
+      interpreter.eval("File.exists(#{d});").should eq(["true"])
+      interpreter.eval("File.isDir(#{d});").should eq(["true"])
+
+      interpreter.eval("File.write(#{a}, \"hi\");").should eq(["undefined"])
+      interpreter.eval("File.exists(#{a});").should eq(["true"])
+      interpreter.eval("File.isDir(#{a});").should eq(["false"])
+      interpreter.eval("File.size(#{a});").should eq(["2"])
+      interpreter.eval("File.listDir(#{d});").should eq(["[\"a.txt\"]"])
+
+      interpreter.eval("File.copy(#{a}, #{b});").should eq(["undefined"])
+      interpreter.eval("File.read(#{b});").should eq(["\"hi\""])
+
+      interpreter.eval("File.rename(#{b}, #{c});").should eq(["undefined"])
+      interpreter.eval("File.exists(#{b});").should eq(["false"])
+      interpreter.eval("File.exists(#{c});").should eq(["true"])
+
+      interpreter.eval("File.glob(#{File.join(dir, "*.txt").to_json}).length;").should eq(["2"])
+
+      interpreter.eval("File.remove(#{d});").should eq(["undefined"])
+      interpreter.eval("File.exists(#{d});").should eq(["false"])
+    ensure
+      FileUtils.rm_r(dir) if File.exists?(dir)
+    end
+  end
+
+  it "provides Path helpers" do
+    interpreter = GiavaScript::Interpreter.new
+    sample = File.join("a", "b", "c.txt")
+
+    interpreter.eval("Path.join(\"a\", \"b\", \"c.txt\");").should eq([sample.to_json])
+    interpreter.eval("Path.dirname(#{sample.to_json});").should eq([File.dirname(sample).to_json])
+    interpreter.eval("Path.basename(#{sample.to_json});").should eq([File.basename(sample).to_json])
+    interpreter.eval("Path.extname(#{sample.to_json});").should eq([File.extname(sample).to_json])
+    interpreter.eval("Path.resolve(\".\");").should eq([File.expand_path(".").to_json])
+  end
+
+  it "validates filesystem and path builtin arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("File.exists();").should eq(["Error: File.exists expects 1 arguments but got 0"])
+    interpreter.eval("File.exists(1);").should eq(["Error: File.exists argument 1 must be a string"])
+    interpreter.eval("File.rename(\"a\");").should eq(["Error: File.rename expects 2 arguments but got 1"])
+    interpreter.eval("File.copy(1, 2);").should eq(["Error: File.copy argument 1 must be a string"])
+    interpreter.eval("Path.join();").should eq(["Error: Path.join expects at least 1 arguments but got 0"])
+    interpreter.eval("Path.join(\"a\", 2);").should eq(["Error: Path.join argument 2 must be a string"])
+    interpreter.eval("Path.basename();").should eq(["Error: Path.basename expects 1 arguments but got 0"])
   end
 
   it "raises error for non-existent file path on File.read" do
@@ -328,5 +452,4 @@ describe GiavaScript do
     interpreter = GiavaScript::Interpreter.new
     interpreter.eval("len(\"hello\");").should eq(["Error: function 'len' does not exist"])
   end
-
 end

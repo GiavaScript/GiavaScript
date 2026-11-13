@@ -1,12 +1,16 @@
 require "json"
 require "set"
 require "time"
+require "file_utils"
 require "http/client"
 
 module GiavaScript
-  VERSION = "0.10.0"
+  VERSION = "0.11.0"
 
   class ExpressionError < Exception
+  end
+
+  class ExecutionError < Exception
   end
 
   class StatementError < ExpressionError
@@ -94,13 +98,13 @@ module GiavaScript
     getter body_source : String
     getter closure : Environment
     getter parameter_defaults : Hash(String, String)
-    @statements : Array(String)?
+    @statements : Array(Statement)?
 
     def initialize(@name : String?, @parameters : Array(String), @body_source : String, @closure : Environment, @rest_parameter : String? = nil, @parameter_defaults : Hash(String, String) = {} of String => String)
     end
 
-    def statements : Array(String)
-      @statements ||= StatementTokenizer.new(@body_source).tokenize
+    def statements : Array(Statement)
+      @statements ||= StatementParser.new.parse_all(@body_source)
     end
 
     def to_s(io : IO)
