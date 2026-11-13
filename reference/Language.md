@@ -159,6 +159,20 @@ Status of core JavaScript language features in GiavaScript.
 | `File.readLines()` | Available |
 | `File.write()` | Available |
 | `File.append()` | Available |
+| `File.exists()` | Available |
+| `File.isDir()` | Available |
+| `File.size()` | Available |
+| `File.listDir()` | Available (entry names only) |
+| `File.mkdir()` | Available (recursive) |
+| `File.remove()` | Available (recursive for directories) |
+| `File.rename()` | Available |
+| `File.copy()` | Available |
+| `File.glob()` | Available |
+| `Path.join()` | Available |
+| `Path.dirname()` | Available |
+| `Path.basename()` | Available |
+| `Path.extname()` | Available |
+| `Path.resolve()` | Available |
 
 ## Notes
 

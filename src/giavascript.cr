@@ -1,6 +1,7 @@
 require "json"
 require "set"
 require "time"
+require "file_utils"
 require "http/client"
 
 module GiavaScript
