@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Embedding API for Crystal hosts: `eval_value`, `set`/`get`, `register`, and `call`, plus a public `ExecutionError` (#144)
 - Capability-scoped interpreters for sandboxed embedding: `Interpreter.new(capabilities: [...])` with `:file`, `:fetch`, and `:process` (#145)
 
+### Changed
+- Simple statements are parsed once into typed AST nodes and evaluated directly, removing per-execution regex dispatch; `numeric_loop` benchmark is ~5× faster (#136)
+
 ### Fixed
 - Bare `true`, `false`, `null`, and `undefined` expression statements no longer raise "variable does not exist"
 

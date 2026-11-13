@@ -41,7 +41,9 @@ module GiavaScript
 
     private def check_node(statement : Statement, errors : Array(String))
       case statement
-      when RawStatement
+      when ErrorStatement
+        errors << statement.message
+      when SimpleStatement
         check_raw(statement.source, errors)
       when BlockStatement
         statement.statements.each { |inner| check_node(inner, errors) }
@@ -49,8 +51,8 @@ module GiavaScript
         check_node(statement.then_branch, errors)
         statement.else_branch.try { |branch| check_node(branch, errors) }
       when ForStatement
-        statement.init.try { |init| check_raw(init.source, errors) }
-        statement.update.try { |update| check_raw(update.source, errors) }
+        statement.init.try { |init| check_node(init, errors) }
+        statement.update.try { |update| check_node(update, errors) }
         check_node(statement.body, errors)
       when ForOfStatement, ForInStatement, WhileStatement, DoWhileStatement
         check_node(statement.body, errors)

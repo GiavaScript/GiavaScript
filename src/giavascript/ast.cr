@@ -171,13 +171,6 @@ module GiavaScript
     property span : Span?
   end
 
-  class RawStatement < Statement
-    getter source : String
-
-    def initialize(@source : String)
-    end
-  end
-
   class BlockStatement < Statement
     getter statements : Array(Statement)
 
@@ -195,12 +188,12 @@ module GiavaScript
   end
 
   class ForStatement < Statement
-    getter init : RawStatement?
+    getter init : Statement?
     getter condition : Expr?
-    getter update : RawStatement?
+    getter update : Statement?
     getter body : Statement
 
-    def initialize(@init : RawStatement?, @condition : Expr?, @update : RawStatement?, @body : Statement)
+    def initialize(@init : Statement?, @condition : Expr?, @update : Statement?, @body : Statement)
     end
   end
 
@@ -262,5 +255,115 @@ module GiavaScript
   end
 
   class ContinueStatement < Statement
+  end
+
+  abstract class SimpleStatement < Statement
+    getter source : String
+
+    def initialize(@source : String)
+    end
+  end
+
+  class ErrorStatement < SimpleStatement
+    getter message : String
+
+    def initialize(source : String, @message : String)
+      super(source)
+    end
+  end
+
+  class ExpressionStatement < SimpleStatement
+    getter expression : Expr
+
+    def initialize(source : String, @expression : Expr)
+      super(source)
+    end
+  end
+
+  class FunctionDeclarationStatement < SimpleStatement
+    getter function : FunctionExpr
+
+    def initialize(source : String, @function : FunctionExpr)
+      super(source)
+    end
+  end
+
+  class VariableDeclarationStatement < SimpleStatement
+    getter keyword : String
+    getter name : String
+    getter has_initializer : Bool
+    getter initializer : Expr?
+    getter initializer_error : String?
+
+    def initialize(source : String, @keyword : String, @name : String, @has_initializer : Bool, @initializer : Expr?, @initializer_error : String?)
+      super(source)
+    end
+  end
+
+  class DestructuringDeclarationStatement < SimpleStatement
+    getter keyword : String
+    getter pattern : BindingPattern
+    getter initializer : Expr?
+    getter initializer_error : String?
+
+    def initialize(source : String, @keyword : String, @pattern : BindingPattern, @initializer : Expr?, @initializer_error : String?)
+      super(source)
+    end
+  end
+
+  class AssignmentStatement < SimpleStatement
+    getter target : Expr
+    getter operator : String
+    getter value : Expr?
+    getter value_error : String?
+
+    def initialize(source : String, @target : Expr, @operator : String, @value : Expr?, @value_error : String?)
+      super(source)
+    end
+  end
+
+  class DestructuringAssignmentStatement < SimpleStatement
+    getter pattern : BindingPattern
+    getter value : Expr?
+    getter value_error : String?
+
+    def initialize(source : String, @pattern : BindingPattern, @value : Expr?, @value_error : String?)
+      super(source)
+    end
+  end
+
+  class UpdateStatement < SimpleStatement
+    getter target : Expr
+    getter operator : String
+
+    def initialize(source : String, @target : Expr, @operator : String)
+      super(source)
+    end
+  end
+
+  class ReturnStatement < SimpleStatement
+    getter value : Expr?
+    getter value_error : String?
+
+    def initialize(source : String, @value : Expr?, @value_error : String?)
+      super(source)
+    end
+  end
+
+  class ThrowStatement < SimpleStatement
+    getter value : Expr?
+    getter value_error : String?
+
+    def initialize(source : String, @value : Expr?, @value_error : String?)
+      super(source)
+    end
+  end
+
+  class ImportStatement < SimpleStatement
+    getter path : Expr
+
+    def initialize(source : String, @path : Expr)
+      super(source)
+    end
   end
 end
