@@ -491,7 +491,7 @@ module GiavaScript
       BuiltinFunction.new("sleep", ->(_receiver : Value, args : Array(Value)) do
         assert_builtin_arity(args, 1, "sleep")
         milliseconds = number_argument(args[0], "sleep", 0)
-        sleep(milliseconds / 1000.0) if milliseconds > 0
+        sleep((milliseconds / 1000.0).seconds) if milliseconds > 0
         UNDEFINED.as(Value)
       end)
     end

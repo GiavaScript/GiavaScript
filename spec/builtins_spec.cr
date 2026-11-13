@@ -223,9 +223,9 @@ describe GiavaScript do
     interpreter.eval("sleep(0);").should eq(["undefined"])
     interpreter.eval("sleep(-10);").should eq(["undefined"])
 
-    elapsed = Time.monotonic
+    elapsed = Time.instant
     interpreter.eval("sleep(20);")
-    (Time.monotonic - elapsed).should be >= 15.milliseconds
+    (Time.instant - elapsed).should be >= 15.milliseconds
   end
 
   it "validates sleep arguments" do
