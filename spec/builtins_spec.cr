@@ -253,6 +253,36 @@ describe GiavaScript do
     interpreter.eval("readAllLines(1);").should eq(["Error: readAllLines expects 0 arguments but got 1"])
   end
 
+  it "provides parseArgs as a global function" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var args = parseArgs([\"file.txt\", \"--verbose\", \"--out=dist\", \"--tag\", \"v1\", \"-abc\", \"--\", \"--raw\"]);").should eq([] of String)
+
+    interpreter.eval("args.flags.verbose;").should eq(["true"])
+    interpreter.eval("args.flags.out;").should eq(["\"dist\""])
+    interpreter.eval("args.flags.tag;").should eq(["\"v1\""])
+    interpreter.eval("args.flags.a;").should eq(["true"])
+    interpreter.eval("args.flags.b;").should eq(["true"])
+    interpreter.eval("args.flags.c;").should eq(["true"])
+    interpreter.eval("args._;").should eq(["[\"file.txt\", \"--raw\"]"])
+  end
+
+  it "lets repeated parseArgs flags win last and leaves value-less flags true" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("var repeated = parseArgs([\"--mode\", \"fast\", \"--mode\", \"slow\"]); repeated.flags.mode;").should eq(["\"slow\""])
+    interpreter.eval("var bare = parseArgs([\"--a\", \"--b\"]); bare.flags.a;").should eq(["true"])
+    interpreter.eval("var empty = parseArgs([\"--key=\"]); empty.flags.key;").should eq(["\"\""])
+  end
+
+  it "validates parseArgs arguments" do
+    interpreter = GiavaScript::Interpreter.new
+
+    interpreter.eval("parseArgs();").should eq(["Error: parseArgs expects 1 arguments but got 0"])
+    interpreter.eval("parseArgs(\"x\");").should eq(["Error: parseArgs argument 1 must be an array"])
+    interpreter.eval("parseArgs([1]);").should eq(["Error: parseArgs argument 1 must be an array of strings"])
+  end
+
   it "raises runtime error when parseInt is overwritten with non-callable" do
     interpreter = GiavaScript::Interpreter.new
 
