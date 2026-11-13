@@ -134,6 +134,15 @@ engine.call("double", [21] of GiavaScript::Value) # => 42
 
 `eval_value` raises `GiavaScript::ExecutionError` on failure, while `eval` keeps returning diagnostic strings for CLI compatibility. `Value` is the explicit interop type (`Int32 | Float64 | String | Bool | Nil | UndefinedValue | Array(Value) | Hash(String, Value) | …`); there is no automatic bridging to arbitrary Crystal objects.
 
+Host capabilities can be scoped:
+
+```crystal
+engine = GiavaScript::Interpreter.new(capabilities: [:console, :math, :json])
+# File, Path, fetch, and process are not defined.
+```
+
+`capabilities` selects the optional host APIs (`:file`, `:fetch`, `:process`); core language builtins are always available. Omitting it keeps the full CLI set. This is capability selection, not a security boundary against malicious native code.
+
 ## Development workflow
 
 Run the tests:
