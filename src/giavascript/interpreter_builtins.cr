@@ -20,6 +20,7 @@ module GiavaScript
       env["parseInt"] = build_parse_int_function
       env["parseFloat"] = build_parse_float_function
       env["isNaN"] = build_is_nan_function
+      env["parseArgs"] = build_parse_args_function
       env["readLine"] = build_read_line_function
       env["readAll"] = build_read_all_function
       env["readAllLines"] = build_read_all_lines_function
@@ -426,6 +427,54 @@ module GiavaScript
         assert_builtin_arity(args, 1, "isNaN")
         number = coerce_to_number_for_globals(args[0])
         (number.is_a?(Float64) && number.nan?).as(Value)
+      end)
+    end
+
+    private def build_parse_args_function : Value
+      BuiltinFunction.new("parseArgs", ->(_receiver : Value, args : Array(Value)) do
+        assert_builtin_arity(args, 1, "parseArgs")
+        argv = args[0]
+        raise ExpressionError.new("Error: parseArgs argument 1 must be an array") unless argv.is_a?(Array(Value))
+
+        positional = [] of Value
+        flags = Hash(String, Value).new
+        end_of_flags = false
+        index = 0
+        while index < argv.size
+          arg_value = argv[index]
+          raise ExpressionError.new("Error: parseArgs argument 1 must be an array of strings") unless arg_value.is_a?(String)
+          arg = arg_value
+
+          if end_of_flags
+            positional << arg
+          elsif arg == "--"
+            end_of_flags = true
+          elsif arg.starts_with?("--")
+            body = arg[2..]
+            if equals = body.index('=')
+              flags[body[0...equals]] = body[(equals + 1)..]
+            else
+              following = index + 1 < argv.size ? argv[index + 1] : nil
+              if following.is_a?(String) && !following.starts_with?("-")
+                index += 1
+                flags[body] = following
+              else
+                flags[body] = true.as(Value)
+              end
+            end
+          elsif arg.starts_with?("-") && arg.size > 1
+            arg[1..].each_char { |char| flags[char.to_s] = true.as(Value) }
+          else
+            positional << arg
+          end
+
+          index += 1
+        end
+
+        result = Hash(String, Value).new
+        result["_"] = positional.as(Value)
+        result["flags"] = flags.as(Value)
+        result.as(Value)
       end)
     end
 
