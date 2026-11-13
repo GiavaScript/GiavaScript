@@ -1,6 +1,6 @@
 module GiavaScript
   module InterpreterBuiltins
-    private def build_global_env : Environment
+    private def build_global_env(capabilities : Array(Symbol)? = nil) : Environment
       env = Environment.new
       env["console"] = build_console_object
       env["JSON"] = build_json_object
@@ -25,10 +25,12 @@ module GiavaScript
       env["readAll"] = build_read_all_function
       env["readAllLines"] = build_read_all_lines_function
       env["sleep"] = build_sleep_function
-      env["fetch"] = build_fetch_function
-      env["File"] = build_file_object
-      env["Path"] = build_path_object
-      env["process"] = build_process_object
+      if capabilities.nil? || capabilities.includes?(:file)
+        env["File"] = build_file_object
+        env["Path"] = build_path_object
+      end
+      env["fetch"] = build_fetch_function if capabilities.nil? || capabilities.includes?(:fetch)
+      env["process"] = build_process_object if capabilities.nil? || capabilities.includes?(:process)
       env
     end
 
