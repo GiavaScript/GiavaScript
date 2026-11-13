@@ -35,7 +35,7 @@ module GiavaScript
 
       current = skip_whitespace(condition_end + 1)
 
-      consequent = parse_indexed_statement(current, INVALID_IF_ERROR, true, true)
+      consequent = parse_indexed_statement(current, INVALID_IF_ERROR, true)
       current = skip_whitespace(advance_past_statement_delimiter(consequent.end_index))
 
       alternate = nil.as(Statement?)
@@ -43,7 +43,7 @@ module GiavaScript
         current += "else".size
         current = skip_whitespace(current)
 
-        alternate_result = parse_indexed_statement(current, INVALID_IF_ERROR, false, true)
+        alternate_result = parse_indexed_statement(current, INVALID_IF_ERROR)
         alternate = alternate_result.statement
         current = alternate_result.end_index
       end

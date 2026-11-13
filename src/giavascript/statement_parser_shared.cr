@@ -37,6 +37,10 @@ module GiavaScript
     end
 
     private def parse_statement_source(source : String) : Statement
+      if source.starts_with?("function ")
+        return parse_function_declaration(source)
+      end
+
       if starts_with_keyword_in_source?(source, "if")
         return IfStatementParser.new(source).parse_from.statement
       end
@@ -57,13 +61,139 @@ module GiavaScript
         return TryStatementParser.new(source).parse_from.statement
       end
 
+      if starts_with_keyword_in_source?(source, "import")
+        return parse_import_statement(source)
+      end
+
       return BreakStatement.new if source == "break"
       return ContinueStatement.new if source == "continue"
 
-      RawStatement.new(source)
+      parse_simple_statement(source)
     end
 
-    private def parse_indexed_statement(index : Int32, error_message : String, stop_before_else : Bool = false, raw_simple_statement : Bool = false) : ParsedIndexedStatement
+    private def parse_function_declaration(source : String) : Statement
+      expression = begin
+        ExpressionParser.new(source).parse
+      rescue ex : ExpressionError
+        return ErrorStatement.new(source, ex.message || "Error: invalid function definition")
+      end
+
+      if expression.is_a?(FunctionExpr) && expression.name
+        FunctionDeclarationStatement.new(source, expression)
+      else
+        ErrorStatement.new(source, "Error: invalid function definition")
+      end
+    end
+
+    private def parse_import_statement(source : String) : Statement
+      match = source.match(/^import\s+(\"[^\"]*\"|\'[^\']*\')$/)
+      unless match
+        return ErrorStatement.new(source, "Error: invalid import statement — expected import \"file.js\"")
+      end
+
+      begin
+        ImportStatement.new(source, ExpressionParser.new(match[1].strip).parse)
+      rescue ex : ExpressionError
+        ErrorStatement.new(source, ex.message || "Error: invalid import statement")
+      end
+    end
+
+    private def parse_simple_statement(source : String) : Statement
+      if match = source.match(/^throw(?:\s+([\s\S]+))?$/)
+        value, error = parse_expression_or_error(match[1]?, "Error: invalid expression")
+        return ThrowStatement.new(source, value, error)
+      end
+
+      if match = source.match(/^return(?:\s+(.+))?$/m)
+        value, error = parse_expression_or_error(match[1]?, "Error: invalid expression")
+        return ReturnStatement.new(source, value, error)
+      end
+
+      if match = source.match(/^(.+?)\s*(\+\+|--)$/)
+        begin
+          target = parse_assignment_target_source(match[1].strip)
+          return UpdateStatement.new(source, target, match[2])
+        rescue ex : ExpressionError
+          return ErrorStatement.new(source, ex.message || "Error: invalid increment expression")
+        end
+      end
+
+      if match = source.match(/^(var|let|const)\s+([A-Za-z_][A-Za-z0-9_]*)$/)
+        return VariableDeclarationStatement.new(source, match[1], match[2], false, nil, nil)
+      end
+
+      if match = source.match(/^(var|let|const)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/)
+        keyword = match[1]
+        name = match[2]
+        rhs = match[3].strip
+        value, error = parse_expression_or_error(rhs, "Error: invalid right-hand side '#{rhs}'")
+        return VariableDeclarationStatement.new(source, keyword, name, true, value, error)
+      end
+
+      if match = source.match(/^(var|let|const)\s+([\[{][\s\S]*)$/)
+        keyword = match[1]
+        body = match[2].strip
+        declaration = AssignmentSplitter.split(body)
+
+        unless declaration && declaration[:operator] == "="
+          return ErrorStatement.new(source, "Error: destructuring declaration requires an initializer")
+        end
+
+        begin
+          pattern = BindingPatternParser.new(declaration[:lhs]).parse
+          value = ExpressionParser.new(declaration[:rhs]).parse
+          return DestructuringDeclarationStatement.new(source, keyword, pattern, value, nil)
+        rescue ex : ExpressionError
+          return ErrorStatement.new(source, ex.message || "Error: invalid destructuring declaration")
+        end
+      end
+
+      if assignment = AssignmentSplitter.split(source)
+        lhs = assignment[:lhs]
+        rhs = assignment[:rhs]
+        operator = assignment[:operator]
+
+        if operator == "=" && (lhs.starts_with?('[') || lhs.starts_with?('{'))
+          begin
+            pattern = BindingPatternParser.new(lhs).parse
+            value = ExpressionParser.new(rhs).parse
+            return DestructuringAssignmentStatement.new(source, pattern, value, nil)
+          rescue ex : ExpressionError
+            return ErrorStatement.new(source, ex.message || "Error: invalid destructuring assignment")
+          end
+        end
+
+        begin
+          target = parse_assignment_target_source(lhs)
+          value, error = parse_expression_or_error(rhs, "Error: invalid assignment")
+          return AssignmentStatement.new(source, target, operator, value, error)
+        rescue ex : ExpressionError
+          return ErrorStatement.new(source, ex.message || "Error: invalid assignment")
+        end
+      end
+
+      begin
+        ExpressionStatement.new(source, ExpressionParser.new(source).parse)
+      rescue ex : ExpressionError
+        ErrorStatement.new(source, ex.message || "Error: invalid right-hand side '#{source}'")
+      end
+    end
+
+    private def parse_expression_or_error(source : String?, fallback : String) : {Expr?, String?}
+      return {nil, nil} unless source
+
+      {ExpressionParser.new(source.strip).parse, nil}
+    rescue ex : ExpressionError
+      {nil, ex.message || fallback}
+    end
+
+    private def parse_assignment_target_source(source : String) : Expr
+      ExpressionParser.new(source).parse
+    rescue ExpressionError
+      raise ExpressionError.new("Error: invalid assignment target '#{source}'")
+    end
+
+    private def parse_indexed_statement(index : Int32, error_message : String, stop_before_else : Bool = false) : ParsedIndexedStatement
       current = skip_whitespace(index)
       raise ExpressionError.new(error_message) if current >= @source.size
 
@@ -85,7 +215,7 @@ module GiavaScript
         source = @source[current...function_end_index].strip
         raise ExpressionError.new(error_message) if source.empty?
 
-        statement = RawStatement.new(source)
+        statement = parse_statement_source(source)
         statement.span = span_for(current, function_end_index)
         return ParsedIndexedStatement.new(statement, function_end_index)
       end
@@ -103,7 +233,7 @@ module GiavaScript
       source = @source[current...simple_end_index].strip
       raise ExpressionError.new(error_message) if source.empty?
 
-      statement = raw_simple_statement ? RawStatement.new(source).as(Statement) : parse_statement_source(source)
+      statement = parse_statement_source(source)
       statement.span = span_for(current, simple_end_index)
       ParsedIndexedStatement.new(statement, simple_end_index)
     end
@@ -359,6 +489,34 @@ module GiavaScript
     private def identifier_continue?(char : Char?) : Bool
       return false unless char
       char.ascii_letter? || char.ascii_number? || char == '_'
+    end
+  end
+
+  class StatementParser
+    include StatementParserShared
+
+    def initialize
+      @source = ""
+    end
+
+    def parse(source : String) : Statement
+      parse_statement_source(source.strip)
+    rescue ex : ExpressionError
+      ErrorStatement.new(source, ex.message || "Error: invalid statement")
+    end
+
+    def parse_all(source : String) : Array(Statement)
+      statements = [] of Statement
+      tokenizer = StatementTokenizer.new(source)
+
+      while raw = tokenizer.next_statement
+        raw = raw.strip
+        next if raw.empty?
+
+        statements << parse(raw)
+      end
+
+      statements
     end
   end
 end

@@ -53,11 +53,11 @@ module GiavaScript
       end
     end
 
-    private def parse_optional_init_clause(source : String) : RawStatement?
+    private def parse_optional_init_clause(source : String) : Statement?
       clause = source.strip
       return nil if clause.empty?
 
-      RawStatement.new(clause)
+      parse_for_clause(clause)
     end
 
     private def parse_optional_condition_clause(source : String) : Expr?
@@ -71,11 +71,17 @@ module GiavaScript
       end
     end
 
-    private def parse_optional_update_clause(source : String) : RawStatement?
+    private def parse_optional_update_clause(source : String) : Statement?
       clause = source.strip
       return nil if clause.empty?
 
-      RawStatement.new(clause)
+      parse_for_clause(clause)
+    end
+
+    private def parse_for_clause(clause : String) : Statement
+      parse_statement_source(clause)
+    rescue ex : ExpressionError
+      ErrorStatement.new(clause, ex.message || "Error: invalid for statement")
     end
 
     private def parse_for_header(index : Int32) : NamedTuple(init_source: String, condition_source: String, update_source: String, end_paren_index: Int32)
