@@ -3,6 +3,7 @@ module GiavaScript
     include InterpreterBuiltins
 
     IDENTIFIER_REGEX          = /^[A-Za-z_][A-Za-z0-9_]*$/
+    LITERAL_KEYWORDS          = %w(true false null undefined)
     MAX_JSON_STRINGIFY_DEPTH  = 1_000
     MAX_EXPRESSION_CACHE_SIZE = 8_192
     MAX_EVALUATOR_CACHE_SIZE  = 1_024
@@ -172,6 +173,70 @@ module GiavaScript
 
     def eval(input : String) : Array(String)
       eval_diagnostics(input).map(&.message)
+    end
+
+    def eval_value(input : String) : Value
+      slices = begin
+        StatementTokenizer.new(CommentStripper.strip(input)).tokenize
+      rescue ex : StatementError
+        raise ExecutionError.new(ex.message || "Error: invalid statement")
+      rescue ex : ExpressionError
+        raise ExecutionError.new(ex.message || "Error: invalid statement")
+      end
+
+      value = UNDEFINED
+      slices.each do |slice|
+        result = begin
+          eval_statement(slice, @env, false, false, false)
+        rescue ex : ThrowSignal
+          raise ExecutionError.new(format_uncaught(ex))
+        rescue ex : ExpressionError
+          raise ExecutionError.new(ex.message || "Error: evaluation failed")
+        end
+
+        raise ExecutionError.new(result.message.not_nil!) if result.error?
+        value = result.value
+      end
+      value
+    end
+
+    def set(name : String, value : Value) : Nil
+      @env[name] = value
+      nil
+    end
+
+    def get(name : String) : Value
+      @env.lookup(name)[:value]
+    end
+
+    def register(name : String, &block : Array(Value) -> Value) : Nil
+      @env[name] = BuiltinFunction.new(name, ->(_receiver : Value, args : Array(Value)) { block.call(args) })
+      nil
+    end
+
+    def call(name : String, args : Array(Value) = [] of Value) : Value
+      found = @env.lookup(name)
+      raise ExecutionError.new("Error: function '#{name}' does not exist") unless found[:found]
+
+      value = found[:value]
+      case value
+      when BuiltinFunction
+        begin
+          value.call(UNDEFINED, args)
+        rescue ex : ExpressionError
+          raise ExecutionError.new(ex.message || "Error: call failed")
+        end
+      when UserFunction
+        begin
+          invoke_user_function(value, args)
+        rescue ex : ThrowSignal
+          raise ExecutionError.new(format_uncaught(ex))
+        rescue ex : ExpressionError
+          raise ExecutionError.new(ex.message || "Error: call failed")
+        end
+      else
+        raise ExecutionError.new("Error: '#{name}' is not a function")
+      end
     end
 
     def eval_diagnostics(input : String) : Array(Diagnostic)
@@ -402,14 +467,15 @@ module GiavaScript
 
       if stmt.matches?(IDENTIFIER_REGEX)
         if env.has_key?(stmt)
-          return EvalResult.normal(value_to_s(env[stmt]))
+          value = env[stmt]
+          return EvalResult.new(ControlFlow::Normal, value_to_s(value), value)
         end
-        return EvalResult.normal("Error: variable '#{stmt}' does not exist")
+        return EvalResult.normal("Error: variable '#{stmt}' does not exist") unless LITERAL_KEYWORDS.includes?(stmt)
       end
 
       begin
         value = eval_rhs(stmt, env)
-        EvalResult.normal(value_to_s(value))
+        EvalResult.new(ControlFlow::Normal, value_to_s(value), value)
       rescue ex : ExpressionError
         EvalResult.normal(ex.message || "Error: invalid right-hand side '#{stmt}'")
       end

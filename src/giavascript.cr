@@ -10,6 +10,9 @@ module GiavaScript
   class ExpressionError < Exception
   end
 
+  class ExecutionError < Exception
+  end
+
   class StatementError < ExpressionError
     getter offset : Int32
 
