@@ -765,7 +765,8 @@ module GiavaScript
         pattern = string_argument(args[0], "File.glob", 0)
 
         begin
-          ::Dir.glob(pattern).map(&.as(Value)).as(Value)
+          # ponytail: Dir.glob matches "/" on Windows; accept either separator.
+          ::Dir.glob(pattern.gsub('\\', '/')).map(&.as(Value)).as(Value)
         rescue ex : Exception
           raise ExpressionError.new("Error: #{ex.message}")
         end
